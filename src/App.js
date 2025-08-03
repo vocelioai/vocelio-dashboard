@@ -721,8 +721,12 @@ const VocelioUltimateDashboard = () => {
         
         <div className="p-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-2xl">
-              <Flame className="w-7 h-7 text-white animate-pulse" />
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-2xl p-1">
+              <img 
+                src="/logo192.png" 
+                alt="Vocelio.ai Logo" 
+                className="w-full h-full object-contain rounded-xl"
+              />
             </div>
             {!sidebarCollapsed && (
               <div>
