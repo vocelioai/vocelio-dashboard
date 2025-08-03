@@ -17,11 +17,30 @@ import {
   MessageCircle, Headset, Gauge, Sparkles, Timer, Map,
   FileCode, Boxes, Webhook, Shuffle, UserPlus, Crown,
   Rocket, Brain, Wand2, MousePointer, Layers3,
-  Command, Code, Wrench, TestTube, Beaker, FlaskConical
+  Command, Code, Wrench, TestTube, Beaker, FlaskConical,
+  ShoppingCart, Volume1
 } from 'lucide-react';
 
+// Import your page components
+import SmartCampaignsDashboard from './pages/SmartCampaigns';
+import LiveCallCenter from './pages/CallCenter';
+import VoiceLabPage from './pages/VoiceLab';
+import FlowBuilderPage from './pages/FlowBuilder';
+import AnalyticsProPage from './pages/AnalyticsPro';
+import AIBrainCenter from './pages/AIBrain';
+import IntegrationsCenter from './pages/IntegrationsCenter';
+import AgentStore from './pages/AgentStore';
+import BillingProCenter from './pages/BillingPro';
+import TeamHubDashboard from './pages/TeamHub';
+import ComplianceDashboard from './pages/Compliance';
+import WhiteLabelDashboard from './pages/WhiteLabelDashboard';
+import TwilioNumberPurchase from './pages/PhoneNumbers';
+import VocelioSettingsDashboard from './pages/SettingsPage';
+import VocelioVoiceMarketplace from './pages/VoiceMarketplace';
+import APIDashboard from './pages/DeveloperAPI';
+
 const VocelioUltimateDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('flow-builder');
   const [darkMode, setDarkMode] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,19 +86,21 @@ const VocelioUltimateDashboard = () => {
   const sidebarItems = [
     { id: 'overview', label: 'Command Center', icon: Command, badge: 'LIVE' },
     { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
-    { id: 'campaigns', label: 'Smart Campaigns', icon: Target, badge: '89' },
+    { id: 'smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: '89' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
-    { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'NEW' },
-    { id: 'script-builder', label: 'Flow Builder', icon: Workflow, badge: 'AI' },
+    { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
+    { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' },
+    { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'AI' },
+    { id: 'flow-builder', label: 'Flow Builder', icon: Workflow, badge: 'AI' },
     { id: 'analytics-pro', label: 'Analytics Pro', icon: BarChart3, badge: null },
-    { id: 'ai-insights', label: 'AI Brain', icon: Brain, badge: '94%' },
+    { id: 'ai-brain', label: 'AI Brain', icon: Brain, badge: '94%' },
     { id: 'integrations', label: 'Integrations', icon: Network, badge: '15' },
-    { id: 'marketplace', label: 'Agent Store', icon: Store, badge: 'HOT' },
+    { id: 'agent-store', label: 'Agent Store', icon: Store, badge: 'HOT' },
     { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
-    { id: 'team-mgmt', label: 'Team Hub', icon: Users, badge: null },
+    { id: 'team-hub', label: 'Team Hub', icon: Users, badge: null },
     { id: 'compliance', label: 'Compliance', icon: Shield, badge: '100%' },
     { id: 'white-label', label: 'White Label', icon: Palette, badge: 'ENTERPRISE' },
-    { id: 'api-docs', label: 'Developer API', icon: Code, badge: null },
+    { id: 'developer-api', label: 'Developer API', icon: Code, badge: null },
     { id: 'settings', label: 'Settings', icon: Settings, badge: null }
   ];
 
@@ -529,6 +550,119 @@ const VocelioUltimateDashboard = () => {
           </div>
         );
 
+      // Add cases for all your page components
+      case 'smart-campaigns':
+        return <SmartCampaignsDashboard />;
+      
+      case 'call-center':
+        return <LiveCallCenter />;
+      
+      case 'phone-numbers':
+        return <TwilioNumberPurchase />;
+      
+      case 'voice-marketplace':
+        return <VocelioVoiceMarketplace />;
+      
+      case 'voice-lab':
+        return <VoiceLabPage />;
+      
+      case 'flow-builder':
+        return <FlowBuilderPage />;
+      
+      case 'analytics-pro':
+        return <AnalyticsProPage />;
+      
+      case 'ai-brain':
+        return <AIBrainCenter />;
+      
+      case 'integrations':
+        return <IntegrationsCenter />;
+      
+      case 'agent-store':
+        return <AgentStore />;
+      
+      case 'billing-pro':
+        return <BillingProCenter />;
+      
+      case 'team-hub':
+        return <TeamHubDashboard />;
+      
+      case 'compliance':
+        return <ComplianceDashboard />;
+      
+      case 'white-label':
+        return (
+          <div className="p-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-8 text-white mb-8">
+                <div className="flex items-center space-x-4 mb-4">
+                  <Palette className="w-12 h-12" />
+                  <div>
+                    <h1 className="text-3xl font-bold">White Label Solutions</h1>
+                    <p className="text-purple-100">Enterprise-grade customization platform</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                >
+                  ← Back to Dashboard
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <Crown className="w-8 h-8 text-yellow-500 mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Partner Management</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Manage reseller partners, custom branding, and revenue sharing models.
+                  </p>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      ✅ Custom domains, branding, and white-label solutions available in Enterprise tier
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <Zap className="w-8 h-8 text-blue-500 mb-4" />
+                  <h3 className="text-xl font-bold mb-2">API Integration</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Full API access for custom integrations and white-label implementations.
+                  </p>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                      🔧 RESTful API with webhooks, SSO, and custom authentication
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
+                <h3 className="font-bold text-yellow-800 dark:text-yellow-400 mb-2">🚀 Coming Soon</h3>
+                <p className="text-yellow-700 dark:text-yellow-300">
+                  Full White Label Dashboard with brand customization, partner analytics, 
+                  revenue management, and enterprise controls will be available in the next release.
+                </p>
+                <div className="mt-4 flex items-center space-x-4">
+                  <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+                    Request Demo
+                  </button>
+                  <button className="px-4 py-2 border border-yellow-500 text-yellow-600 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30">
+                    Contact Enterprise Sales
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'developer-api':
+        return <APIDashboard />;
+      
+      case 'settings':
+        return <VocelioSettingsDashboard />;
+
       default:
         return (
           <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-8 text-center backdrop-blur-sm`}>
@@ -604,7 +738,7 @@ const VocelioUltimateDashboard = () => {
           <button 
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className={`mt-4 p-3 rounded-xl ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'} 
-            transition-all w-full flex items-center justify-center hidden lg:flex group`}
+            transition-all w-full lg:flex items-center justify-center hidden group`}
           >
             {sidebarCollapsed ? 
               <Menu className="w-6 h-6 group-hover:scale-110 transition-transform" /> : 
