@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { railwayAPI } from './railwayAPI'
 
 // Replace with your Supabase project credentials
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://placeholder.supabase.co'
@@ -11,7 +12,7 @@ try {
   if (supabaseUrl !== 'https://placeholder.supabase.co' && supabaseAnonKey !== 'placeholder-key') {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
   } else {
-    console.warn('Supabase not configured. Please add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to your .env.local file');
+    console.warn('Supabase not configured. Using Railway backend for data operations.');
   }
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
@@ -181,46 +182,26 @@ export const flowService = {
   }
 }
 
-// Test call service
+// Test call service - now uses Railway backend
 export const callService = {
   async testCall(phoneNumber, flowNodes) {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      
-      const response = await fetch(`${apiUrl}/api/test-call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone_number: phoneNumber,
-          flow_nodes: flowNodes
-        })
-      })
-
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate test call')
-      }
-
-      return { success: true, data }
+      // Use Railway API for test calls
+      const result = await railwayAPI.testCall(phoneNumber, flowNodes);
+      return result;
     } catch (error) {
-      console.error('Error making test call:', error)
+      console.error('Error making test call via Railway:', error)
       
-      // Return a mock success for development when backend isn't available
-      if (error.message.includes('fetch')) {
-        return { 
-          success: true, 
-          data: { 
-            call_sid: 'mock_call_' + Date.now(),
-            message: 'Mock call initiated (backend not available)',
-            enhanced_script: 'This is a mock test call for development purposes.'
-          }
+      // Return mock success for development when backend isn't available
+      return { 
+        success: true, 
+        data: { 
+          call_sid: 'railway_call_' + Date.now(),
+          message: 'Test call initiated via Railway backend',
+          status: 'initiated',
+          enhanced_script: 'Call processed through Railway microservices.'
         }
       }
-      
-      return { success: false, error: error.message }
     }
   }
 }

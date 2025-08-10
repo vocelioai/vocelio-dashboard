@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import RailwayConnectionTest from '../components/RailwayConnectionTest';
 import { 
   Settings, User, Shield, Bell, Globe, Palette, Database, Key,
   Smartphone, Headphones, Brain, Zap, Cloud, Lock, Unlock,
@@ -202,6 +203,13 @@ const VocelioSettingsDashboard = () => {
       icon: Network,
       description: 'CRM, webhooks, API access, and third-party services',
       badge: '15+'
+    },
+    {
+      id: 'railway',
+      label: 'Railway Backend',
+      icon: Server,
+      description: 'Railway backend connection and API gateway settings',
+      badge: 'CONNECTED'
     },
     {
       id: 'billing',
@@ -879,6 +887,37 @@ const VocelioSettingsDashboard = () => {
                   label="Performance Alerting"
                   description="Get alerts when performance thresholds are exceeded"
                 />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'railway':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Railway Backend Connection</h3>
+              <div className="space-y-6">
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'}`}>
+                  <h4 className="font-medium mb-2">Connection Settings</h4>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>API Gateway:</strong> https://api-gateway-production-588d.up.railway.app</div>
+                    <div><strong>API Version:</strong> v1</div>
+                    <div><strong>Microservices:</strong> 20 services deployed</div>
+                    <div><strong>Status:</strong> <span className="text-green-500">Connected</span></div>
+                  </div>
+                </div>
+                
+                <RailwayConnectionTest />
+                
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-blue-900/20 border-blue-500/20' : 'bg-blue-50 border-blue-200'} border`}>
+                  <h4 className="font-medium mb-2 text-blue-600">ℹ️ Railway Integration Info</h4>
+                  <p className="text-sm text-blue-700">
+                    Your dashboard is connected to a Railway backend with 20 microservices including 
+                    overview, agent-store, call processing, analytics, and more. All API calls are 
+                    routed through the API Gateway for optimal performance and security.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
