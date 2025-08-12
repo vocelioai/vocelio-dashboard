@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import twilioAPI from '../lib/twilioAPI';
 import { 
   Phone, Plus, Search, Filter, Globe, CreditCard, Check, X, 
   ArrowRight, MapPin, Shield, Clock, Star, AlertCircle, Info,
@@ -8,6 +9,7 @@ import {
   Upload, Edit, Trash2, MoreHorizontal, AlertTriangle, Crown,
   Sparkles, Award, TrendingUp, BarChart3, Activity, Volume2
 } from 'lucide-react';
+import './PhoneNumbers.css';
 
 const TwilioNumberPurchase = () => {
   const [activeTab, setActiveTab] = useState('my-numbers');
@@ -23,55 +25,46 @@ const TwilioNumberPurchase = () => {
   const [myNumbers, setMyNumbers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data for existing numbers
-  const mockMyNumbers = [
-    {
-      id: '1',
-      number: '+1 (555) 123-4567',
-      friendlyName: 'Main Sales Line',
-      type: 'Local',
-      country: 'US',
-      state: 'CA',
-      city: 'San Francisco',
-      features: ['Voice', 'SMS'],
-      status: 'Active',
-      monthlyPrice: 1.15,
-      usage: { calls: 2847, minutes: 15420, sms: 1203 },
-      created: '2024-01-15',
-      campaigns: 3,
-      lastUsed: '2 hours ago'
-    },
-    {
-      id: '2', 
-      number: '+1 (800) 555-CALL',
-      friendlyName: 'Toll-Free Support',
-      type: 'Toll-Free',
-      country: 'US',
-      features: ['Voice'],
-      status: 'Active',
-      monthlyPrice: 2.00,
-      usage: { calls: 1456, minutes: 8923, sms: 0 },
-      created: '2024-02-01',
-      campaigns: 1,
-      lastUsed: '5 minutes ago'
-    },
-    {
-      id: '3',
-      number: '+1 (555) 789-0123', 
-      friendlyName: 'Campaign #3 Dedicated',
-      type: 'Local',
-      country: 'US',
-      state: 'NY',
-      city: 'New York',
-      features: ['Voice', 'SMS'],
-      status: 'Active', 
-      monthlyPrice: 1.15,
-      usage: { calls: 892, minutes: 4231, sms: 456 },
-      created: '2024-02-10',
-      campaigns: 1,
-      lastUsed: '1 day ago'
+  // Load owned numbers on component mount
+  useEffect(() => {
+    loadOwnedNumbers();
+  }, []);
+
+  // Load owned numbers from Twilio API
+  const loadOwnedNumbers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await twilioAPI.getOwnedNumbers();
+      
+      if (response.incoming_phone_numbers) {
+        const formattedNumbers = response.incoming_phone_numbers.map((number, index) => ({
+          id: number.sid || index + 1,
+          phoneNumber: twilioAPI.formatPhoneNumber(number.phone_number),
+          friendlyName: number.friendly_name || 'Unnamed Number',
+          capabilities: [
+            ...(number.capabilities?.voice ? ['Voice'] : []),
+            ...(number.capabilities?.sms ? ['SMS'] : []),
+            ...(number.capabilities?.mms ? ['MMS'] : [])
+          ],
+          status: number.status || 'active',
+          purchaseDate: number.date_created ? new Date(number.date_created).toISOString().split('T')[0] : '2024-01-01',
+          monthlyFee: `$${twilioAPI.getPricing(selectedCountry, 'local')}`,
+          usage: {
+            calls: Math.floor(Math.random() * 100), // TODO: Get real usage from backend
+            sms: Math.floor(Math.random() * 500),
+            mms: Math.floor(Math.random() * 50)
+          },
+          rawData: number
+        }));
+        setMyNumbers(formattedNumbers);
+      }
+    } catch (error) {
+      console.error('Failed to load owned numbers:', error);
+      // Keep any existing numbers in case of API failure
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const countries = [
     { code: 'US', name: 'United States', flag: '🇺🇸', pricing: { local: 1.15, tollFree: 2.00, mobile: 1.50 } },
@@ -117,46 +110,52 @@ const TwilioNumberPurchase = () => {
     { id: 'mms', name: 'MMS Messaging', icon: Smartphone, required: false }
   ];
 
-  useEffect(() => {
-    setMyNumbers(mockMyNumbers);
-  }, []);
-
   const handleSearch = async () => {
     setIsSearching(true);
-    // Simulate API call to Twilio
-    setTimeout(() => {
-      const mockNumbers = [
-        {
-          phoneNumber: '+15551234567',
-          friendlyName: '+1 (555) 123-4567',
-          locality: 'San Francisco',
-          region: 'CA',
-          country: 'US',
-          capabilities: selectedFeatures,
-          monthlyPrice: countries.find(c => c.code === selectedCountry)?.pricing[selectedType] || 1.15
-        },
-        {
-          phoneNumber: '+15551234568',
-          friendlyName: '+1 (555) 123-4568', 
-          locality: 'San Francisco',
-          region: 'CA',
-          country: 'US',
-          capabilities: selectedFeatures,
-          monthlyPrice: countries.find(c => c.code === selectedCountry)?.pricing[selectedType] || 1.15
-        },
-        {
-          phoneNumber: '+15551234569',
-          friendlyName: '+1 (555) 123-4569',
-          locality: 'San Francisco', 
-          region: 'CA',
-          country: 'US',
-          capabilities: selectedFeatures,
-          monthlyPrice: countries.find(c => c.code === selectedCountry)?.pricing[selectedType] || 1.15
-        }
-      ];
-      setAvailableNumbers(mockNumbers);
+    try {
+      const searchOptions = {
+        limit: 10,
+        type: selectedType === 'local' ? 'Local' : selectedType === 'tollFree' ? 'TollFree' : 'Mobile'
+      };
+
+      // Add area code filter if provided
+      if (searchArea && searchArea.length === 3) {
+        searchOptions.areaCode = searchArea;
+      }
+
+      // Add pattern search if provided
+      if (searchArea && searchArea.length > 3) {
+        searchOptions.contains = searchArea.replace(/\D/g, '');
+      }
+
+      const response = await twilioAPI.searchAvailableNumbers(selectedCountry, searchOptions);
+      
+      if (response.available_phone_numbers) {
+        const formattedNumbers = response.available_phone_numbers.map(number => ({
+          phoneNumber: number.phone_number,
+          friendlyName: twilioAPI.formatPhoneNumber(number.phone_number),
+          locality: number.locality || 'Unknown',
+          region: number.region || 'Unknown',
+          country: number.iso_country || selectedCountry,
+          capabilities: [
+            ...(number.capabilities?.voice ? ['voice'] : []),
+            ...(number.capabilities?.sms ? ['sms'] : []),
+            ...(number.capabilities?.mms ? ['mms'] : [])
+          ],
+          monthlyPrice: number.price ? parseFloat(number.price) : twilioAPI.getPricing(selectedCountry, selectedType),
+          rawData: number
+        }));
+        setAvailableNumbers(formattedNumbers);
+      } else {
+        setAvailableNumbers([]);
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      // Show fallback message or mock data
+      setAvailableNumbers([]);
+    } finally {
       setIsSearching(false);
-    }, 1500);
+    }
   };
 
   const handlePurchase = async (number) => {
@@ -165,107 +164,154 @@ const TwilioNumberPurchase = () => {
   };
 
   const completePurchase = async () => {
-    setIsLoading(true);
-    // Simulate Stripe checkout and Twilio provisioning
-    setTimeout(() => {
-      const newNumber = {
-        id: Date.now().toString(),
-        number: selectedNumber.friendlyName,
-        friendlyName: `New Number ${myNumbers.length + 1}`,
-        type: selectedType === 'tollFree' ? 'Toll-Free' : selectedType === 'mobile' ? 'Mobile' : 'Local',
-        country: selectedCountry,
-        state: selectedNumber.region,
-        city: selectedNumber.locality,
-        features: selectedFeatures.map(f => f.charAt(0).toUpperCase() + f.slice(1)),
-        status: 'Active',
-        monthlyPrice: selectedNumber.monthlyPrice,
-        usage: { calls: 0, minutes: 0, sms: 0 },
-        created: new Date().toISOString().split('T')[0],
-        campaigns: 0,
-        lastUsed: 'Never'
-      };
+    if (!selectedNumber) return;
+
+    try {
+      setIsLoading(true);
       
-      setMyNumbers([...myNumbers, newNumber]);
-      setShowCheckout(false);
-      setSelectedNumber(null);
-      setActiveTab('my-numbers');
+      const purchaseOptions = {
+        friendlyName: selectedNumber.friendlyName || `Number ${selectedNumber.phoneNumber}`,
+        // Add webhook URLs from environment variables if available
+        voiceUrl: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || '',
+        smsUrl: process.env.REACT_APP_TWILIO_SMS_WEBHOOK || ''
+      };
+
+      const result = await twilioAPI.purchaseNumber(selectedNumber.phoneNumber, purchaseOptions);
+      
+      if (result.sid) {
+        // Add to local state immediately
+        const newNumber = {
+          id: result.sid,
+          phoneNumber: twilioAPI.formatPhoneNumber(result.phone_number),
+          friendlyName: result.friendly_name,
+          capabilities: [
+            ...(result.capabilities?.voice ? ['Voice'] : []),
+            ...(result.capabilities?.sms ? ['SMS'] : []),
+            ...(result.capabilities?.mms ? ['MMS'] : [])
+          ],
+          status: 'active',
+          purchaseDate: new Date().toISOString().split('T')[0],
+          monthlyFee: `$${selectedNumber.monthlyPrice}`,
+          usage: { calls: 0, sms: 0, mms: 0 },
+          rawData: result
+        };
+
+        setMyNumbers(prev => [...prev, newNumber]);
+        setShowCheckout(false);
+        setSelectedNumber(null);
+        setActiveTab('my-numbers');
+        
+        // Optionally reload all numbers to ensure sync
+        setTimeout(() => loadOwnedNumbers(), 1000);
+      }
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      alert('Failed to purchase number: ' + error.message);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
-  const NumberCard = ({ number }) => (
+  const deleteNumber = async (numberId) => {
+    try {
+      const number = myNumbers.find(n => n.id === numberId);
+      if (!number) return;
+
+      if (window.confirm(`Are you sure you want to delete ${number.phoneNumber}? This action cannot be undone.`)) {
+        setIsLoading(true);
+        
+        // If this is a real Twilio number (has rawData.sid), delete from Twilio
+        if (number.rawData?.sid) {
+          await twilioAPI.deleteNumber(number.rawData.sid);
+        }
+        
+        // Remove from local state
+        setMyNumbers(prev => prev.filter(n => n.id !== numberId));
+      }
+    } catch (error) {
+      console.error('Failed to delete number:', error);
+      alert('Failed to delete number: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const NumberCard = ({ number, onDelete }) => (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-            number.type === 'Toll-Free' ? 'bg-purple-500/10 text-purple-500' :
-            number.type === 'Mobile' ? 'bg-blue-500/10 text-blue-500' :
-            'bg-green-500/10 text-green-500'
+            number.capabilities.includes('Voice') && number.capabilities.includes('SMS') ? 'bg-green-500/10 text-green-500' :
+            number.capabilities.includes('Voice') ? 'bg-blue-500/10 text-blue-500' :
+            'bg-purple-500/10 text-purple-500'
           }`}>
-            {number.type === 'Toll-Free' ? <Crown className="w-6 h-6" /> :
-             number.type === 'Mobile' ? <Smartphone className="w-6 h-6" /> :
-             <MapPin className="w-6 h-6" />}
+            {number.capabilities.includes('Voice') ? <PhoneCall className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
           </div>
           <div>
-            <h3 className="font-bold text-lg">{number.number}</h3>
+            <h3 className="font-bold text-lg">{number.phoneNumber}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">{number.friendlyName}</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-            number.status === 'Active' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'
+            number.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'
           }`}>
             {number.status}
           </span>
-          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          <div className="relative group">
+            <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              <button 
+                onClick={() => onDelete && onDelete(number.id)}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Number</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
+        {number.capabilities.map(capability => (
+          <span key={capability} className="px-2 py-1 bg-blue-500/10 text-blue-500 text-xs font-medium rounded-full">
+            {capability}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
           <div className="text-lg font-bold text-blue-500">{number.usage.calls.toLocaleString()}</div>
-          <div className="text-xs text-gray-500">Total Calls</div>
+          <div className="text-xs text-gray-500">Calls</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-green-500">{number.usage.minutes.toLocaleString()}</div>
-          <div className="text-xs text-gray-500">Minutes Used</div>
+          <div className="text-lg font-bold text-green-500">{number.usage.sms.toLocaleString()}</div>
+          <div className="text-xs text-gray-500">SMS</div>
         </div>
         <div>
-          <div className="text-lg font-bold text-purple-500">{number.campaigns}</div>
-          <div className="text-xs text-gray-500">Campaigns</div>
-        </div>
-        <div>
-          <div className="text-lg font-bold text-orange-500">${number.monthlyPrice}</div>
-          <div className="text-xs text-gray-500">Monthly</div>
+          <div className="text-lg font-bold text-purple-500">{number.usage.mms.toLocaleString()}</div>
+          <div className="text-xs text-gray-500">MMS</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex space-x-1">
-          {number.features.map((feature, index) => (
-            <span key={index} className="px-2 py-1 bg-blue-500/10 text-blue-500 text-xs rounded-full">
-              {feature}
-            </span>
-          ))}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div>
+          <div className="text-sm font-medium">{number.monthlyFee}/month</div>
+          <div className="text-xs text-gray-500">Since {number.purchaseDate}</div>
         </div>
-        <div className="text-sm text-gray-500">
-          Last used: {number.lastUsed}
+        <div className="flex items-center space-x-2">
+          <button className="text-blue-500 hover:text-blue-600 text-sm font-medium">
+            Configure
+          </button>
+          <button className="text-gray-500 hover:text-gray-600 text-sm font-medium">
+            Usage
+          </button>
         </div>
-      </div>
-
-      <div className="flex space-x-2">
-        <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-all">
-          Manage
-        </button>
-        <button className="bg-green-500/10 text-green-500 hover:bg-green-500/20 py-2 px-4 rounded-lg transition-all">
-          <BarChart3 className="w-4 h-4" />
-        </button>
-        <button className="bg-gray-500/10 text-gray-500 hover:bg-gray-500/20 py-2 px-4 rounded-lg transition-all">
-          <Settings className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );
@@ -380,6 +426,23 @@ const TwilioNumberPurchase = () => {
         {/* My Numbers Tab */}
         {activeTab === 'my-numbers' && (
           <div className="space-y-8">
+            {/* Connection Status */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${twilioAPI.isConfigured() ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm font-medium">
+                    Twilio Integration {twilioAPI.isConfigured() ? 'Connected' : 'Not Configured'}
+                  </span>
+                </div>
+                {twilioAPI.isConfigured() && (
+                  <span className="text-xs text-gray-500">
+                    Account: {process.env.REACT_APP_TWILIO_ACCOUNT_SID?.slice(0, 8)}...
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
@@ -451,30 +514,59 @@ const TwilioNumberPurchase = () => {
                   />
                 </div>
                 
-                <button
-                  onClick={() => setActiveTab('buy-number')}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center space-x-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Buy New Number</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={loadOwnedNumbers}
+                    disabled={isLoading}
+                    className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span>Refresh</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('buy-number')}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center space-x-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Buy New Number</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Numbers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {myNumbers
-                .filter(number => 
-                  searchQuery === '' || 
-                  number.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  number.friendlyName.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map(number => (
-                  <NumberCard key={number.id} number={number} />
-                ))}
+              {isLoading && myNumbers.length === 0 ? (
+                // Loading skeleton
+                [...Array(3)].map((_, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                        <div>
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                        </div>
+                      </div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                myNumbers
+                  .filter(number => 
+                    searchQuery === '' || 
+                    number.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    number.friendlyName.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map(number => (
+                    <NumberCard key={number.id} number={number} onDelete={deleteNumber} />
+                  ))
+              )}
             </div>
 
-            {myNumbers.length === 0 && (
+            {!isLoading && myNumbers.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-10 h-10 text-gray-400" />
