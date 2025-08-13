@@ -40,6 +40,23 @@ import VocelioSettingsDashboard from './pages/SettingsPage';
 import VocelioVoiceMarketplace from './pages/VoiceMarketplace';
 import APIDashboard from './pages/DeveloperAPI';
 
+// Import new missing service pages
+import KnowledgeBase from './pages/KnowledgeBase';
+import LeadManagement from './pages/LeadManagement';
+import NotificationsCenter from './pages/NotificationsCenter';
+import SchedulingCenter from './pages/SchedulingCenter';
+import AIAgentsEnhanced from './pages/AIAgentsEnhanced';
+import WebhooksManager from './pages/WebhooksManager';
+import APIManagement from './pages/APIManagement';
+import EnterpriseSecurityCenter from './pages/EnterpriseSecurityCenter';
+import SSOIdentityManager from './pages/SSOIdentityManager';
+import AuditCompliance from './pages/AuditCompliance';
+import DataWarehouse from './pages/DataWarehouse';
+import EnterprisePortal from './pages/EnterprisePortal';
+import NotificationService from './pages/NotificationService';
+import BusinessIntelligence from './pages/BusinessIntelligence';
+import AutomationEngine from './pages/AutomationEngine';
+
 const VocelioUltimateDashboard = () => {
   const [activeTab, setActiveTab] = useState('flow-builder');
   const [darkMode, setDarkMode] = useState(true);
@@ -87,6 +104,7 @@ const VocelioUltimateDashboard = () => {
   const sidebarItems = [
     { id: 'overview', label: 'Command Center', icon: Command, badge: 'LIVE' },
     { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
+    { id: 'agents-enhanced', label: 'AI Agents Pro', icon: Brain, badge: 'NEW' },
     { id: 'smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: '89' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
     { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
@@ -95,6 +113,30 @@ const VocelioUltimateDashboard = () => {
     { id: 'flow-builder', label: 'Flow Builder', icon: Workflow, badge: 'AI' },
     { id: 'analytics-pro', label: 'Analytics Pro', icon: BarChart3, badge: null },
     { id: 'ai-brain', label: 'AI Brain', icon: Brain, badge: '94%' },
+    
+    // New Priority 1 Services (Core Missing)
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: FileText, badge: 'NEW' },
+    { id: 'lead-management', label: 'Lead Management', icon: Users, badge: 'NEW' },
+    { id: 'notifications-center', label: 'Notifications Center', icon: Bell, badge: 'NEW' },
+    { id: 'scheduling-center', label: 'Scheduling Center', icon: Calendar, badge: 'NEW' },
+    
+    // Enhanced Services
+    { id: 'webhooks-manager', label: 'Webhooks Manager', icon: Webhook, badge: 'NEW' },
+    { id: 'api-management', label: 'API Management', icon: Server, badge: 'NEW' },
+    
+    // Enterprise Features
+    { id: 'enterprise-security', label: 'Security Center', icon: Shield, badge: 'NEW' },
+    { id: 'sso-identity', label: 'Identity Manager', icon: Key, badge: 'NEW' },
+    { id: 'audit-compliance', label: 'Audit & Compliance', icon: FileText, badge: 'NEW' },
+    
+    // Additional Services
+    { id: 'data-warehouse', label: 'Data Warehouse', icon: Database, badge: 'NEW' },
+    { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' },
+    { id: 'notification-service', label: 'Notification Service', icon: MessageSquare, badge: 'NEW' },
+    { id: 'business-intelligence', label: 'Business Intelligence', icon: TrendingUp, badge: 'NEW' },
+    { id: 'automation-engine', label: 'Automation Engine', icon: Zap, badge: 'NEW' },
+    
+    // Existing Services
     { id: 'integrations', label: 'Integrations', icon: Network, badge: '15' },
     { id: 'agent-store', label: 'Agent Store', icon: Store, badge: 'HOT' },
     { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
@@ -666,6 +708,55 @@ const VocelioUltimateDashboard = () => {
       
       case 'settings':
         return <VocelioSettingsDashboard />;
+
+      // New Priority 1 Services (Core Missing)
+      case 'knowledge-base':
+        return <KnowledgeBase />;
+      
+      case 'lead-management':
+        return <LeadManagement />;
+      
+      case 'notifications-center':
+        return <NotificationsCenter />;
+      
+      case 'scheduling-center':
+        return <SchedulingCenter />;
+      
+      case 'agents-enhanced':
+        return <AIAgentsEnhanced />;
+      
+      // Enhanced Services
+      case 'webhooks-manager':
+        return <WebhooksManager />;
+      
+      case 'api-management':
+        return <APIManagement />;
+      
+      // Enterprise Features
+      case 'enterprise-security':
+        return <EnterpriseSecurityCenter />;
+      
+      case 'sso-identity':
+        return <SSOIdentityManager />;
+      
+      case 'audit-compliance':
+        return <AuditCompliance />;
+      
+      // Additional Services
+      case 'data-warehouse':
+        return <DataWarehouse />;
+      
+      case 'enterprise-portal':
+        return <EnterprisePortal />;
+      
+      case 'notification-service':
+        return <NotificationService />;
+      
+      case 'business-intelligence':
+        return <BusinessIntelligence />;
+      
+      case 'automation-engine':
+        return <AutomationEngine />;
 
       default:
         return (
