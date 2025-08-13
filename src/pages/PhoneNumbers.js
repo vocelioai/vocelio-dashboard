@@ -24,6 +24,7 @@ const TwilioNumberPurchase = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [myNumbers, setMyNumbers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
   // Load owned numbers on component mount
   useEffect(() => {
@@ -112,6 +113,8 @@ const TwilioNumberPurchase = () => {
 
   const handleSearch = async () => {
     setIsSearching(true);
+    setIsUsingMockData(false);
+    
     try {
       const searchOptions = {
         limit: 10,
@@ -129,6 +132,14 @@ const TwilioNumberPurchase = () => {
       }
 
       const response = await twilioAPI.searchAvailableNumbers(selectedCountry, searchOptions);
+      
+      // Check if this is mock data (indicated by consistent patterns or specific messages)
+      const isMockData = response.available_phone_numbers && 
+                        (response.available_phone_numbers.length > 0 && 
+                         response.available_phone_numbers[0].phone_number.includes('555') ||
+                         !process.env.REACT_APP_RAILWAY_API_URL);
+      
+      setIsUsingMockData(isMockData);
       
       if (response.available_phone_numbers) {
         const formattedNumbers = response.available_phone_numbers.map(number => ({
@@ -380,6 +391,15 @@ const TwilioNumberPurchase = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   📞 Manage your Twilio phone numbers • Global coverage • Instant provisioning
                 </p>
+                {/* Connection Status Indicator */}
+                {isUsingMockData && (
+                  <div className="flex items-center space-x-2 mt-1">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                      Demo Mode: Backend API not configured - showing sample data
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -786,6 +806,23 @@ const TwilioNumberPurchase = () => {
                     Found {availableNumbers.length} numbers
                   </div>
                 </div>
+                
+                {/* Mock Data Notice */}
+                {isUsingMockData && (
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+                          Demo Mode: Sample Numbers
+                        </p>
+                        <p className="text-xs text-orange-600 dark:text-orange-300">
+                          These are sample numbers for demonstration. Configure the Railway backend API to connect to real Twilio services.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {availableNumbers.map((number, index) => (

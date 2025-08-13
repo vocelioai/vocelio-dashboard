@@ -18,6 +18,9 @@
 .env.test.local
 .env.production.local
 
+# Environment variables export files (contain sensitive data)
+vercel-env-variables.txt
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

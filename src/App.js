@@ -28,6 +28,7 @@ import VoiceLabPage from './pages/VoiceLab';
 import FlowBuilderPage from './pages/FlowBuilder';
 import AnalyticsProPage from './pages/AnalyticsPro';
 import AIBrainCenter from './pages/AIBrain';
+import ServiceHealthMonitor from './components/ServiceHealthMonitor';
 import IntegrationsCenter from './pages/IntegrationsCenter';
 import AgentStore from './pages/AgentStore';
 import BillingProCenter from './pages/BillingPro';
@@ -442,6 +443,9 @@ const VocelioUltimateDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Service Health Monitor */}
+            <ServiceHealthMonitor />
           </div>
         );
 
