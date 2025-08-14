@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Mic2, Play, Pause, Download, Upload, Settings, BarChart3, 
   TestTube, Wand2, Users, Globe, Volume2, VolumeX, Eye,
@@ -8,7 +8,13 @@ import {
   FileAudio, Waves, Activity, Brain, Cpu, Database,
   CheckCircle, XCircle, AlertCircle, Info, ArrowRight,
   Maximize2, Minimize2, RotateCcw, Share2, ExternalLink,
-  Heart, ThumbsUp, ThumbsDown, MessageSquare, Phone
+  Heart, ThumbsUp, ThumbsDown, MessageSquare, Phone,
+  Mic, MicOff, PlayCircle, PauseCircle, StopCircle, Monitor,
+  Gamepad2, LineChart, PieChart, Bot, Layers, Network,
+  Shuffle, SkipBack, SkipForward, Speaker, Bluetooth,
+  Wifi, CloudDownload, CloudUpload, Lock, Unlock, Shield,
+  Timer, Maximize, Minimize, FullScreen, RotateCw, Palette,
+  Brush, Magic, Atom, Codesandbox, Layers3, Radar, Crosshair
 } from 'lucide-react';
 
 const VoiceLabPage = () => {
@@ -21,12 +27,38 @@ const VoiceLabPage = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
+  const [realTimeWaveform, setRealTimeWaveform] = useState(false);
+  const [voiceSpectrum, setVoiceSpectrum] = useState({});
+  const [aiOptimization, setAiOptimization] = useState(false);
+  const [emotionalAnalysis, setEmotionalAnalysis] = useState({});
+  const [livePerformance, setLivePerformance] = useState({});
+  const [voiceFingerprint, setVoiceFingerprint] = useState({});
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const [viewMode, setViewMode] = useState('grid'); // grid, list, detailed, comparison
+  const [sortBy, setSortBy] = useState('quality');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [favorites, setFavorites] = useState(['21m00Tcm4TlvDq8ikWAM', 'EXAVITQu4vr4xnSDxMaL']);
+  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
+  const [voiceRecommendations, setVoiceRecommendations] = useState([]);
+  const [aiCoach, setAiCoach] = useState(null);
+  const [performanceInsights, setPerformanceInsights] = useState({});
+  const [customLabels, setCustomLabels] = useState({});
+  const [voiceGroups, setVoiceGroups] = useState([]);
+  const [abTesting, setAbTesting] = useState(null);
+  const [voiceClones, setVoiceClones] = useState([]);
+  const [qualityMetrics, setQualityMetrics] = useState({});
+  const [sentimentTracking, setSentimentTracking] = useState({});
+  const [conversionTracking, setConversionTracking] = useState({});
+  const canvasRef = useRef(null);
+  const waveformDataRef = useRef([]);
+  const animationFrameRef = useRef(null);
 
-  // Voice data with all the features from your backend
+  // Enhanced voice data with advanced AI metrics and features
   const [voices] = useState([
     {
       voice_id: "21m00Tcm4TlvDq8ikWAM",
-      name: "Rachel - Professional",
+      name: "Rachel - AI Professional",
       gender: "female",
       age: "young",
       accent: "american",
@@ -34,80 +66,370 @@ const VoiceLabPage = () => {
       description: "Calm, professional female voice perfect for business calls and customer service",
       use_case: "business",
       category: "premade",
-      quality_score: 95,
-      performance: { usage_count: 15420, avg_sentiment: 0.78, success_rate: 73.2 },
-      settings: { stability: 0.7, similarity_boost: 0.8, style: 0.2 },
+      quality_score: 98.5,
+      performance: { 
+        usage_count: 25420, 
+        avg_sentiment: 0.87, 
+        success_rate: 84.2,
+        conversion_rate: 23.4,
+        engagement_score: 92.1,
+        clarity_index: 97.8,
+        naturalness_score: 95.6,
+        emotional_range: 87.3,
+        accent_accuracy: 98.1,
+        pronunciation_score: 96.9
+      },
+      settings: { 
+        stability: 0.75, 
+        similarity_boost: 0.85, 
+        style: 0.25,
+        speed: 1.0,
+        pitch: 0.0,
+        emotion_intensity: 0.6,
+        breath_control: 0.8,
+        pause_dynamics: 0.7
+      },
+      ai_features: {
+        emotion_adaptation: true,
+        real_time_optimization: true,
+        context_awareness: true,
+        sentiment_matching: true,
+        accent_switching: ['american', 'british', 'canadian'],
+        multilingual_support: ['en', 'en-gb', 'en-ca'],
+        neural_enhancement: true,
+        voice_aging: false,
+        background_noise_filtering: true,
+        prosody_control: true
+      },
+      analytics: {
+        hourly_performance: Array(24).fill(0).map(() => 70 + Math.random() * 30),
+        weekly_trends: Array(7).fill(0).map(() => 80 + Math.random() * 20),
+        conversion_by_time: Array(24).fill(0).map(() => 15 + Math.random() * 15),
+        demographic_performance: {
+          '18-25': 88.2,
+          '26-35': 91.5,
+          '36-45': 89.7,
+          '46-55': 87.3,
+          '55+': 85.1
+        },
+        industry_performance: {
+          'finance': 92.1,
+          'healthcare': 89.7,
+          'retail': 88.5,
+          'technology': 91.3,
+          'education': 87.9
+        }
+      },
       preview_url: "/api/voices/preview/rachel.mp3",
-      cost_per_char: 0.00018,
-      available_for_tiers: ["free", "starter", "pro", "enterprise"]
+      cost_per_char: 0.00015,
+      available_for_tiers: ["free", "starter", "pro", "enterprise"],
+      voice_fingerprint: "AK47B2C9D1E8F5G3H7I2",
+      neural_model: "ElevenLabs-V3-Neural-Pro",
+      training_hours: 847,
+      last_updated: "2024-08-10",
+      tags: ["professional", "clear", "trustworthy", "business", "ai-enhanced"]
     },
     {
       voice_id: "EXAVITQu4vr4xnSDxMaL",
-      name: "Bella - Warm Sales",
+      name: "Bella - AI Warm Sales",
       gender: "female",
       age: "young",
       accent: "american", 
       language: "en",
-      description: "Friendly, warm female voice excellent for sales calls and customer engagement",
+      description: "Friendly, warm female voice enhanced with AI emotional intelligence for sales calls",
       use_case: "sales",
       category: "premade",
-      quality_score: 92,
-      performance: { usage_count: 12890, avg_sentiment: 0.82, success_rate: 76.8 },
-      settings: { stability: 0.6, similarity_boost: 0.85, style: 0.4 },
+      quality_score: 96.8,
+      performance: { 
+        usage_count: 18890, 
+        avg_sentiment: 0.91, 
+        success_rate: 81.8,
+        conversion_rate: 28.7,
+        engagement_score: 95.3,
+        clarity_index: 94.2,
+        naturalness_score: 97.1,
+        emotional_range: 93.8,
+        accent_accuracy: 95.7,
+        pronunciation_score: 96.2
+      },
+      settings: { 
+        stability: 0.65, 
+        similarity_boost: 0.9, 
+        style: 0.45,
+        speed: 1.05,
+        pitch: 0.1,
+        emotion_intensity: 0.8,
+        breath_control: 0.9,
+        pause_dynamics: 0.8
+      },
+      ai_features: {
+        emotion_adaptation: true,
+        real_time_optimization: true,
+        context_awareness: true,
+        sentiment_matching: true,
+        accent_switching: ['american', 'southern'],
+        multilingual_support: ['en'],
+        neural_enhancement: true,
+        voice_aging: false,
+        background_noise_filtering: true,
+        prosody_control: true
+      },
+      analytics: {
+        hourly_performance: Array(24).fill(0).map(() => 75 + Math.random() * 25),
+        weekly_trends: Array(7).fill(0).map(() => 85 + Math.random() * 15),
+        conversion_by_time: Array(24).fill(0).map(() => 20 + Math.random() * 20),
+        demographic_performance: {
+          '18-25': 92.8,
+          '26-35': 95.2,
+          '36-45': 91.4,
+          '46-55': 89.6,
+          '55+': 87.8
+        },
+        industry_performance: {
+          'retail': 96.7,
+          'real_estate': 94.3,
+          'insurance': 91.8,
+          'automotive': 93.5,
+          'travel': 95.1
+        }
+      },
       preview_url: "/api/voices/preview/bella.mp3",
-      cost_per_char: 0.00018,
-      available_for_tiers: ["starter", "pro", "enterprise"]
+      cost_per_char: 0.00015,
+      available_for_tiers: ["starter", "pro", "enterprise"],
+      voice_fingerprint: "BL58C3D9E2F6G4H8I5J1",
+      neural_model: "ElevenLabs-V3-Neural-Pro",
+      training_hours: 692,
+      last_updated: "2024-08-08",
+      tags: ["warm", "sales", "persuasive", "friendly", "ai-enhanced"]
     },
     {
       voice_id: "VR6AewLTigWG4xSOukaG",
-      name: "Sofia - Spanish Native",
+      name: "Sofia - AI Multilingual Pro",
       gender: "female",
       age: "young",
       accent: "spanish",
       language: "es",
-      description: "Native Spanish speaker perfect for Spanish-language calling campaigns",
+      description: "AI-powered multilingual voice with perfect Spanish accent and cross-language capabilities",
       use_case: "multilingual",
       category: "premade",
-      quality_score: 89,
-      performance: { usage_count: 4200, avg_sentiment: 0.75, success_rate: 71.5 },
-      settings: { stability: 0.65, similarity_boost: 0.8, style: 0.35 },
+      quality_score: 94.2,
+      performance: { 
+        usage_count: 7200, 
+        avg_sentiment: 0.82, 
+        success_rate: 78.5,
+        conversion_rate: 19.8,
+        engagement_score: 89.7,
+        clarity_index: 96.4,
+        naturalness_score: 93.1,
+        emotional_range: 91.5,
+        accent_accuracy: 99.2,
+        pronunciation_score: 98.7
+      },
+      settings: { 
+        stability: 0.7, 
+        similarity_boost: 0.85, 
+        style: 0.4,
+        speed: 0.95,
+        pitch: 0.05,
+        emotion_intensity: 0.75,
+        breath_control: 0.85,
+        pause_dynamics: 0.9
+      },
+      ai_features: {
+        emotion_adaptation: true,
+        real_time_optimization: true,
+        context_awareness: true,
+        sentiment_matching: true,
+        accent_switching: ['spanish', 'mexican', 'argentinian', 'colombian'],
+        multilingual_support: ['es', 'en', 'pt'],
+        neural_enhancement: true,
+        voice_aging: false,
+        background_noise_filtering: true,
+        prosody_control: true
+      },
+      analytics: {
+        hourly_performance: Array(24).fill(0).map(() => 65 + Math.random() * 30),
+        weekly_trends: Array(7).fill(0).map(() => 75 + Math.random() * 20),
+        conversion_by_time: Array(24).fill(0).map(() => 12 + Math.random() * 18),
+        demographic_performance: {
+          '18-25': 91.3,
+          '26-35': 89.8,
+          '36-45': 92.1,
+          '46-55': 88.7,
+          '55+': 86.4
+        },
+        industry_performance: {
+          'telecommunications': 94.2,
+          'banking': 89.6,
+          'healthcare': 91.8,
+          'government': 88.3,
+          'education': 93.7
+        }
+      },
       preview_url: "/api/voices/preview/sofia.mp3",
-      cost_per_char: 0.00024,
-      available_for_tiers: ["pro", "enterprise"]
+      cost_per_char: 0.00020,
+      available_for_tiers: ["pro", "enterprise"],
+      voice_fingerprint: "SF73D4E1F8G2H9I6J3K7",
+      neural_model: "ElevenLabs-V3-Neural-Multilingual",
+      training_hours: 1247,
+      last_updated: "2024-08-05",
+      tags: ["multilingual", "authentic", "cultural", "professional", "ai-enhanced"]
     },
     {
       voice_id: "pNInz6obpgDQGcFmaJgB",
-      name: "Adam - Executive",
+      name: "Adam - AI Executive Authority",
       gender: "male",
       age: "middle_aged",
       accent: "american",
       language: "en",
-      description: "Professional male voice for formal business communication and executive calls",
+      description: "AI-enhanced authoritative male voice optimized for executive communication and leadership presence",
       use_case: "executive",
       category: "premade",
-      quality_score: 90,
-      performance: { usage_count: 7120, avg_sentiment: 0.69, success_rate: 65.9 },
-      settings: { stability: 0.8, similarity_boost: 0.75, style: 0.3 },
+      quality_score: 97.3,
+      performance: { 
+        usage_count: 12120, 
+        avg_sentiment: 0.79, 
+        success_rate: 76.9,
+        conversion_rate: 31.2,
+        engagement_score: 88.4,
+        clarity_index: 98.1,
+        naturalness_score: 94.7,
+        emotional_range: 82.6,
+        accent_accuracy: 97.8,
+        pronunciation_score: 98.4
+      },
+      settings: { 
+        stability: 0.85, 
+        similarity_boost: 0.8, 
+        style: 0.35,
+        speed: 0.9,
+        pitch: -0.1,
+        emotion_intensity: 0.5,
+        breath_control: 0.95,
+        pause_dynamics: 0.85
+      },
+      ai_features: {
+        emotion_adaptation: true,
+        real_time_optimization: true,
+        context_awareness: true,
+        sentiment_matching: true,
+        accent_switching: ['american', 'british'],
+        multilingual_support: ['en', 'en-gb'],
+        neural_enhancement: true,
+        voice_aging: true,
+        background_noise_filtering: true,
+        prosody_control: true
+      },
+      analytics: {
+        hourly_performance: Array(24).fill(0).map(() => 70 + Math.random() * 25),
+        weekly_trends: Array(7).fill(0).map(() => 78 + Math.random() * 18),
+        conversion_by_time: Array(24).fill(0).map(() => 25 + Math.random() * 15),
+        demographic_performance: {
+          '18-25': 82.7,
+          '26-35': 88.4,
+          '36-45': 94.2,
+          '46-55': 96.8,
+          '55+': 92.3
+        },
+        industry_performance: {
+          'finance': 97.1,
+          'consulting': 95.8,
+          'legal': 94.6,
+          'technology': 89.3,
+          'manufacturing': 91.7
+        }
+      },
       preview_url: "/api/voices/preview/adam.mp3",
-      cost_per_char: 0.00018,
-      available_for_tiers: ["starter", "pro", "enterprise"]
+      cost_per_char: 0.00015,
+      available_for_tiers: ["starter", "pro", "enterprise"],
+      voice_fingerprint: "AD92E5F1G7H3I8J4K6L2",
+      neural_model: "ElevenLabs-V3-Neural-Pro",
+      training_hours: 923,
+      last_updated: "2024-08-07",
+      tags: ["authoritative", "executive", "trustworthy", "leadership", "ai-enhanced"]
     },
     {
       voice_id: "custom_001",
-      name: "CEO Clone - Premium",
+      name: "CEO Clone - Neural Premium",
       gender: "male",
       age: "middle_aged",
       accent: "american",
       language: "en",
-      description: "Custom cloned voice for enterprise branding and executive communications",
+      description: "Custom AI-cloned voice with neural enhancement for enterprise branding and executive communications",
       use_case: "executive",
       category: "cloned",
-      quality_score: 87,
-      performance: { usage_count: 850, avg_sentiment: 0.74, success_rate: 68.2 },
-      settings: { stability: 0.75, similarity_boost: 0.9, style: 0.25 },
+      quality_score: 95.7,
+      performance: { 
+        usage_count: 1850, 
+        avg_sentiment: 0.84, 
+        success_rate: 79.2,
+        conversion_rate: 34.6,
+        engagement_score: 91.8,
+        clarity_index: 96.3,
+        naturalness_score: 98.2,
+        emotional_range: 89.4,
+        accent_accuracy: 99.1,
+        pronunciation_score: 97.8
+      },
+      settings: { 
+        stability: 0.8, 
+        similarity_boost: 0.95, 
+        style: 0.3,
+        speed: 0.92,
+        pitch: -0.05,
+        emotion_intensity: 0.65,
+        breath_control: 0.9,
+        pause_dynamics: 0.95
+      },
+      ai_features: {
+        emotion_adaptation: true,
+        real_time_optimization: true,
+        context_awareness: true,
+        sentiment_matching: true,
+        accent_switching: ['american'],
+        multilingual_support: ['en'],
+        neural_enhancement: true,
+        voice_aging: true,
+        background_noise_filtering: true,
+        prosody_control: true,
+        biometric_verification: true,
+        deepfake_protection: true
+      },
+      analytics: {
+        hourly_performance: Array(24).fill(0).map(() => 75 + Math.random() * 20),
+        weekly_trends: Array(7).fill(0).map(() => 82 + Math.random() * 15),
+        conversion_by_time: Array(24).fill(0).map(() => 28 + Math.random() * 12),
+        demographic_performance: {
+          '18-25': 87.2,
+          '26-35': 91.6,
+          '36-45': 95.8,
+          '46-55': 97.4,
+          '55+': 94.1
+        },
+        industry_performance: {
+          'enterprise': 98.2,
+          'consulting': 96.7,
+          'finance': 95.3,
+          'technology': 92.8,
+          'healthcare': 90.4
+        }
+      },
       preview_url: "/api/voices/preview/ceo.mp3",
       cost_per_char: 0.00035,
-      available_for_tiers: ["enterprise"]
+      available_for_tiers: ["enterprise"],
+      voice_fingerprint: "CE18F6G3H9I2J7K4L1M5",
+      neural_model: "ElevenLabs-V3-Neural-Clone-Pro",
+      training_hours: 2150,
+      last_updated: "2024-08-12",
+      tags: ["custom", "executive", "branded", "premium", "neural-enhanced"],
+      clone_metadata: {
+        source_samples: 47,
+        training_iterations: 15000,
+        validation_score: 98.6,
+        speaker_verification: 99.8,
+        ethical_approval: true,
+        consent_verified: true
+      }
     }
   ]);
 
@@ -115,37 +437,286 @@ const VoiceLabPage = () => {
   const [voiceComparison, setVoiceComparison] = useState(null);
   const [analytics, setAnalytics] = useState({});
 
-  const handlePlayVoice = (voiceId) => {
+  // Advanced AI Features
+  useEffect(() => {
+    initializeAudioContext();
+    loadVoiceRecommendations();
+    initializePerformanceTracking();
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const initializeAudioContext = useCallback(() => {
+    try {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+    } catch (error) {
+      console.warn('Web Audio API not supported:', error);
+    }
+  }, []);
+
+  const loadVoiceRecommendations = useCallback(async () => {
+    // Simulate AI recommendation loading
+    setTimeout(() => {
+      setVoiceRecommendations([
+        {
+          voice_id: "21m00Tcm4TlvDq8ikWAM",
+          reason: "High conversion rate for your industry segment",
+          confidence: 94.2,
+          predicted_improvement: "+23% conversion"
+        },
+        {
+          voice_id: "EXAVITQu4vr4xnSDxMaL",
+          reason: "Optimal emotional resonance for your target demographic",
+          confidence: 91.7,
+          predicted_improvement: "+18% engagement"
+        }
+      ]);
+    }, 1500);
+  }, []);
+
+  const initializePerformanceTracking = useCallback(() => {
+    const interval = setInterval(() => {
+      setLivePerformance(prev => ({
+        ...prev,
+        timestamp: Date.now(),
+        active_voices: Math.floor(Math.random() * 12) + 8,
+        avg_response_time: 1.2 + Math.random() * 0.8,
+        success_rate: 85 + Math.random() * 10,
+        ai_optimization_score: 90 + Math.random() * 8
+      }));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const generateWaveform = useCallback((voiceId) => {
+    if (!analyserRef.current || !realTimeWaveform) return;
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const draw = () => {
+      analyserRef.current.getByteFrequencyData(dataArray);
+      
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+
+      const barWidth = (width / dataArray.length) * 2.5;
+      let barHeight;
+      let x = 0;
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#3B82F6');
+      gradient.addColorStop(0.5, '#8B5CF6');
+      gradient.addColorStop(1, '#EC4899');
+
+      for (let i = 0; i < dataArray.length; i++) {
+        barHeight = (dataArray[i] / 255) * height * 0.8;
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+        
+        x += barWidth + 1;
+      }
+
+      waveformDataRef.current = [...dataArray];
+      animationFrameRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+  }, [realTimeWaveform]);
+
+  const analyzeVoiceSpectrum = useCallback(async (voiceId) => {
+    setVoiceSpectrum(prev => ({ ...prev, [voiceId]: 'analyzing' }));
+    
+    // Simulate advanced spectrum analysis
+    setTimeout(() => {
+      const analysis = {
+        fundamental_frequency: 180 + Math.random() * 100,
+        harmonics: Array(10).fill(0).map(() => Math.random() * 100),
+        formants: [700 + Math.random() * 200, 1200 + Math.random() * 300, 2500 + Math.random() * 500],
+        spectral_centroid: 1500 + Math.random() * 800,
+        spectral_rolloff: 3500 + Math.random() * 1000,
+        zero_crossing_rate: 0.1 + Math.random() * 0.1,
+        mfcc: Array(13).fill(0).map(() => Math.random() * 50 - 25),
+        voice_quality_metrics: {
+          breathiness: Math.random() * 100,
+          roughness: Math.random() * 100,
+          creakiness: Math.random() * 100,
+          strain: Math.random() * 100
+        },
+        emotion_vectors: {
+          happiness: Math.random() * 100,
+          sadness: Math.random() * 100,
+          anger: Math.random() * 100,
+          fear: Math.random() * 100,
+          surprise: Math.random() * 100,
+          disgust: Math.random() * 100,
+          neutral: Math.random() * 100
+        }
+      };
+      
+      setVoiceSpectrum(prev => ({ ...prev, [voiceId]: analysis }));
+    }, 3000);
+  }, []);
+
+  const performAIOptimization = useCallback(async (voiceId, targetMetrics) => {
+    setAiOptimization(true);
+    
+    // Simulate AI optimization process
+    setTimeout(() => {
+      const optimizedSettings = {
+        stability: 0.7 + Math.random() * 0.2,
+        similarity_boost: 0.8 + Math.random() * 0.15,
+        style: 0.2 + Math.random() * 0.3,
+        speed: 0.9 + Math.random() * 0.2,
+        pitch: -0.1 + Math.random() * 0.2,
+        emotion_intensity: 0.5 + Math.random() * 0.4,
+        breath_control: 0.8 + Math.random() * 0.15,
+        pause_dynamics: 0.7 + Math.random() * 0.2
+      };
+
+      const improvement_prediction = {
+        quality_score: `+${(Math.random() * 5).toFixed(1)}%`,
+        conversion_rate: `+${(Math.random() * 15).toFixed(1)}%`,
+        engagement: `+${(Math.random() * 12).toFixed(1)}%`,
+        naturalness: `+${(Math.random() * 8).toFixed(1)}%`
+      };
+
+      setPerformanceInsights(prev => ({
+        ...prev,
+        [voiceId]: {
+          optimized_settings: optimizedSettings,
+          predicted_improvements: improvement_prediction,
+          confidence_score: 85 + Math.random() * 15,
+          optimization_timestamp: new Date().toISOString()
+        }
+      }));
+
+      setAiOptimization(false);
+    }, 4000);
+  }, []);
+
+  const generateVoiceFingerprint = useCallback(async (voiceId) => {
+    // Simulate biometric voice fingerprinting
+    setTimeout(() => {
+      setVoiceFingerprint(prev => ({
+        ...prev,
+        [voiceId]: {
+          unique_id: `FP_${voiceId.slice(-8)}_${Date.now()}`,
+          biometric_hash: Array(32).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+          features: {
+            vocal_tract_length: 15.2 + Math.random() * 2,
+            pitch_range: [100 + Math.random() * 50, 300 + Math.random() * 100],
+            formant_pattern: Array(5).fill(0).map(() => 500 + Math.random() * 2000),
+            speaking_rate: 4.5 + Math.random() * 1.5,
+            pause_patterns: Array(8).fill(0).map(() => Math.random() * 1000)
+          },
+          security_level: 'enterprise',
+          verification_confidence: 95 + Math.random() * 5
+        }
+      }));
+    }, 2000);
+  }, []);
+
+  const handlePlayVoice = useCallback((voiceId) => {
     // Toggle play state
     setIsPlaying(prev => ({
       ...prev,
       [voiceId]: !prev[voiceId]
     }));
     
-    // Simulate audio playback
+    // Track recently played
+    setRecentlyPlayed(prev => {
+      const updated = [voiceId, ...prev.filter(id => id !== voiceId)].slice(0, 10);
+      return updated;
+    });
+    
+    // Simulate audio playback with real-time analysis
     if (!isPlaying[voiceId]) {
       // Stop other playing voices
       setIsPlaying({ [voiceId]: true });
       
+      // Start real-time waveform if enabled
+      if (realTimeWaveform) {
+        generateWaveform(voiceId);
+      }
+      
       // Auto-stop after 3 seconds (simulated audio duration)
       setTimeout(() => {
         setIsPlaying(prev => ({ ...prev, [voiceId]: false }));
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
       }, 3000);
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     }
-  };
+  }, [isPlaying, realTimeWaveform, generateWaveform]);
 
-  const handleCloneVoice = (voiceId) => {
-    alert(`🔬 Voice cloning started for voice ID: ${voiceId}\n\nThis would typically:\n1. Upload audio sample\n2. Process with AI\n3. Generate voice model\n4. Test & validate\n\nFeature available in production!`);
-  };
+  const handleCloneVoice = useCallback((voiceId) => {
+    const voice = voices.find(v => v.voice_id === voiceId);
+    alert(`🧬 AI Voice Cloning Lab\n\nInitiating advanced neural cloning for: ${voice?.name}\n\nThis process includes:\n✓ Voice fingerprint analysis\n✓ Neural pattern mapping\n✓ Emotional range calibration\n✓ Accent preservation\n✓ Security verification\n\nEstimated time: 3-5 minutes\nQuality: Enterprise-grade\n\nFeature available in production!`);
+  }, [voices]);
 
-  // Filter voices based on search and filters
+  // Enhanced filtering with AI recommendations
   const filteredVoices = voices.filter(voice => {
     const matchesSearch = voice.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         voice.description.toLowerCase().includes(searchQuery.toLowerCase());
+                         voice.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         voice.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesLanguage = filterLanguage === 'all' || voice.language === filterLanguage;
     const matchesGender = filterGender === 'all' || voice.gender === filterGender;
     
     return matchesSearch && matchesLanguage && matchesGender;
+  }).sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'quality':
+        aValue = a.quality_score;
+        bValue = b.quality_score;
+        break;
+      case 'performance':
+        aValue = a.performance.success_rate;
+        bValue = b.performance.success_rate;
+        break;
+      case 'conversion':
+        aValue = a.performance.conversion_rate;
+        bValue = b.performance.conversion_rate;
+        break;
+      case 'usage':
+        aValue = a.performance.usage_count;
+        bValue = b.performance.usage_count;
+        break;
+      case 'cost':
+        aValue = a.cost_per_char;
+        bValue = b.cost_per_char;
+        break;
+      case 'recent':
+        aValue = new Date(a.last_updated).getTime();
+        bValue = new Date(b.last_updated).getTime();
+        break;
+      default:
+        aValue = a.quality_score;
+        bValue = b.quality_score;
+    }
+    
+    return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
   });
 
   // Get unique languages and genders for filters
@@ -258,178 +829,379 @@ const VoiceLabPage = () => {
     }
   };
 
-  const VoiceCard = ({ voice }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300 group">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
-            voice.quality_score >= 95 ? 'from-green-500 to-emerald-500' :
-            voice.quality_score >= 90 ? 'from-blue-500 to-cyan-500' :
-            voice.quality_score >= 85 ? 'from-purple-500 to-pink-500' :
-            'from-yellow-500 to-orange-500'
-          } flex items-center justify-center`}>
-            {voice.category === 'cloned' ? <Users className="w-6 h-6 text-white" /> : <Mic2 className="w-6 h-6 text-white" />}
-          </div>
-          <div>
-            <h3 className="font-bold text-lg">{voice.name}</h3>
-            <div className="flex items-center space-x-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                voice.language === 'en' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                voice.language === 'es' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  const EnhancedVoiceCard = ({ voice }) => {
+    const isRecommended = voiceRecommendations.some(rec => rec.voice_id === voice.voice_id);
+    const isFavorite = favorites.includes(voice.voice_id);
+    const hasSpectrum = voiceSpectrum[voice.voice_id] && voiceSpectrum[voice.voice_id] !== 'analyzing';
+    const hasInsights = performanceInsights[voice.voice_id];
+    const hasFingerprint = voiceFingerprint[voice.voice_id];
+
+    return (
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl border-2 transition-all duration-500 group hover:shadow-2xl hover:scale-[1.02] ${
+        isRecommended ? 'border-gradient-to-r from-blue-500 to-purple-500 shadow-lg' : 
+        'border-gray-200 dark:border-gray-700'
+      } ${selectedVoices.includes(voice.voice_id) ? 'ring-4 ring-blue-400/50' : ''}`}>
+        
+        {/* Header with AI Badges */}
+        <div className="relative p-6 pb-4">
+          {isRecommended && (
+            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 animate-pulse">
+              <Sparkles className="w-3 h-3" />
+              <span>AI RECOMMENDED</span>
+            </div>
+          )}
+          
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${
+                voice.quality_score >= 97 ? 'from-green-400 via-emerald-500 to-teal-600' :
+                voice.quality_score >= 95 ? 'from-blue-400 via-indigo-500 to-purple-600' :
+                voice.quality_score >= 90 ? 'from-purple-400 via-pink-500 to-rose-600' :
+                'from-yellow-400 via-orange-500 to-red-600'
+              } flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                {voice.category === 'cloned' ? 
+                  <Users className="w-8 h-8 text-white" /> : 
+                  <Mic2 className="w-8 h-8 text-white" />
+                }
+                {voice.ai_features?.neural_enhancement && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
+                    <Brain className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-1">
+                  <h3 className="font-bold text-xl text-gray-900 dark:text-white">{voice.name}</h3>
+                  <button 
+                    onClick={() => setFavorites(prev => 
+                      isFavorite ? prev.filter(id => id !== voice.voice_id) : [...prev, voice.voice_id]
+                    )}
+                    className={`p-1 rounded-full transition-all ${
+                      isFavorite ? 'text-red-500 hover:text-red-600' : 'text-gray-400 hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+                
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    voice.language === 'en' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                    voice.language === 'es' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  }`}>
+                    {voice.language.toUpperCase()}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {voice.gender} • {voice.accent}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {voice.neural_model?.includes('V3') && '⚡ V3'}
+                  </span>
+                </div>
+
+                {/* AI Feature Badges */}
+                <div className="flex flex-wrap gap-1">
+                  {voice.ai_features?.emotion_adaptation && (
+                    <span className="px-2 py-1 bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 text-xs rounded-full">
+                      🎭 Emotion AI
+                    </span>
+                  )}
+                  {voice.ai_features?.real_time_optimization && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs rounded-full">
+                      ⚡ Real-time
+                    </span>
+                  )}
+                  {voice.ai_features?.multilingual_support?.length > 1 && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs rounded-full">
+                      🌍 Multilingual
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedVoices.includes(voice.voice_id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedVoices([...selectedVoices, voice.voice_id]);
+                  } else {
+                    setSelectedVoices(selectedVoices.filter(id => id !== voice.voice_id));
+                  }
+                }}
+                className="w-5 h-5 text-blue-600 rounded-lg focus:ring-blue-500 border-2"
+              />
+              <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                voice.category === 'cloned' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 dark:from-amber-900 dark:to-yellow-900 dark:text-amber-200'
               }`}>
-                {voice.language.toUpperCase()}
-              </span>
-              <span className="text-sm text-gray-500">{voice.gender} • {voice.accent}</span>
+                {voice.category === 'cloned' ? '🧬 CLONED' : '⭐ PREMIUM'}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={selectedVoices.includes(voice.voice_id)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedVoices([...selectedVoices, voice.voice_id]);
-              } else {
-                setSelectedVoices(selectedVoices.filter(id => id !== voice.voice_id));
-              }
-            }}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-          />
-          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-            voice.category === 'cloned' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-          }`}>
-            {voice.category === 'cloned' ? 'CUSTOM' : 'PREMIUM'}
-          </div>
-        </div>
-      </div>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-        {voice.description}
-      </p>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quality Score</span>
-            <span className={`text-lg font-bold ${
-              voice.quality_score >= 95 ? 'text-green-500' :
-              voice.quality_score >= 90 ? 'text-blue-500' :
-              voice.quality_score >= 85 ? 'text-purple-500' :
-              'text-yellow-500'
-            }`}>
-              {voice.quality_score}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-            <div 
-              className={`h-2 rounded-full transition-all duration-500 ${
-                voice.quality_score >= 95 ? 'bg-green-500' :
-                voice.quality_score >= 90 ? 'bg-blue-500' :
-                voice.quality_score >= 85 ? 'bg-purple-500' :
-                'bg-yellow-500'
-              }`}
-              style={{ width: `${voice.quality_score}%` }}
-            ></div>
-          </div>
-        </div>
-        
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Success Rate</span>
-            <span className="text-lg font-bold text-cyan-500">
-              {voice.performance.success_rate}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-            <div 
-              className="h-2 rounded-full bg-cyan-500 transition-all duration-500"
-              style={{ width: `${voice.performance.success_rate}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Usage Stats */}
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <span>{voice.performance.usage_count.toLocaleString()} calls</span>
-        <span>${voice.cost_per_char * 1000}/1k chars</span>
-        <span>⭐ {voice.performance.avg_sentiment.toFixed(2)} sentiment</span>
-      </div>
-
-      {/* Voice Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-2">
-          <button
-            onClick={() => isPlaying[voice.voice_id] ? stopPlayback() : playVoice(voice.voice_id)}
-            className={`p-2 rounded-lg transition-all transform hover:scale-105 ${
-              isPlaying[voice.voice_id] 
-                ? 'bg-red-500 text-white hover:bg-red-600' 
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }`}
-          >
-            {isPlaying[voice.voice_id] ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </button>
-          
-          <button
-            onClick={() => testVoiceQuality(voice.voice_id)}
-            className={`p-2 rounded-lg transition-all transform hover:scale-105 ${
-              testResults[voice.voice_id] === 'testing'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-green-500 text-white hover:bg-green-600'
-            }`}
-            disabled={testResults[voice.voice_id] === 'testing'}
-          >
-            {testResults[voice.voice_id] === 'testing' ? 
-              <RefreshCw className="w-4 h-4 animate-spin" /> : 
-              <TestTube className="w-4 h-4" />
-            }
-          </button>
-          
-          <button className="p-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-all transform hover:scale-105">
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="flex items-center space-x-1">
-          {voice.available_for_tiers.includes('enterprise') && (
-            <Award className="w-4 h-4 text-yellow-500" title="Enterprise" />
-          )}
-          {voice.quality_score >= 95 && (
-            <Star className="w-4 h-4 text-yellow-500" title="Top Quality" />
-          )}
-          {voice.performance.success_rate >= 75 && (
-            <TrendingUp className="w-4 h-4 text-green-500" title="High Performance" />
-          )}
-        </div>
-      </div>
-
-      {/* Test Results */}
-      {testResults[voice.voice_id] && testResults[voice.voice_id] !== 'testing' && (
-        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold">Quality Test Results</span>
-            <span className="text-lg font-bold text-green-500">
-              {testResults[voice.voice_id].overall_score.toFixed(1)}%
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>Clarity: {testResults[voice.voice_id].clarity.toFixed(1)}%</div>
-            <div>Natural: {testResults[voice.voice_id].naturalness.toFixed(1)}%</div>
-            <div>Consistent: {testResults[voice.voice_id].consistency.toFixed(1)}%</div>
-            <div>Emotional: {testResults[voice.voice_id].emotion_range.toFixed(1)}%</div>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-            {testResults[voice.voice_id].recommendation}
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+            {voice.description}
           </p>
+
+          {/* Enhanced Performance Metrics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+              <div className={`text-2xl font-bold ${
+                voice.quality_score >= 97 ? 'text-green-600' :
+                voice.quality_score >= 95 ? 'text-blue-600' :
+                voice.quality_score >= 90 ? 'text-purple-600' :
+                'text-yellow-600'
+              }`}>
+                {voice.quality_score.toFixed(1)}%
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Quality</div>
+            </div>
+            
+            <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
+              <div className="text-2xl font-bold text-blue-600">
+                {voice.performance.conversion_rate.toFixed(1)}%
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Conversion</div>
+            </div>
+
+            <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+              <div className="text-2xl font-bold text-purple-600">
+                {voice.performance.engagement_score.toFixed(0)}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Engagement</div>
+            </div>
+
+            <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
+              <div className="text-2xl font-bold text-orange-600">
+                ${voice.cost_per_char * 1000}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Per 1K</div>
+            </div>
+          </div>
+
+          {/* Advanced Analytics Preview */}
+          {voice.analytics && (
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Performance Insights</span>
+                <button 
+                  onClick={() => analyzeVoiceSpectrum(voice.voice_id)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Deep Analysis →
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-500">Usage: </span>
+                  <span className="font-bold">{voice.performance.usage_count.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Sentiment: </span>
+                  <span className="font-bold text-green-600">⭐ {voice.performance.avg_sentiment.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Updated: </span>
+                  <span className="font-bold">{new Date(voice.last_updated).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Voice Controls with Enhanced Features */}
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handlePlayVoice(voice.voice_id)}
+                className={`p-3 rounded-xl transition-all transform hover:scale-110 shadow-lg ${
+                  isPlaying[voice.voice_id] 
+                    ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600' 
+                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600'
+                }`}
+              >
+                {isPlaying[voice.voice_id] ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              </button>
+              
+              <button
+                onClick={() => testVoiceQuality(voice.voice_id)}
+                className={`p-3 rounded-xl transition-all transform hover:scale-110 shadow-lg ${
+                  testResults[voice.voice_id] === 'testing'
+                    ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                }`}
+                disabled={testResults[voice.voice_id] === 'testing'}
+              >
+                {testResults[voice.voice_id] === 'testing' ? 
+                  <RefreshCw className="w-5 h-5 animate-spin" /> : 
+                  <TestTube className="w-5 h-5" />
+                }
+              </button>
+
+              <button 
+                onClick={() => analyzeVoiceSpectrum(voice.voice_id)}
+                className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 transition-all transform hover:scale-110 shadow-lg"
+                disabled={voiceSpectrum[voice.voice_id] === 'analyzing'}
+              >
+                {voiceSpectrum[voice.voice_id] === 'analyzing' ? 
+                  <RefreshCw className="w-5 h-5 animate-spin" /> : 
+                  <Activity className="w-5 h-5" />
+                }
+              </button>
+
+              <button 
+                onClick={() => performAIOptimization(voice.voice_id, ['conversion', 'engagement'])}
+                className="p-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-600 hover:to-teal-600 transition-all transform hover:scale-110 shadow-lg"
+                disabled={aiOptimization}
+              >
+                {aiOptimization ? 
+                  <RefreshCw className="w-5 h-5 animate-spin" /> : 
+                  <Brain className="w-5 h-5" />
+                }
+              </button>
+              
+              <button 
+                onClick={() => generateVoiceFingerprint(voice.voice_id)}
+                className="p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600 transition-all transform hover:scale-110 shadow-lg"
+              >
+                <Shield className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Premium Indicators */}
+            <div className="flex items-center space-x-2">
+              {voice.ai_features?.neural_enhancement && (
+                <div className="p-2 bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 rounded-lg" title="Neural Enhanced">
+                  <Cpu className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                </div>
+              )}
+              {voice.available_for_tiers.includes('enterprise') && (
+                <Award className="w-5 h-5 text-yellow-500" title="Enterprise" />
+              )}
+              {voice.quality_score >= 97 && (
+                <Star className="w-5 h-5 text-yellow-500 fill-current" title="Premium Quality" />
+              )}
+              {voice.performance.conversion_rate >= 25 && (
+                <TrendingUp className="w-5 h-5 text-green-500" title="High Conversion" />
+              )}
+            </div>
+          </div>
+
+          {/* Real-time Waveform Display */}
+          {isPlaying[voice.voice_id] && realTimeWaveform && (
+            <div className="mt-4 p-3 bg-gray-900 rounded-xl">
+              <canvas 
+                ref={canvasRef}
+                width={300} 
+                height={80} 
+                className="w-full h-20 rounded-lg"
+              />
+            </div>
+          )}
+
+          {/* Spectrum Analysis Results */}
+          {hasSpectrum && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-bold text-purple-800 dark:text-purple-200">🔬 Voice Spectrum Analysis</span>
+                <span className="text-xs text-purple-600 dark:text-purple-400">Advanced AI Analysis</span>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Frequency:</span>
+                  <div className="font-bold">{voiceSpectrum[voice.voice_id].fundamental_frequency.toFixed(1)}Hz</div>
+                </div>
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Clarity:</span>
+                  <div className="font-bold">{voice.performance.clarity_index.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Naturalness:</span>
+                  <div className="font-bold">{voice.performance.naturalness_score.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Emotion Range:</span>
+                  <div className="font-bold">{voice.performance.emotional_range.toFixed(1)}%</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Optimization Insights */}
+          {hasInsights && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl border border-cyan-200 dark:border-cyan-800">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-bold text-cyan-800 dark:text-cyan-200">🤖 AI Optimization Results</span>
+                <span className="text-xs text-cyan-600 dark:text-cyan-400">
+                  Confidence: {performanceInsights[voice.voice_id].confidence_score.toFixed(1)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {Object.entries(performanceInsights[voice.voice_id].predicted_improvements).map(([key, value]) => (
+                  <div key={key}>
+                    <span className="text-cyan-600 dark:text-cyan-400 capitalize">{key.replace('_', ' ')}:</span>
+                    <div className="font-bold text-green-600">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Voice Fingerprint */}
+          {hasFingerprint && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold text-indigo-800 dark:text-indigo-200">🔐 Voice Fingerprint</span>
+                <span className="text-xs text-indigo-600 dark:text-indigo-400">
+                  Security: {voiceFingerprint[voice.voice_id].security_level}
+                </span>
+              </div>
+              <div className="text-xs font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded">
+                {voiceFingerprint[voice.voice_id].biometric_hash.slice(0, 16)}...
+              </div>
+            </div>
+          )}
+
+          {/* Test Results */}
+          {testResults[voice.voice_id] && testResults[voice.voice_id] !== 'testing' && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-bold text-green-800 dark:text-green-200">🧪 Quality Test Results</span>
+                <span className="text-lg font-bold text-green-600">
+                  {testResults[voice.voice_id].overall_score.toFixed(1)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-green-600 dark:text-green-400">Clarity:</span>
+                  <span className="font-bold ml-1">{testResults[voice.voice_id].clarity.toFixed(1)}%</span>
+                </div>
+                <div>
+                  <span className="text-green-600 dark:text-green-400">Natural:</span>
+                  <span className="font-bold ml-1">{testResults[voice.voice_id].naturalness.toFixed(1)}%</span>
+                </div>
+                <div>
+                  <span className="text-green-600 dark:text-green-400">Consistent:</span>
+                  <span className="font-bold ml-1">{testResults[voice.voice_id].consistency.toFixed(1)}%</span>
+                </div>
+                <div>
+                  <span className="text-green-600 dark:text-green-400">Emotional:</span>
+                  <span className="font-bold ml-1">{testResults[voice.voice_id].emotion_range.toFixed(1)}%</span>
+                </div>
+              </div>
+              <p className="text-xs text-green-700 dark:text-green-300 mt-2 font-medium">
+                {testResults[voice.voice_id].recommendation}
+              </p>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const ComparisonResults = () => (
     <div className="space-y-6">
@@ -632,89 +1404,246 @@ const VoiceLabPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-700/50 rounded-2xl p-8 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
+      {/* Enhanced Header with Live Performance */}
+      <div className="relative bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 border border-purple-700/50 rounded-3xl p-8 backdrop-blur-xl overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-transparent to-blue-600/10 animate-pulse"></div>
+        
+        <div className="relative flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent mb-2">
-              🎙️ Voice Lab - Advanced Voice Management
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-3">
+              🎙️ Voice Lab AI - Neural Voice Intelligence
             </h1>
-            <p className="text-gray-400">
-              Test, compare, clone and optimize AI voices for maximum performance
+            <p className="text-gray-300 text-lg mb-4">
+              Advanced AI-powered voice optimization, analysis, and neural enhancement platform
             </p>
+            
+            {/* Live Performance Indicators */}
+            <div className="flex items-center space-x-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 font-medium">Live Analysis Active</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Activity className="w-4 h-4 text-blue-400" />
+                <span className="text-blue-400">
+                  {livePerformance.active_voices || 0} voices processing
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span className="text-purple-400">
+                  AI Score: {livePerformance.ai_optimization_score?.toFixed(1) || '95.2'}%
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400">
+                  {livePerformance.avg_response_time?.toFixed(1) || '1.3'}s avg response
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={compareVoices}
-              disabled={selectedVoices.length < 2 || isGenerating}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 ${
-                selectedVoices.length >= 2 && !isGenerating
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+          
+          <div className="flex flex-col space-y-3">
+            {/* Primary Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={compareVoices}
+                disabled={selectedVoices.length < 2 || isGenerating}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 shadow-lg ${
+                  selectedVoices.length >= 2 && !isGenerating
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                    : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <BarChart3 className="w-5 h-5" />
+                    <span>Compare ({selectedVoices.length})</span>
+                  </>
+                )}
+              </button>
+              
+              <button 
+                onClick={() => setActiveTab('cloning')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 shadow-lg"
+              >
+                <Users className="w-5 h-5" />
+                <span>Neural Clone</span>
+              </button>
+              
+              <button 
+                onClick={() => setActiveTab('batch')}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 shadow-lg"
+              >
+                <Zap className="w-5 h-5" />
+                <span>Batch AI</span>
+              </button>
+            </div>
+            
+            {/* Secondary Controls */}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setRealTimeWaveform(!realTimeWaveform)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  realTimeWaveform 
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
+                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/50'
+                }`}
+              >
+                <Waves className="w-4 h-4 inline mr-1" />
+                Live Waveform
+              </button>
+              
+              <button className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 transition-all hover:bg-indigo-500/30">
+                <Radar className="w-4 h-4 inline mr-1" />
+                AI Coach
+              </button>
+              
+              <button className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-500/20 text-purple-400 border border-purple-500/50 transition-all hover:bg-purple-500/30">
+                <Target className="w-4 h-4 inline mr-1" />
+                Auto-Optimize
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Recommendations Banner */}
+        {voiceRecommendations.length > 0 && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl backdrop-blur-sm">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-blue-400" />
+                <span className="font-semibold text-blue-400">AI Recommendations</span>
+              </div>
+              <div className="flex-1 flex items-center space-x-4">
+                {voiceRecommendations.slice(0, 2).map((rec, index) => (
+                  <div key={rec.voice_id} className="flex items-center space-x-2 text-sm">
+                    <span className="text-gray-300">
+                      {voices.find(v => v.voice_id === rec.voice_id)?.name}
+                    </span>
+                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                      {rec.predicted_improvement}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">
+                View All →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enhanced Navigation Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-3 shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex space-x-2">
+            {[
+              { id: 'voices', label: 'Voice Library', icon: Mic2, count: filteredVoices.length, color: 'blue' },
+              { id: 'comparison', label: 'AI Comparison', icon: BarChart3, count: voiceComparison?.voices?.length || 0, color: 'green' },
+              { id: 'cloning', label: 'Neural Cloning', icon: Users, badge: 'AI', color: 'purple' },
+              { id: 'analytics', label: 'AI Analytics', icon: TrendingUp, color: 'indigo' },
+              { id: 'optimization', label: 'AI Optimization', icon: Brain, badge: 'NEW', color: 'pink' },
+              { id: 'lab', label: 'Research Lab', icon: TestTube, badge: 'BETA', color: 'cyan' },
+              { id: 'settings', label: 'Neural Settings', icon: Settings, color: 'gray' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center space-x-2 px-4 py-3 rounded-xl transition-all font-medium group ${
+                  activeTab === tab.id
+                    ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg transform scale-105`
+                    : `text-gray-600 dark:text-gray-400 hover:bg-${tab.color}-50 dark:hover:bg-${tab.color}-900/20 hover:text-${tab.color}-600 dark:hover:text-${tab.color}-400`
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                    activeTab === tab.id 
+                      ? 'bg-white/20 text-white' 
+                      : `bg-${tab.color}-100 text-${tab.color}-800 dark:bg-${tab.color}-900 dark:text-${tab.color}-200`
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+                {tab.badge && (
+                  <span className={`absolute -top-1 -right-1 px-2 py-1 text-xs rounded-full font-bold ${
+                    tab.badge === 'AI' ? 'bg-purple-500 text-white' :
+                    tab.badge === 'NEW' ? 'bg-green-500 text-white' :
+                    tab.badge === 'BETA' ? 'bg-orange-500 text-white' :
+                    'bg-gray-500 text-white'
+                  } animate-pulse`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="flex items-center space-x-2">
+            <select
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
             >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span>Comparing...</span>
-                </>
-              ) : (
-                <>
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Compare Voices ({selectedVoices.length})</span>
-                </>
-              )}
-            </button>
+              <option value="grid">Grid View</option>
+              <option value="list">List View</option>
+              <option value="detailed">Detailed View</option>
+              <option value="comparison">Comparison View</option>
+            </select>
             
-            <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2">
-              <Upload className="w-5 h-5" />
-              <span>Clone Voice</span>
-            </button>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
+            >
+              <option value="quality">Quality Score</option>
+              <option value="performance">Success Rate</option>
+              <option value="conversion">Conversion Rate</option>
+              <option value="usage">Usage Count</option>
+              <option value="cost">Cost</option>
+              <option value="recent">Recently Updated</option>
+            </select>
             
-            <button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2">
-              <TestTube className="w-5 h-5" />
-              <span>Batch Test</span>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+              className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              {sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-2">
-        <div className="flex space-x-2">
-          {[
-            { id: 'voices', label: 'Voice Library', icon: Mic2, count: filteredVoices.length },
-            { id: 'comparison', label: 'Voice Comparison', icon: BarChart3, count: voiceComparison?.voices?.length || 0 },
-            { id: 'cloning', label: 'Voice Cloning', icon: Users, badge: 'ENTERPRISE' },
-            { id: 'analytics', label: 'Performance Analytics', icon: TrendingUp },
-            { id: 'settings', label: 'Voice Settings', icon: Settings },
-            { id: 'batch', label: 'Batch Operations', icon: Zap }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all font-medium ${
-                activeTab === tab.id
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              <span>{tab.label}</span>
-              {tab.count > 0 && (
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                  activeTab === tab.id ? 'bg-white/20' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-              {tab.badge && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs rounded-full font-bold">
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
+        
+        {/* Quick Stats */}
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center space-x-4">
+            <span>{filteredVoices.length} voices available</span>
+            {selectedVoices.length > 0 && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full font-medium">
+                {selectedVoices.length} selected
+              </span>
+            )}
+            {favorites.length > 0 && (
+              <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full font-medium">
+                {favorites.length} favorites
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <span>Avg Quality: {(filteredVoices.reduce((acc, v) => acc + v.quality_score, 0) / filteredVoices.length).toFixed(1)}%</span>
+            <span>Avg Conversion: {(filteredVoices.reduce((acc, v) => acc + v.performance.conversion_rate, 0) / filteredVoices.length).toFixed(1)}%</span>
+          </div>
         </div>
       </div>
 
@@ -827,10 +1756,15 @@ const VoiceLabPage = () => {
             )}
           </div>
 
-          {/* Voice Library Grid */}
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Enhanced Voice Library Grid */}
+          <div className={`gap-6 ${
+            viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3' :
+            viewMode === 'list' ? 'space-y-4' :
+            viewMode === 'detailed' ? 'grid lg:grid-cols-2 gap-8' :
+            'grid md:grid-cols-2 gap-6'
+          }`}>
             {filteredVoices.map(voice => (
-              <VoiceCard key={voice.voice_id} voice={voice} />
+              <EnhancedVoiceCard key={voice.voice_id} voice={voice} />
             ))}
           </div>
 
@@ -863,6 +1797,320 @@ const VoiceLabPage = () => {
       )}
 
       {activeTab === 'cloning' && <VoiceCloner />}
+
+      {activeTab === 'optimization' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8">
+            <h3 className="text-2xl font-bold mb-6 flex items-center space-x-3">
+              <Brain className="w-8 h-8 text-pink-500" />
+              <span>AI Voice Optimization Engine</span>
+              <span className="px-3 py-1 bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 text-sm rounded-full font-bold">
+                NEURAL AI
+              </span>
+            </h3>
+
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Optimization Dashboard */}
+              <div>
+                <h4 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Real-time Optimization</h4>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold text-blue-800 dark:text-blue-200">Conversion Rate Optimizer</span>
+                      <span className="text-sm text-blue-600 dark:text-blue-400">Active</span>
+                    </div>
+                    <div className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                      AI is analyzing call patterns and optimizing voice parameters for maximum conversion rates
+                    </div>
+                    <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                      <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{ width: '74%' }}></div>
+                    </div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">74% optimization complete</div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold text-green-800 dark:text-green-200">Emotional Intelligence AI</span>
+                      <span className="text-sm text-green-600 dark:text-green-400">Learning</span>
+                    </div>
+                    <div className="text-sm text-green-700 dark:text-green-300 mb-2">
+                      Neural network adapting voice emotional range based on customer sentiment analysis
+                    </div>
+                    <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full animate-pulse" style={{ width: '91%' }}></div>
+                    </div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">91% adaptation complete</div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold text-purple-800 dark:text-purple-200">Neural Enhancement Engine</span>
+                      <span className="text-sm text-purple-600 dark:text-purple-400">Processing</span>
+                    </div>
+                    <div className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                      Advanced neural processing improving voice naturalness and human-likeness
+                    </div>
+                    <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                      <div className="bg-purple-500 h-2 rounded-full animate-pulse" style={{ width: '58%' }}></div>
+                    </div>
+                    <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">58% enhancement complete</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Optimization Controls */}
+              <div>
+                <h4 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Optimization Controls</h4>
+                <div className="space-y-6">
+                  <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
+                    <h5 className="font-bold mb-4 flex items-center space-x-2">
+                      <Target className="w-5 h-5 text-orange-500" />
+                      <span>Target Metrics</span>
+                    </h5>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Conversion Rate Target</label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="range"
+                            min="20"
+                            max="40"
+                            defaultValue="30"
+                            className="flex-1"
+                          />
+                          <span className="text-sm font-bold w-12">30%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Engagement Score Target</label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="range"
+                            min="80"
+                            max="100"
+                            defaultValue="90"
+                            className="flex-1"
+                          />
+                          <span className="text-sm font-bold w-12">90</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Quality Score Target</label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="range"
+                            min="90"
+                            max="100"
+                            defaultValue="95"
+                            className="flex-1"
+                          />
+                          <span className="text-sm font-bold w-12">95%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
+                    <h5 className="font-bold mb-4 flex items-center space-x-2">
+                      <Cpu className="w-5 h-5 text-blue-500" />
+                      <span>AI Model Selection</span>
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <input type="radio" name="ai-model" value="v3-pro" defaultChecked className="w-4 h-4" />
+                        <div>
+                          <div className="font-medium">Neural V3 Pro</div>
+                          <div className="text-sm text-gray-500">Advanced neural processing with emotional AI</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="radio" name="ai-model" value="v3-ultra" className="w-4 h-4" />
+                        <div>
+                          <div className="font-medium">Neural V3 Ultra</div>
+                          <div className="text-sm text-gray-500">Maximum quality with real-time adaptation</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input type="radio" name="ai-model" value="experimental" className="w-4 h-4" />
+                        <div>
+                          <div className="font-medium">Experimental Neural</div>
+                          <div className="text-sm text-gray-500">Cutting-edge research models (Beta)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg">
+                    🚀 Start AI Optimization
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Optimization Results */}
+            <div className="mt-8 grid md:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-green-800 dark:text-green-200 font-semibold">Total Improvement</span>
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-3xl font-bold text-green-600 mb-1">+24.7%</div>
+                <div className="text-sm text-green-700 dark:text-green-300">Avg performance boost</div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-blue-800 dark:text-blue-200 font-semibold">Voices Optimized</span>
+                  <Cpu className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">47</div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">This week</div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-purple-800 dark:text-purple-200 font-semibold">Neural Efficiency</span>
+                  <Brain className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="text-3xl font-bold text-purple-600 mb-1">98.3%</div>
+                <div className="text-sm text-purple-700 dark:text-purple-300">AI processing accuracy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'lab' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8">
+            <h3 className="text-2xl font-bold mb-6 flex items-center space-x-3">
+              <TestTube className="w-8 h-8 text-cyan-500" />
+              <span>Voice Research Laboratory</span>
+              <span className="px-3 py-1 bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 text-sm rounded-full font-bold">
+                EXPERIMENTAL
+              </span>
+            </h3>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Research Projects */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl">
+                  <h4 className="text-lg font-bold mb-4 flex items-center space-x-2">
+                    <Atom className="w-6 h-6 text-purple-500" />
+                    <span>Neural Voice Synthesis Research</span>
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <h5 className="font-semibold mb-2">Quantum-Enhanced Voice Processing</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Experimental quantum computing algorithms for ultra-realistic voice generation
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-purple-600 dark:text-purple-400">Status: Active Research</span>
+                        <button className="px-3 py-1 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600">
+                          Join Study
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <h5 className="font-semibold mb-2">Emotional Resonance AI</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Advanced emotional intelligence for voice adaptation based on real-time sentiment
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-green-600 dark:text-green-400">Status: Beta Testing</span>
+                        <button className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600">
+                          Test Beta
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <h5 className="font-semibold mb-2">Multimodal Voice-Video Sync</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Synchronized voice generation with facial expressions and lip movements
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-blue-600 dark:text-blue-400">Status: Development</span>
+                        <button className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lab Tools */}
+              <div>
+                <h4 className="text-lg font-bold mb-4">Research Tools</h4>
+                <div className="space-y-4">
+                  <button className="w-full p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left">
+                    <div className="flex items-center space-x-3">
+                      <Waves className="w-6 h-6 text-blue-500" />
+                      <div>
+                        <div className="font-semibold">Spectral Analyzer</div>
+                        <div className="text-sm text-gray-500">Advanced voice frequency analysis</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button className="w-full p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left">
+                    <div className="flex items-center space-x-3">
+                      <Brain className="w-6 h-6 text-purple-500" />
+                      <div>
+                        <div className="font-semibold">Neural Trainer</div>
+                        <div className="text-sm text-gray-500">Train custom neural models</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button className="w-full p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left">
+                    <div className="flex items-center space-x-3">
+                      <Radar className="w-6 h-6 text-green-500" />
+                      <div>
+                        <div className="font-semibold">Emotion Detector</div>
+                        <div className="text-sm text-gray-500">Real-time emotion analysis</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button className="w-full p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left">
+                    <div className="flex items-center space-x-3">
+                      <Crosshair className="w-6 h-6 text-red-500" />
+                      <div>
+                        <div className="font-semibold">Precision Tuner</div>
+                        <div className="text-sm text-gray-500">Fine-tune voice parameters</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Research Metrics */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl">
+                  <h5 className="font-semibold mb-3 text-cyan-800 dark:text-cyan-200">Research Impact</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Papers Published:</span>
+                      <span className="font-bold">23</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Patents Filed:</span>
+                      <span className="font-bold">7</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Breakthrough Models:</span>
+                      <span className="font-bold">4</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'analytics' && (
         <div className="space-y-6">
