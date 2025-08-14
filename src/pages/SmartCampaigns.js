@@ -920,8 +920,387 @@ const SmartCampaignsDashboard = () => {
                 </div>
               )}
 
-              {/* Other steps can be added here */}
-              {createCampaignStep > 1 && (
+              {/* Step 2: Campaign Configuration */}
+              {createCampaignStep === 2 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-2xl font-bold">Configure Campaign</h3>
+                      <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Set up your campaign parameters and targeting</p>
+                    </div>
+                    <div className="text-sm text-blue-500 font-semibold">Step 2 of 4</div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Basic Information */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Campaign Details</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Campaign Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Holiday Sales Outreach"
+                            className={`w-full px-4 py-3 rounded-lg border ${
+                              darkMode 
+                                ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400' 
+                                : 'bg-gray-100/50 border-gray-200/50 text-gray-900 placeholder-gray-500'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <textarea
+                            rows="3"
+                            placeholder="Brief description of your campaign goals..."
+                            className={`w-full px-4 py-3 rounded-lg border ${
+                              darkMode 
+                                ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400' 
+                                : 'bg-gray-100/50 border-gray-200/50 text-gray-900 placeholder-gray-500'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Campaign Type</label>
+                          <select className={`w-full px-4 py-3 rounded-lg border ${
+                            darkMode 
+                              ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                              : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}>
+                            <option>Sales Outreach</option>
+                            <option>Lead Qualification</option>
+                            <option>Customer Follow-up</option>
+                            <option>Survey Collection</option>
+                            <option>Appointment Setting</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Targeting Options */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Targeting & Timing</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Target Audience</label>
+                          <div className="space-y-2">
+                            {['All Leads', 'New Leads', 'Warm Prospects', 'Previous Customers', 'Custom Segment'].map((option, index) => (
+                              <label key={index} className="flex items-center space-x-3">
+                                <input type="radio" name="audience" className="text-blue-500" />
+                                <span className="text-sm">{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Call Schedule</label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Start Time</label>
+                              <input
+                                type="time"
+                                defaultValue="09:00"
+                                className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                  darkMode 
+                                    ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                                    : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                                }`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">End Time</label>
+                              <input
+                                type="time"
+                                defaultValue="17:00"
+                                className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                                  darkMode 
+                                    ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                                    : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Days of Week</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
+                              <label key={index} className="flex items-center space-x-1">
+                                <input type="checkbox" defaultChecked={index < 5} className="text-blue-500" />
+                                <span className="text-sm">{day}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-6">
+                    <button 
+                      onClick={() => setCreateCampaignStep(1)}
+                      className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => setCreateCampaignStep(3)}
+                      className="px-6 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                    >
+                      Next: AI Agent Setup
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: AI Agent Configuration */}
+              {createCampaignStep === 3 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-2xl font-bold">AI Agent Setup</h3>
+                      <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Configure your AI agent's behavior and scripts</p>
+                    </div>
+                    <div className="text-sm text-blue-500 font-semibold">Step 3 of 4</div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Agent Configuration */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Agent Personality</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Voice Model</label>
+                          <select className={`w-full px-4 py-3 rounded-lg border ${
+                            darkMode 
+                              ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                              : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}>
+                            <option>Professional Sarah (Female)</option>
+                            <option>Confident Marcus (Male)</option>
+                            <option>Friendly Emma (Female)</option>
+                            <option>Authoritative David (Male)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Conversation Style</label>
+                          <div className="space-y-2">
+                            {['Professional & Direct', 'Friendly & Conversational', 'Consultative & Helpful', 'Energetic & Persuasive'].map((style, index) => (
+                              <label key={index} className="flex items-center space-x-3">
+                                <input type="radio" name="style" className="text-blue-500" defaultChecked={index === 0} />
+                                <span className="text-sm">{style}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Objection Handling</label>
+                          <select className={`w-full px-4 py-3 rounded-lg border ${
+                            darkMode 
+                              ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                              : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                          }`}>
+                            <option>Standard Responses</option>
+                            <option>Aggressive Persistence</option>
+                            <option>Gentle Persuasion</option>
+                            <option>Educational Approach</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Script Configuration */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Call Script</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Opening Script</label>
+                          <textarea
+                            rows="4"
+                            placeholder="Hi [First Name], this is [Agent Name] calling from [Company]. I hope I'm catching you at a good time..."
+                            className={`w-full px-4 py-3 rounded-lg border text-sm ${
+                              darkMode 
+                                ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400' 
+                                : 'bg-gray-100/50 border-gray-200/50 text-gray-900 placeholder-gray-500'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Key Talking Points</label>
+                          <div className="space-y-2">
+                            {['Product Benefits', 'Pricing Information', 'Case Studies', 'Special Offers'].map((point, index) => (
+                              <label key={index} className="flex items-center space-x-3">
+                                <input type="checkbox" defaultChecked className="text-blue-500" />
+                                <span className="text-sm">{point}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Call Goal</label>
+                          <select className={`w-full px-4 py-3 rounded-lg border ${
+                            darkMode 
+                              ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                              : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                          }`}>
+                            <option>Schedule Demo</option>
+                            <option>Direct Sale</option>
+                            <option>Qualify Lead</option>
+                            <option>Gather Information</option>
+                            <option>Set Appointment</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-6">
+                    <button 
+                      onClick={() => setCreateCampaignStep(2)}
+                      className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => setCreateCampaignStep(4)}
+                      className="px-6 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                    >
+                      Next: Review & Launch
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Review & Launch */}
+              {createCampaignStep === 4 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-2xl font-bold">Review & Launch</h3>
+                      <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Review your campaign settings and launch</p>
+                    </div>
+                    <div className="text-sm text-blue-500 font-semibold">Step 4 of 4</div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Campaign Summary */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Campaign Summary</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Campaign Name:</span>
+                          <span className="text-sm font-medium">Holiday Sales Outreach</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Type:</span>
+                          <span className="text-sm font-medium">Sales Outreach</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Target Audience:</span>
+                          <span className="text-sm font-medium">Warm Prospects</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Expected Leads:</span>
+                          <span className="text-sm font-medium text-blue-500">~2,500 contacts</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Estimated Duration:</span>
+                          <span className="text-sm font-medium">5-7 days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Agent Voice:</span>
+                          <span className="text-sm font-medium">Professional Sarah</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Launch Options */}
+                    <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50`}>
+                      <h4 className="text-lg font-bold mb-4">Launch Options</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Launch Schedule</label>
+                          <div className="space-y-2">
+                            <label className="flex items-center space-x-3">
+                              <input type="radio" name="launch" className="text-blue-500" defaultChecked />
+                              <span className="text-sm">Start Immediately</span>
+                            </label>
+                            <label className="flex items-center space-x-3">
+                              <input type="radio" name="launch" className="text-blue-500" />
+                              <span className="text-sm">Schedule for Later</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Call Velocity</label>
+                          <select className={`w-full px-4 py-3 rounded-lg border ${
+                            darkMode 
+                              ? 'bg-gray-700/50 border-gray-600/50 text-white' 
+                              : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
+                          }`}>
+                            <option>Conservative (50 calls/hour)</option>
+                            <option>Standard (100 calls/hour)</option>
+                            <option>Aggressive (200 calls/hour)</option>
+                            <option>Maximum (500 calls/hour)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Budget Limit</label>
+                          <div className="flex space-x-2">
+                            <input
+                              type="number"
+                              placeholder="1000"
+                              className={`flex-1 px-4 py-3 rounded-lg border ${
+                                darkMode 
+                                  ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400' 
+                                  : 'bg-gray-100/50 border-gray-200/50 text-gray-900 placeholder-gray-500'
+                              }`}
+                            />
+                            <span className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">USD</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`${darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50/80 border-green-200/50'} rounded-xl border p-6`}>
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-green-600 dark:text-green-400">Ready to Launch!</h4>
+                        <p className="text-sm text-green-600 dark:text-green-400">Your campaign is configured and ready to go</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                      Estimated results: 15-20% connection rate, 5-8% qualified leads, ROI: 300-500%
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between pt-6">
+                    <button 
+                      onClick={() => setCreateCampaignStep(3)}
+                      className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setCreateCampaignStep(1);
+                        setShowCreateCampaign(false);
+                        // Here you would typically save the campaign and start it
+                      }}
+                      className="px-8 py-3 rounded-lg bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold transition-all transform hover:scale-105"
+                    >
+                      🚀 Launch Campaign
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Other steps fallback */}
+              {createCampaignStep > 4 && (
                 <div className="text-center py-12">
                   <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Rocket className="w-10 h-10 text-white" />

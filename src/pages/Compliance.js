@@ -8,7 +8,7 @@ import {
   Gavel, Scale, UserCheck, FileCheck, ShieldCheck, KeyRound,
   Building, MapPin, Smartphone, Monitor, Headphones, Mic,
   Archive, Trash2, Edit, Plus, X, ChevronDown, ChevronRight,
-  Star, Heart, ThumbsUp, Mail, MessageSquare, Video, Briefcase
+  Star, Heart, ThumbsUp, Mail, MessageSquare, Video, Briefcase, User
 } from 'lucide-react';
 
 const ComplianceDashboard = ({ darkMode = true }) => {
@@ -887,19 +887,310 @@ const ComplianceDashboard = ({ darkMode = true }) => {
             <div className="text-sm font-medium text-orange-300">Renewals Due</div>
           </div>
         </div>
-      </div>
 
-      <div className="text-center">
-        <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Book className="w-10 h-10 text-white" />
+        {/* Training Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Available Courses */}
+          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+            <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+              <Book className="w-6 h-6 text-blue-500" />
+              <span>Available Courses</span>
+            </h3>
+            <div className="space-y-4">
+              {[
+                { 
+                  title: 'TCPA Fundamentals', 
+                  duration: '45 min', 
+                  level: 'Beginner', 
+                  completed: false,
+                  description: 'Essential TCPA compliance knowledge'
+                },
+                { 
+                  title: 'Advanced GDPR Compliance', 
+                  duration: '90 min', 
+                  level: 'Advanced', 
+                  completed: true,
+                  description: 'Deep dive into GDPR requirements'
+                },
+                { 
+                  title: 'AI Ethics in Communication', 
+                  duration: '60 min', 
+                  level: 'Intermediate', 
+                  completed: false,
+                  description: 'Ethical AI usage in customer communication'
+                },
+                { 
+                  title: 'Data Breach Response', 
+                  duration: '30 min', 
+                  level: 'Beginner', 
+                  completed: true,
+                  description: 'How to handle security incidents'
+                }
+              ].map((course, index) => (
+                <div key={index} className={`p-4 rounded-xl border ${
+                  course.completed 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700/50' 
+                    : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600/50'
+                } transition-all cursor-pointer hover:shadow-md`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-sm">{course.title}</h4>
+                    {course.completed ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{course.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full ${
+                        course.level === 'Beginner' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                        course.level === 'Intermediate' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                        'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {course.level}
+                      </span>
+                      <span className="text-gray-500">{course.duration}</span>
+                    </div>
+                    <button className={`text-xs font-semibold ${
+                      course.completed ? 'text-green-500' : 'text-blue-500 hover:underline'
+                    }`}>
+                      {course.completed ? 'Completed' : 'Start Course'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Progress Tracking */}
+          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+            <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+              <TrendingUp className="w-6 h-6 text-green-500" />
+              <span>Your Progress</span>
+            </h3>
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-500 mb-2">67%</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Overall Completion</div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3 dark:bg-gray-700">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '67%' }}></div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Courses Completed</span>
+                    <span className="text-sm text-green-500 font-semibold">8/12</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '67%' }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Certifications Earned</span>
+                    <span className="text-sm text-blue-500 font-semibold">3/5</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Time Invested</span>
+                    <span className="text-sm text-purple-500 font-semibold">12.5 hrs</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
+                <div className="flex items-center space-x-3">
+                  <Award className="w-6 h-6 text-blue-500" />
+                  <div>
+                    <h4 className="font-semibold text-blue-600 dark:text-blue-400">Next Milestone</h4>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Complete 2 more courses to earn Advanced Compliance certification</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Certifications */}
+          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+            <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+              <Award className="w-6 h-6 text-yellow-500" />
+              <span>Certifications</span>
+            </h3>
+            <div className="space-y-4">
+              {[
+                { 
+                  name: 'TCPA Compliance Expert', 
+                  earned: true, 
+                  date: '2024-10-15',
+                  validUntil: '2025-10-15',
+                  icon: '🛡️'
+                },
+                { 
+                  name: 'GDPR Specialist', 
+                  earned: true, 
+                  date: '2024-09-22',
+                  validUntil: '2025-09-22',
+                  icon: '🔒'
+                },
+                { 
+                  name: 'AI Ethics Certified', 
+                  earned: true, 
+                  date: '2024-11-03',
+                  validUntil: '2025-11-03',
+                  icon: '🤖'
+                },
+                { 
+                  name: 'Advanced Compliance', 
+                  earned: false, 
+                  progress: 60,
+                  icon: '🏆'
+                },
+                { 
+                  name: 'Data Security Master', 
+                  earned: false, 
+                  progress: 20,
+                  icon: '🔐'
+                }
+              ].map((cert, index) => (
+                <div key={index} className={`p-4 rounded-xl border ${
+                  cert.earned 
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50' 
+                    : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600/50'
+                }`}>
+                  <div className="flex items-start space-x-3">
+                    <div className="text-2xl">{cert.icon}</div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm">{cert.name}</h4>
+                      {cert.earned ? (
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          <div>Earned: {cert.date}</div>
+                          <div>Valid until: {cert.validUntil}</div>
+                        </div>
+                      ) : (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                            <span className="font-semibold">{cert.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1 dark:bg-gray-600">
+                            <div 
+                              className="bg-blue-500 h-1 rounded-full transition-all duration-1000"
+                              style={{ width: `${cert.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {cert.earned && (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button className="w-full mt-6 bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-xl font-semibold transition-colors">
+              View All Certifications
+            </button>
+          </div>
         </div>
-        <h3 className="text-2xl font-bold mb-4">Training Center Coming Soon</h3>
-        <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-8 max-w-2xl mx-auto`}>
-          Comprehensive compliance training modules with interactive courses, certifications, and progress tracking.
-        </p>
-        <button className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
-          🎯 Available Soon
-        </button>
+
+        {/* Upcoming Training Sessions */}
+        <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+          <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+            <Calendar className="w-6 h-6 text-purple-500" />
+            <span>Upcoming Training Sessions</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'TCPA Updates 2024',
+                date: 'Dec 5, 2024',
+                time: '2:00 PM EST',
+                type: 'Live Webinar',
+                instructor: 'Sarah Mitchell',
+                capacity: '150 spots',
+                registered: 127
+              },
+              {
+                title: 'AI Compliance Workshop',
+                date: 'Dec 12, 2024',
+                time: '10:00 AM EST',
+                type: 'Interactive Workshop',
+                instructor: 'Dr. James Chen',
+                capacity: '50 spots',
+                registered: 23
+              },
+              {
+                title: 'GDPR Advanced Topics',
+                date: 'Dec 18, 2024',
+                time: '3:00 PM EST',
+                type: 'Certification Course',
+                instructor: 'Maria Rodriguez',
+                capacity: '100 spots',
+                registered: 67
+              }
+            ].map((session, index) => (
+              <div key={index} className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-700/30 border-gray-600/50' : 'bg-gray-50 border-gray-200'} hover:shadow-lg transition-all`}>
+                <div className="mb-4">
+                  <h4 className="font-bold text-lg mb-2">{session.title}</h4>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>{session.date}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4" />
+                      <span>{session.time}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <User className="w-4 h-4" />
+                      <span>{session.instructor}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-600 dark:text-gray-400">Registration</span>
+                    <span className="font-semibold">{session.registered}/{session.capacity.split(' ')[0]}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-600">
+                    <div 
+                      className="bg-purple-500 h-2 rounded-full transition-all duration-1000"
+                      style={{ width: `${(session.registered / parseInt(session.capacity.split(' ')[0])) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    session.type === 'Live Webinar' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
+                    session.type === 'Interactive Workshop' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                    'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                  }`}>
+                    {session.type}
+                  </span>
+                  <button className="text-sm bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                    Register
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

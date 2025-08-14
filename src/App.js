@@ -18,7 +18,7 @@ import {
   FileCode, Boxes, Webhook, Shuffle, UserPlus, Crown,
   Rocket, Brain, Wand2, MousePointer, Layers3,
   Command, Code, Wrench, TestTube, Beaker, FlaskConical,
-  ShoppingCart, Volume1
+  ShoppingCart, Volume1, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 // Import your page components
@@ -38,27 +38,27 @@ import WhiteLabelDashboard from './pages/WhiteLabelDashboard';
 import TwilioNumberPurchase from './pages/PhoneNumbers';
 import VocelioSettingsDashboard from './pages/SettingsPage';
 import VocelioVoiceMarketplace from './pages/VoiceMarketplace';
-import APIDashboard from './pages/DeveloperAPI';
+import APICenter from './pages/APICenter';
 
 // Import new missing service pages
 import KnowledgeBase from './pages/KnowledgeBase';
 import LeadManagement from './pages/LeadManagement';
-import NotificationsCenter from './pages/NotificationsCenter';
+import UnifiedNotificationCenter from './pages/UnifiedNotificationCenter';
 import SchedulingCenter from './pages/SchedulingCenter';
 import AIAgentsEnhanced from './pages/AIAgentsEnhanced';
 import WebhooksManager from './pages/WebhooksManager';
-import APIManagement from './pages/APIManagement';
 import EnterpriseSecurityCenter from './pages/EnterpriseSecurityCenter';
 import SSOIdentityManager from './pages/SSOIdentityManager';
 import AuditCompliance from './pages/AuditCompliance';
 import DataWarehouse from './pages/DataWarehouse';
 import EnterprisePortal from './pages/EnterprisePortal';
-import NotificationService from './pages/NotificationService';
 import BusinessIntelligence from './pages/BusinessIntelligence';
 import AutomationEngine from './pages/AutomationEngine';
+import UnifiedCampaignsPage from './pages/UnifiedCampaigns';
+import AIAgentPlatform from './pages/AIAgentPlatform';
 
 const VocelioUltimateDashboard = () => {
-  const [activeTab, setActiveTab] = useState('flow-builder');
+  const [activeTab, setActiveTab] = useState('overview');
   const [darkMode, setDarkMode] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -101,11 +101,137 @@ const VocelioUltimateDashboard = () => {
     return () => clearInterval(interval);
   }, [activeTab]);
 
+  const [expandedMenus, setExpandedMenus] = useState({});
+
+  const toggleMenu = (menuId) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuId]: !prev[menuId]
+    }));
+  };
+
+  // Reorganized hierarchical navigation structure
+  const sidebarMenus = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: Command,
+      type: 'single',
+      badge: 'LIVE',
+      route: 'overview'
+    },
+    {
+      id: 'ai-services',
+      label: 'AI Services',
+      icon: Brain,
+      type: 'group',
+      badge: 'AI',
+      children: [
+        { id: 'ai-agent-platform', label: 'AI Agent Platform', icon: Sparkles, badge: 'UNIFIED' },
+        { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
+        { id: 'agents-enhanced', label: 'AI Agents Pro', icon: Brain, badge: 'NEW' },
+        { id: 'ai-brain', label: 'AI Brain', icon: Brain, badge: '94%' },
+        { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'AI' },
+        { id: 'flow-builder', label: 'Flow Builder', icon: Workflow, badge: 'AI' }
+      ]
+    },
+    {
+      id: 'communications',
+      label: 'Communications',
+      icon: PhoneCall,
+      type: 'group',
+      badge: null,
+      children: [
+        { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
+        { id: 'unified-campaigns', label: 'Unified Campaigns', icon: Zap, badge: 'MULTI' },
+        { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
+        { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' }
+      ]
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics & Insights',
+      icon: BarChart3,
+      type: 'group',
+      badge: null,
+      children: [
+        { id: 'analytics-pro', label: 'Analytics Pro', icon: BarChart3, badge: null },
+        { id: 'business-intelligence', label: 'Business Intelligence', icon: TrendingUp, badge: 'NEW' },
+        { id: 'data-warehouse', label: 'Data Warehouse', icon: Database, badge: 'NEW' }
+      ]
+    },
+    {
+      id: 'customer-management',
+      label: 'Customer Management',
+      icon: Users,
+      type: 'group',
+      badge: null,
+      children: [
+        { id: 'lead-management', label: 'Lead Management', icon: Users, badge: 'NEW' },
+        { id: 'team-hub', label: 'Team Hub', icon: Users, badge: null },
+        { id: 'scheduling-center', label: 'Scheduling Center', icon: Calendar, badge: 'NEW' },
+        { id: 'knowledge-base', label: 'Knowledge Base', icon: FileText, badge: 'NEW' }
+      ]
+    },
+    {
+      id: 'integrations-automation',
+      label: 'Integrations & Automation',
+      icon: Network,
+      type: 'group',
+      badge: null,
+      children: [
+        { id: 'integrations', label: 'Integrations', icon: Network, badge: '15' },
+        { id: 'automation-engine', label: 'Automation Engine', icon: Zap, badge: 'NEW' },
+        { id: 'webhooks-manager', label: 'Webhooks Manager', icon: Webhook, badge: 'NEW' },
+        { id: 'api-center', label: 'API Center', icon: Server, badge: 'UNIFIED' }
+      ]
+    },
+    {
+      id: 'enterprise',
+      label: 'Enterprise',
+      icon: Building,
+      type: 'group',
+      badge: 'ENTERPRISE',
+      children: [
+        { id: 'enterprise-security', label: 'Security Center', icon: Shield, badge: 'NEW' },
+        { id: 'sso-identity', label: 'Identity Manager', icon: Key, badge: 'NEW' },
+        { id: 'audit-compliance', label: 'Audit & Compliance', icon: FileText, badge: 'NEW' },
+        { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' },
+        { id: 'compliance', label: 'Compliance', icon: Shield, badge: '100%' }
+      ]
+    },
+    {
+      id: 'marketplace',
+      label: 'Marketplace',
+      icon: Store,
+      type: 'group',
+      badge: 'HOT',
+      children: [
+        { id: 'agent-store', label: 'Agent Store', icon: Store, badge: 'HOT' },
+        { id: 'white-label', label: 'White Label', icon: Palette, badge: 'ENTERPRISE' }
+      ]
+    },
+    {
+      id: 'system',
+      label: 'System & Settings',
+      icon: Settings,
+      type: 'group',
+      badge: null,
+      children: [
+        { id: 'notifications-center', label: 'Notification Center', icon: Bell, badge: 'UNIFIED' },
+        { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
+        { id: 'developer-api', label: 'Developer API', icon: Code, badge: null },
+        { id: 'settings', label: 'Settings', icon: Settings, badge: null }
+      ]
+    }
+  ];
+
+  // Legacy flat structure for backward compatibility
   const sidebarItems = [
     { id: 'overview', label: 'Command Center', icon: Command, badge: 'LIVE' },
     { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
     { id: 'agents-enhanced', label: 'AI Agents Pro', icon: Brain, badge: 'NEW' },
-    { id: 'smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: '89' },
+    { id: 'unified-campaigns', label: 'Unified Campaigns', icon: Zap, badge: 'MULTI' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
     { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
     { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' },
@@ -117,12 +243,12 @@ const VocelioUltimateDashboard = () => {
     // New Priority 1 Services (Core Missing)
     { id: 'knowledge-base', label: 'Knowledge Base', icon: FileText, badge: 'NEW' },
     { id: 'lead-management', label: 'Lead Management', icon: Users, badge: 'NEW' },
-    { id: 'notifications-center', label: 'Notifications Center', icon: Bell, badge: 'NEW' },
+    { id: 'notifications-center', label: 'Notification Center', icon: Bell, badge: 'UNIFIED' },
     { id: 'scheduling-center', label: 'Scheduling Center', icon: Calendar, badge: 'NEW' },
     
     // Enhanced Services
     { id: 'webhooks-manager', label: 'Webhooks Manager', icon: Webhook, badge: 'NEW' },
-    { id: 'api-management', label: 'API Management', icon: Server, badge: 'NEW' },
+    { id: 'api-center', label: 'API Center', icon: Server, badge: 'UNIFIED' },
     
     // Enterprise Features
     { id: 'enterprise-security', label: 'Security Center', icon: Shield, badge: 'NEW' },
@@ -132,7 +258,6 @@ const VocelioUltimateDashboard = () => {
     // Additional Services
     { id: 'data-warehouse', label: 'Data Warehouse', icon: Database, badge: 'NEW' },
     { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' },
-    { id: 'notification-service', label: 'Notification Service', icon: MessageSquare, badge: 'NEW' },
     { id: 'business-intelligence', label: 'Business Intelligence', icon: TrendingUp, badge: 'NEW' },
     { id: 'automation-engine', label: 'Automation Engine', icon: Zap, badge: 'NEW' },
     
@@ -491,6 +616,9 @@ const VocelioUltimateDashboard = () => {
           </div>
         );
 
+      case 'ai-agent-platform':
+        return <AIAgentPlatform />;
+
       case 'agents':
         return (
           <div className="space-y-8">
@@ -583,20 +711,36 @@ const VocelioUltimateDashboard = () => {
                 </div>
               </div>
               
-              <div className="h-64 flex items-center justify-center bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-xl">
-                <div className="text-center">
-                  <BarChart3 className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                  <p className="text-lg font-semibold mb-2">Advanced Analytics Coming Soon</p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Interactive charts, performance trends, and AI optimization insights
-                  </p>
+              <div className="h-64 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Advanced Analytics Dashboard</h3>
+                  <BarChart3 className="w-8 h-8 text-blue-500" />
                 </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Call Success Rate</p>
+                    <p className="text-2xl font-bold text-green-600">68.5%</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue Impact</p>
+                    <p className="text-2xl font-bold text-blue-600">$45.2K</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('analytics')}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  View Full Analytics
+                </button>
               </div>
             </div>
           </div>
         );
 
       // Add cases for all your page components
+      case 'unified-campaigns':
+        return <UnifiedCampaignsPage />;
+      
       case 'smart-campaigns':
         return <SmartCampaignsDashboard />;
       
@@ -684,27 +828,44 @@ const VocelioUltimateDashboard = () => {
                 </div>
               </div>
               
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
-                <h3 className="font-bold text-yellow-800 dark:text-yellow-400 mb-2">🚀 Coming Soon</h3>
-                <p className="text-yellow-700 dark:text-yellow-300">
-                  Full White Label Dashboard with brand customization, partner analytics, 
-                  revenue management, and enterprise controls will be available in the next release.
-                </p>
-                <div className="mt-4 flex items-center space-x-4">
-                  <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
-                    Request Demo
-                  </button>
-                  <button className="px-4 py-2 border border-yellow-500 text-yellow-600 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30">
-                    Contact Enterprise Sales
-                  </button>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-yellow-800 dark:text-yellow-400">🎨 White Label Portal</h3>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
+                <p className="text-yellow-700 dark:text-yellow-300 mb-4">
+                  Full brand customization, partner management, revenue analytics, 
+                  and enterprise controls are now available.
+                </p>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-center">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Partners</p>
+                    <p className="font-bold text-yellow-700 dark:text-yellow-300">23</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-center">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Revenue</p>
+                    <p className="font-bold text-yellow-700 dark:text-yellow-300">$125K</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 text-center">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Active</p>
+                    <p className="font-bold text-yellow-700 dark:text-yellow-300">18</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('white-label')}
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  Manage Partners
+                </button>
               </div>
             </div>
           </div>
         );
       
+      case 'api-center':
       case 'developer-api':
-        return <APIDashboard />;
+      case 'api-management':
+        return <APICenter />;
       
       case 'settings':
         return <VocelioSettingsDashboard />;
@@ -717,7 +878,8 @@ const VocelioUltimateDashboard = () => {
         return <LeadManagement />;
       
       case 'notifications-center':
-        return <NotificationsCenter />;
+      case 'notification-service':
+        return <UnifiedNotificationCenter />;
       
       case 'scheduling-center':
         return <SchedulingCenter />;
@@ -728,9 +890,6 @@ const VocelioUltimateDashboard = () => {
       // Enhanced Services
       case 'webhooks-manager':
         return <WebhooksManager />;
-      
-      case 'api-management':
-        return <APIManagement />;
       
       // Enterprise Features
       case 'enterprise-security':
@@ -748,9 +907,6 @@ const VocelioUltimateDashboard = () => {
       
       case 'enterprise-portal':
         return <EnterprisePortal />;
-      
-      case 'notification-service':
-        return <NotificationService />;
       
       case 'business-intelligence':
         return <BusinessIntelligence />;
@@ -848,45 +1004,135 @@ const VocelioUltimateDashboard = () => {
 
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <div className="space-y-2">
-            {sidebarItems.map(({ id, label, icon: Icon, badge }) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setActiveTab(id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center space-x-4 px-4 py-4 rounded-xl transition-all duration-300 group relative ${
-                  activeTab === id
-                    ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 text-white shadow-2xl transform scale-105'
-                    : darkMode 
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
-                }`}
-              >
-                <Icon className={`w-6 h-6 ${activeTab === id ? 'text-white' : ''} transition-all group-hover:scale-110`} />
-                {!sidebarCollapsed && (
-                  <>
-                    <span className="font-semibold transition-all flex-1 text-left">{label}</span>
-                    {badge && (
-                      <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        activeTab === id 
-                          ? 'bg-white/20 text-white' 
-                          : badge === 'LIVE' || badge === 'HOT' || badge === 'NEW'
-                            ? 'bg-red-500/10 text-red-500'
-                            : badge === 'AI' || badge === 'ENTERPRISE'
-                              ? 'bg-purple-500/10 text-purple-500'
-                              : 'bg-blue-500/10 text-blue-500'
-                        }`}>
-                        {badge}
+            {sidebarMenus.map((menu) => {
+              if (menu.type === 'single') {
+                // Single menu item (like Dashboard)
+                const id = menu.route || menu.id;
+                return (
+                  <button
+                    key={menu.id}
+                    onClick={() => {
+                      setActiveTab(id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-4 px-4 py-4 rounded-xl transition-all duration-300 group relative ${
+                      activeTab === id
+                        ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 text-white shadow-2xl transform scale-105'
+                        : darkMode 
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                    }`}
+                  >
+                    <menu.icon className={`w-6 h-6 ${activeTab === id ? 'text-white' : ''} transition-all group-hover:scale-110`} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="font-semibold transition-all flex-1 text-left">{menu.label}</span>
+                        {menu.badge && (
+                          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeTab === id 
+                              ? 'bg-white/20 text-white' 
+                              : menu.badge === 'LIVE' || menu.badge === 'HOT' || menu.badge === 'NEW'
+                                ? 'bg-red-500/10 text-red-500'
+                                : menu.badge === 'AI' || menu.badge === 'ENTERPRISE'
+                                  ? 'bg-purple-500/10 text-purple-500'
+                                  : 'bg-blue-500/10 text-blue-500'
+                            }`}>
+                            {menu.badge}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {activeTab === id && (
+                      <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-full"></div>
+                    )}
+                  </button>
+                );
+              } else {
+                // Group menu with children
+                const isExpanded = expandedMenus[menu.id];
+                const hasActiveChild = menu.children.some(child => activeTab === child.id);
+                
+                return (
+                  <div key={menu.id} className="space-y-1">
+                    {/* Group Header */}
+                    <button
+                      onClick={() => toggleMenu(menu.id)}
+                      className={`w-full flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-300 group ${
+                        hasActiveChild
+                          ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                          : darkMode 
+                            ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                      }`}
+                    >
+                      <menu.icon className={`w-5 h-5 ${hasActiveChild ? 'text-blue-500' : ''} transition-all group-hover:scale-110`} />
+                      {!sidebarCollapsed && (
+                        <>
+                          <span className="font-medium transition-all flex-1 text-left text-sm">{menu.label}</span>
+                          <div className="flex items-center space-x-2">
+                            {menu.badge && (
+                              <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                hasActiveChild
+                                  ? 'bg-blue-500/20 text-blue-500' 
+                                  : menu.badge === 'LIVE' || menu.badge === 'HOT' || menu.badge === 'NEW'
+                                    ? 'bg-red-500/10 text-red-500'
+                                    : menu.badge === 'AI' || menu.badge === 'ENTERPRISE'
+                                      ? 'bg-purple-500/10 text-purple-500'
+                                      : 'bg-blue-500/10 text-blue-500'
+                                }`}>
+                                {menu.badge}
+                              </div>
+                            )}
+                            {isExpanded ? 
+                              <ChevronDown className="w-4 h-4 transition-transform" /> : 
+                              <ChevronRight className="w-4 h-4 transition-transform" />
+                            }
+                          </div>
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Sub-menu items */}
+                    {!sidebarCollapsed && isExpanded && (
+                      <div className="ml-6 space-y-1 border-l-2 border-gray-700/30 pl-4">
+                        {menu.children.map((child) => (
+                          <button
+                            key={child.id}
+                            onClick={() => {
+                              setActiveTab(child.id);
+                              setMobileMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-300 group text-sm ${
+                              activeTab === child.id
+                                ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 text-white shadow-lg'
+                                : darkMode 
+                                  ? 'text-gray-400 hover:text-white hover:bg-gray-700/30' 
+                                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/30'
+                            }`}
+                          >
+                            <child.icon className={`w-4 h-4 ${activeTab === child.id ? 'text-white' : ''} transition-all group-hover:scale-110`} />
+                            <span className="font-medium transition-all flex-1 text-left">{child.label}</span>
+                            {child.badge && (
+                              <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                activeTab === child.id 
+                                  ? 'bg-white/20 text-white' 
+                                  : child.badge === 'LIVE' || child.badge === 'HOT' || child.badge === 'NEW'
+                                    ? 'bg-red-500/10 text-red-500'
+                                    : child.badge === 'AI' || child.badge === 'ENTERPRISE'
+                                      ? 'bg-purple-500/10 text-purple-500'
+                                      : 'bg-blue-500/10 text-blue-500'
+                                }`}>
+                                {child.badge}
+                              </div>
+                            )}
+                          </button>
+                        ))}
                       </div>
                     )}
-                  </>
-                )}
-                {activeTab === id && (
-                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-full"></div>
-                )}
-              </button>
-            ))}
+                  </div>
+                );
+              }
+            })}
           </div>
         </nav>
 

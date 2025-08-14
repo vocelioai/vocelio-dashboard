@@ -7,7 +7,7 @@ import {
   Shield, Package, Activity, Network, ArrowUpRight, 
   ArrowDownRight, Mail, Bell, Calculator, Timer, 
   Brain, AlertCircle, Trash2, PhoneCall, Wallet, 
-  Loader, FileText
+  Loader, FileText, Building
 } from 'lucide-react';
 
 const BillingProCenter = () => {
@@ -755,6 +755,334 @@ const BillingProCenter = () => {
                     <span>Total Cost</span>
                     <span>${billingData.monthlySpend.toFixed(2)}</span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'settings':
+        return (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Billing Preferences */}
+              <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+                <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+                  <Settings className="w-6 h-6 text-blue-500" />
+                  <span>Billing Preferences</span>
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Payment Method</label>
+                    <div className="space-y-3">
+                      <div className={`p-4 rounded-lg border-2 border-blue-500 ${darkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <CreditCard className="w-6 h-6 text-blue-500" />
+                            <div>
+                              <div className="font-semibold">•••• •••• •••• 4242</div>
+                              <div className="text-sm text-gray-500">Expires 12/25</div>
+                            </div>
+                          </div>
+                          <div className="text-sm font-semibold text-blue-500">Primary</div>
+                        </div>
+                      </div>
+                      <button className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                        + Add New Payment Method
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Auto Top-Up Settings</label>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span>Enable Auto Top-Up</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" defaultChecked className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Trigger Amount</label>
+                          <select className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}>
+                            <option>$25</option>
+                            <option>$50</option>
+                            <option>$100</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Top-Up Amount</label>
+                          <select className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}>
+                            <option>$100</option>
+                            <option>$250</option>
+                            <option>$500</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Billing Notifications</label>
+                    <div className="space-y-3">
+                      {[
+                        'Low balance alerts',
+                        'Monthly usage summaries',
+                        'Payment confirmations',
+                        'Auto top-up notifications'
+                      ].map((notification, index) => (
+                        <label key={index} className="flex items-center space-x-3">
+                          <input type="checkbox" defaultChecked={index < 3} className="text-blue-500" />
+                          <span className="text-sm">{notification}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Information */}
+              <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+                <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+                  <Building className="w-6 h-6 text-green-500" />
+                  <span>Company Information</span>
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Company Name</label>
+                    <input
+                      type="text"
+                      defaultValue="Acme Corporation"
+                      className={`w-full px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tax ID</label>
+                    <input
+                      type="text"
+                      defaultValue="12-3456789"
+                      className={`w-full px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Billing Address</label>
+                    <textarea
+                      rows="3"
+                      defaultValue="123 Business St&#10;Suite 100&#10;San Francisco, CA 94102"
+                      className={`w-full px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Billing Contact</label>
+                    <input
+                      type="email"
+                      defaultValue="billing@acmecorp.com"
+                      className={`w-full px-4 py-3 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <h4 className="text-lg font-bold mb-4">Tax Settings</h4>
+                  <div className="space-y-3">
+                    <label className="flex items-center space-x-3">
+                      <input type="checkbox" className="text-blue-500" />
+                      <span className="text-sm">VAT Exempt</span>
+                    </label>
+                    <label className="flex items-center space-x-3">
+                      <input type="checkbox" defaultChecked className="text-blue-500" />
+                      <span className="text-sm">Apply local sales tax</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'limits':
+        return (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Spending Limits */}
+              <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+                <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+                  <Shield className="w-6 h-6 text-red-500" />
+                  <span>Spending Limits</span>
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium">Daily Spending Limit</label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <div className="flex space-x-2">
+                      <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">$</span>
+                      <input
+                        type="number"
+                        defaultValue="500"
+                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Current today: $127.50</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium">Monthly Spending Limit</label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    <div className="flex space-x-2">
+                      <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">$</span>
+                      <input
+                        type="number"
+                        defaultValue="10000"
+                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Current month: $3,247.89</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2 dark:bg-gray-700">
+                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: '32%' }}></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">Call Volume Limits</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Calls per Hour</label>
+                        <input
+                          type="number"
+                          defaultValue="1000"
+                          className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Calls per Day</label>
+                        <input
+                          type="number"
+                          defaultValue="15000"
+                          className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security & Alerts */}
+              <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
+                <h3 className="text-xl font-bold mb-6 flex items-center space-x-2">
+                  <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                  <span>Security & Alerts</span>
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Fraud Protection</h4>
+                    <div className="space-y-3">
+                      <label className="flex items-center justify-between">
+                        <span className="text-sm">Unusual spending pattern detection</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" defaultChecked className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </label>
+                      <label className="flex items-center justify-between">
+                        <span className="text-sm">Geographic restriction alerts</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" defaultChecked className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </label>
+                      <label className="flex items-center justify-between">
+                        <span className="text-sm">Large transaction notifications</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" defaultChecked className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Alert Thresholds</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Large Transaction Amount</label>
+                        <div className="flex space-x-2">
+                          <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">$</span>
+                          <input
+                            type="number"
+                            defaultValue="1000"
+                            className={`flex-1 px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Rapid Usage Threshold</label>
+                        <select className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600/50 text-white' : 'bg-gray-100/50 border-gray-200/50 text-gray-900'}`}>
+                          <option>2x normal usage</option>
+                          <option>3x normal usage</option>
+                          <option>5x normal usage</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Emergency Actions</h4>
+                    <div className="space-y-3">
+                      <label className="flex items-center justify-between">
+                        <span className="text-sm">Auto-pause on limit exceed</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" defaultChecked className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </label>
+                      <label className="flex items-center justify-between">
+                        <span className="text-sm">Require approval for large charges</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <button className="w-full mt-6 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                  Save Security Settings
+                </button>
+              </div>
+            </div>
+
+            {/* Current Status */}
+            <div className={`${darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50/80 border-green-200/50'} rounded-xl border p-6`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-green-600 dark:text-green-400">Account in Good Standing</h4>
+                    <p className="text-sm text-green-600 dark:text-green-400">All limits and security settings are active</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-green-600 dark:text-green-400">Last security check:</div>
+                  <div className="text-sm font-semibold text-green-700 dark:text-green-300">2 minutes ago</div>
                 </div>
               </div>
             </div>
