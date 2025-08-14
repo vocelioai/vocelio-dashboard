@@ -1547,21 +1547,21 @@ const VoiceLabPage = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex space-x-2">
             {[
-              { id: 'voices', label: 'Voice Library', icon: Mic2, count: filteredVoices.length, color: 'blue' },
-              { id: 'comparison', label: 'AI Comparison', icon: BarChart3, count: voiceComparison?.voices?.length || 0, color: 'green' },
-              { id: 'cloning', label: 'Neural Cloning', icon: Users, badge: 'AI', color: 'purple' },
-              { id: 'analytics', label: 'AI Analytics', icon: TrendingUp, color: 'indigo' },
-              { id: 'optimization', label: 'AI Optimization', icon: Brain, badge: 'NEW', color: 'pink' },
-              { id: 'lab', label: 'Research Lab', icon: TestTube, badge: 'BETA', color: 'cyan' },
-              { id: 'settings', label: 'Neural Settings', icon: Settings, color: 'gray' }
+              { id: 'voices', label: 'Voice Library', icon: Mic2, count: filteredVoices.length },
+              { id: 'comparison', label: 'AI Comparison', icon: BarChart3, count: voiceComparison?.voices?.length || 0 },
+              { id: 'cloning', label: 'Neural Cloning', icon: Users, badge: 'AI' },
+              { id: 'analytics', label: 'AI Analytics', icon: TrendingUp },
+              { id: 'optimization', label: 'AI Optimization', icon: Brain, badge: 'NEW' },
+              { id: 'lab', label: 'Research Lab', icon: TestTube, badge: 'BETA' },
+              { id: 'settings', label: 'Neural Settings', icon: Settings }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative flex items-center space-x-2 px-4 py-3 rounded-xl transition-all font-medium group ${
                   activeTab === tab.id
-                    ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg transform scale-105`
-                    : `text-gray-600 dark:text-gray-400 hover:bg-${tab.color}-50 dark:hover:bg-${tab.color}-900/20 hover:text-${tab.color}-600 dark:hover:text-${tab.color}-400`
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
@@ -1570,7 +1570,7 @@ const VoiceLabPage = () => {
                   <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                     activeTab === tab.id 
                       ? 'bg-white/20 text-white' 
-                      : `bg-${tab.color}-100 text-${tab.color}-800 dark:bg-${tab.color}-900 dark:text-${tab.color}-200`
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                   }`}>
                     {tab.count}
                   </span>
@@ -1594,7 +1594,7 @@ const VoiceLabPage = () => {
             <select
               value={viewMode}
               onChange={(e) => setViewMode(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-gray-900 text-sm"
             >
               <option value="grid">Grid View</option>
               <option value="list">List View</option>
@@ -1605,7 +1605,7 @@ const VoiceLabPage = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-gray-900 text-sm"
             >
               <option value="quality">Quality Score</option>
               <option value="performance">Success Rate</option>
@@ -1661,14 +1661,14 @@ const VoiceLabPage = () => {
                     placeholder="Search voices by name, description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 w-80"
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900 w-80"
                   />
                 </div>
                 
                 <select
                   value={filterLanguage}
                   onChange={(e) => setFilterLanguage(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900"
                 >
                   <option value="all">All Languages</option>
                   {languages.map(lang => (
@@ -1679,7 +1679,7 @@ const VoiceLabPage = () => {
                 <select
                   value={filterGender}
                   onChange={(e) => setFilterGender(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900"
                 >
                   <option value="all">All Genders</option>
                   {genders.map(gender => (
@@ -1713,7 +1713,7 @@ const VoiceLabPage = () => {
                 <div className="grid md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Quality Score</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900">
                       <option value="all">All Scores</option>
                       <option value="95+">95%+ (Premium)</option>
                       <option value="90+">90%+ (High)</option>
@@ -1723,7 +1723,7 @@ const VoiceLabPage = () => {
                   
                   <div>
                     <label className="block text-sm font-medium mb-2">Use Case</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900">
                       <option value="all">All Use Cases</option>
                       <option value="business">Business</option>
                       <option value="sales">Sales</option>
@@ -1734,7 +1734,7 @@ const VoiceLabPage = () => {
                   
                   <div>
                     <label className="block text-sm font-medium mb-2">Voice Category</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900">
                       <option value="all">All Categories</option>
                       <option value="premade">Premade</option>
                       <option value="cloned">Custom Cloned</option>
@@ -1743,7 +1743,7 @@ const VoiceLabPage = () => {
                   
                   <div>
                     <label className="block text-sm font-medium mb-2">Pricing Tier</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-gray-900">
                       <option value="all">All Tiers</option>
                       <option value="free">Free Tier</option>
                       <option value="starter">Starter+</option>
