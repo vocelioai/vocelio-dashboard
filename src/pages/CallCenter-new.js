@@ -5,7 +5,7 @@ import {
   Volume2, VolumeX, Mic, MicOff, Video, VideoOff, MoreVertical,
   Download, Upload, Filter, Search, Calendar, Target, BarChart3,
   PieChart, Activity, Zap, Shield, Globe, MapPin, Mail, FileText,
-  CheckCircle, XCircle, AlertCircle, RefreshCw, ArrowUp, ArrowDown,
+  CheckCircle, XCircle, AlertCircle, AlertTriangle, RefreshCw, ArrowUp, ArrowDown,
   Plus, Minus, Edit, Trash2, Copy, X, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown, Flag, Tag, Bookmark, Share2, Eye, EyeOff,
   Lock, Unlock, Save, RotateCcw, FastForward, Rewind, Home, Building2,
@@ -164,20 +164,31 @@ const LiveCallCenter = () => {
     
     return (
       <div className="space-y-6">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white backdrop-blur-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Auto Dialer Control</h2>
+              <p className="text-blue-100">Manage automated calling campaigns and dialing operations</p>
+            </div>
+            <Activity className="h-12 w-12 text-white opacity-80" />
+          </div>
+        </div>
+
         {/* Dialer Control Panel */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold mb-4">Auto Dialer Control</h3>
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
+          <h3 className="text-lg font-semibold mb-4 text-white">Dialer Settings</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Mode Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Dialing Mode
               </label>
               <select 
                 value={dialerMode} 
                 onChange={(e) => setDialerMode(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full border border-slate-600 rounded-md px-3 py-2 bg-slate-700/50 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="predictive">Predictive Dialing</option>
                 <option value="progressive">Progressive Dialing</option>
@@ -188,10 +199,10 @@ const LiveCallCenter = () => {
 
             {/* Campaign Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Active Campaign
               </label>
-              <select className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+              <select className="w-full border border-slate-600 rounded-md px-3 py-2 bg-slate-700/50 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option>Summer Sales Blitz</option>
                 <option>Q4 Lead Follow-up</option>
                 <option>Cold Outreach - Tech</option>
@@ -230,48 +241,48 @@ const LiveCallCenter = () => {
 
         {/* Real-time Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Calls/Hour</p>
-                <p className="text-2xl font-bold text-blue-600">127</p>
+                <p className="text-sm font-medium text-slate-400">Calls/Hour</p>
+                <p className="text-2xl font-bold text-blue-400">127</p>
               </div>
-              <Phone className="w-8 h-8 text-blue-500" />
+              <Phone className="w-8 h-8 text-blue-400" />
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Connect Rate</p>
-                <p className="text-2xl font-bold text-green-600">34.8%</p>
+                <p className="text-sm font-medium text-slate-400">Connect Rate</p>
+                <p className="text-2xl font-bold text-green-400">34.8%</p>
               </div>
-              <Target className="w-8 h-8 text-green-500" />
+              <Target className="w-8 h-8 text-green-400" />
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Drop Rate</p>
-                <p className="text-2xl font-bold text-red-600">2.1%</p>
+                <p className="text-sm font-medium text-slate-400">Drop Rate</p>
+                <p className="text-2xl font-bold text-red-400">2.1%</p>
               </div>
-              <XCircle className="w-8 h-8 text-red-500" />
+              <XCircle className="w-8 h-8 text-red-400" />
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversions</p>
-                <p className="text-2xl font-bold text-purple-600">18</p>
+                <p className="text-sm font-medium text-slate-400">Conversions</p>
+                <p className="text-2xl font-bold text-purple-400">18</p>
               </div>
-              <CheckCircle className="w-8 h-8 text-purple-500" />
+              <CheckCircle className="w-8 h-8 text-purple-400" />
             </div>
           </div>
         </div>
 
         {/* DNC and Compliance */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Shield className="w-5 h-5 mr-2 text-green-500" />
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
+            <Shield className="w-5 h-5 mr-2 text-green-400" />
             Compliance & DNC Management
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -295,90 +306,192 @@ const LiveCallCenter = () => {
 
   // Inbound Center Component
   const InboundCenterComponent = () => (
-    <div className="space-y-6">
-      {/* Queue Overview */}
+    <div className="space-y-8">
+      {/* Enhanced Inbound Center Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-6 text-white backdrop-blur-lg shadow-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30">
+              <Phone className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Inbound Call Center</h2>
+              <p className="text-purple-100">Manage incoming calls and queue operations with real-time insights</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
+              <div className="text-2xl font-bold text-white">12</div>
+              <div className="text-xs text-purple-100">Queue</div>
+            </div>
+            <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
+              <div className="text-2xl font-bold text-white">94.2%</div>
+              <div className="text-xs text-purple-100">SLA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Queue Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-orange-500/50 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Calls in Queue</p>
-              <p className="text-2xl font-bold text-orange-600">12</p>
+              <p className="text-sm font-medium text-slate-400">Calls in Queue</p>
+              <p className="text-3xl font-bold text-orange-400 mt-2">12</p>
+              <p className="text-xs text-slate-500 mt-1">+2 from last hour</p>
             </div>
-            <Clock className="w-8 h-8 text-orange-500" />
+            <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+              <Clock className="w-6 h-6 text-orange-400" />
+            </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Wait Time</p>
-              <p className="text-2xl font-bold text-blue-600">1:43</p>
+              <p className="text-sm font-medium text-slate-400">Avg Wait Time</p>
+              <p className="text-3xl font-bold text-blue-400 mt-2">1:43</p>
+              <p className="text-xs text-slate-500 mt-1">-15s improvement</p>
             </div>
-            <Timer className="w-8 h-8 text-blue-500" />
+            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <Timer className="w-6 h-6 text-blue-400" />
+            </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-green-500/50 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Agents</p>
-              <p className="text-2xl font-bold text-green-600">8</p>
+              <p className="text-sm font-medium text-slate-400">Available Agents</p>
+              <p className="text-3xl font-bold text-green-400 mt-2">8</p>
+              <p className="text-xs text-slate-500 mt-1">of 12 total agents</p>
             </div>
-            <Users className="w-8 h-8 text-green-500" />
+            <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-green-400" />
+            </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Service Level</p>
-              <p className="text-2xl font-bold text-purple-600">94.2%</p>
+              <p className="text-sm font-medium text-slate-400">Service Level</p>
+              <p className="text-3xl font-bold text-purple-400 mt-2">94.2%</p>
+              <p className="text-xs text-slate-500 mt-1">Target: 95%</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-purple-500" />
+            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-purple-400" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Department Routing */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">Department Call Distribution</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-white flex items-center">
+            <Activity className="w-6 h-6 mr-3 text-purple-400" />
+            Department Call Distribution
+          </h3>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-slate-400">Live Updates</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Queue Distribution */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Sales</span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">5 calls</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Support</span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">4 calls</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Billing</span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">3 calls</span>
+            <h4 className="text-lg font-medium text-slate-300 mb-4">Active Queues</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-blue-500/50 transition-all duration-300">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                  <span className="font-medium text-slate-200">Sales</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-blue-400">5 calls</div>
+                  <div className="text-xs text-slate-500">Avg: 2:15</div>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-green-500/50 transition-all duration-300">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <span className="font-medium text-slate-200">Support</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-green-400">4 calls</div>
+                  <div className="text-xs text-slate-500">Avg: 3:42</div>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-orange-500/50 transition-all duration-300">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                  <span className="font-medium text-slate-200">Billing</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-orange-400">3 calls</div>
+                  <div className="text-xs text-slate-500">Avg: 1:58</div>
+                </div>
+              </div>
             </div>
           </div>
+          
+          {/* Performance Metrics */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <span className="font-medium">Average Handle Time</span>
-              <span className="text-sm font-bold text-green-600">4:32</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <span className="font-medium">First Call Resolution</span>
-              <span className="text-sm font-bold text-blue-600">87%</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <span className="font-medium">Customer Satisfaction</span>
-              <span className="text-sm font-bold text-purple-600">4.6★</span>
+            <h4 className="text-lg font-medium text-slate-300 mb-4">Performance Metrics</h4>
+            <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg border border-green-500/30">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-slate-200">Average Handle Time</span>
+                  <span className="text-lg font-bold text-green-400">4:32</span>
+                </div>
+                <div className="text-xs text-green-300 mt-1">-12% from yesterday</div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg border border-blue-500/30">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-slate-200">First Call Resolution</span>
+                  <span className="text-lg font-bold text-blue-400">87%</span>
+                </div>
+                <div className="text-xs text-blue-300 mt-1">+3% improvement</div>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg border border-purple-500/30">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-slate-200">Customer Satisfaction</span>
+                  <span className="text-lg font-bold text-purple-400">4.6★</span>
+                </div>
+                <div className="text-xs text-purple-300 mt-1">+0.2 this week</div>
+              </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <h4 className="font-medium mb-3">Queue Actions</h4>
-            <div className="space-y-2">
-              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-                Force Next Call
+          
+          {/* Queue Actions */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-medium text-slate-300 mb-4">Queue Management</h4>
+            <div className="space-y-3">
+              <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+                <Zap className="w-4 h-4" />
+                <span>Force Next Call</span>
               </button>
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-                Broadcast Message
+              
+              <button className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+                <Mic className="w-4 h-4" />
+                <span>Broadcast Message</span>
               </button>
-              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-                Emergency Override
+              
+              <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Emergency Override</span>
+              </button>
+              
+              <button className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+                <Settings className="w-4 h-4" />
+                <span>Queue Settings</span>
               </button>
             </div>
           </div>
