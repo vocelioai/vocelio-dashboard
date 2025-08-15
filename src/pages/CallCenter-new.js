@@ -865,27 +865,35 @@ const LiveCallCenter = () => {
   const AnalyticsHubComponent = () => (
     <div className="space-y-6">
       {/* Real-time Global Statistics */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Globe className="w-5 h-5 mr-2" />
-          Global Call Center Statistics - Live
-        </h3>
+      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold flex items-center text-white">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3 backdrop-blur-sm">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            Global Call Center Statistics - Live
+          </h3>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-green-200">LIVE</span>
+          </div>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold">47,283</div>
-            <div className="text-sm text-indigo-100">Active Calls Worldwide</div>
+          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+            <div className="text-4xl font-bold text-white mb-2">47,283</div>
+            <div className="text-sm font-medium text-blue-100">Active Calls Worldwide</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">47</div>
-            <div className="text-sm text-indigo-100">Countries Covered</div>
+          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+            <div className="text-4xl font-bold text-white mb-2">47</div>
+            <div className="text-sm font-medium text-purple-100">Countries Covered</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">23</div>
-            <div className="text-sm text-indigo-100">Time Zones</div>
+          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+            <div className="text-4xl font-bold text-white mb-2">23</div>
+            <div className="text-sm font-medium text-pink-100">Time Zones</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">99.97%</div>
-            <div className="text-sm text-indigo-100">Uptime SLA</div>
+          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+            <div className="text-4xl font-bold text-white mb-2">99.97%</div>
+            <div className="text-sm font-medium text-green-100">Uptime SLA</div>
           </div>
         </div>
       </div>
