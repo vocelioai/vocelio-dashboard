@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Play, Pause, Volume2, VolumeX, Star, Crown, Zap, Globe, 
-  Mic, Heart, Award, TrendingUp, Filter, Search, ShoppingCart,
-  Check, X, ArrowRight, Sparkles, Brain, Headphones, Radio,
-  Languages, Users, BarChart3, Clock, DollarSign, Shield,
-  Download, Share2, Bookmark, Eye, ThumbsUp, MessageSquare,
-  Palette, Wand2, TestTube, Cpu, Database, Network, Layers,
-  ChevronDown, ChevronUp, Info, AlertTriangle, CheckCircle,
-  ExternalLink, Copy, RefreshCw, Settings, HelpCircle, Plus,
-  Tag, ChevronRight
+  Play, Pause, Volume2, VolumeX, Star, Crown, Zap, 
+  Mic, Check, X, Sparkles, Brain, Settings,
+  BarChart3, DollarSign, TestTube, CheckCircle,
+  ChevronRight, Users, Bookmark, Search, Shield
 } from 'lucide-react';
 
 const VocelioVoiceMarketplace = () => {
-  const [selectedTier, setSelectedTier] = useState('pro');
-  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [selectedTier, setSelectedTier] = useState('standard');
+  const [currentSelectedVoice, setCurrentSelectedVoice] = useState('std_sarah_us'); // Default to first standard voice
   const [playingVoice, setPlayingVoice] = useState(null);
   const [filterLanguage, setFilterLanguage] = useState('all');
   const [filterGender, setFilterGender] = useState('all');
@@ -21,9 +16,7 @@ const VocelioVoiceMarketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonVoices, setComparisonVoices] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
-  const [showCart, setShowCart] = useState(false);
-  const [expandedTier, setExpandedTier] = useState('pro');
+  const [expandedTier, setExpandedTier] = useState('standard');
 
   const voiceTiers = {
     standard: {
@@ -34,6 +27,7 @@ const VocelioVoiceMarketplace = () => {
       provider: 'Powered by Piper TTS',
       color: 'green',
       popular: false,
+      isDefault: true,
       voiceCount: '8 Premium Voices',
       languages: 'English, Spanish'
     },
@@ -45,6 +39,7 @@ const VocelioVoiceMarketplace = () => {
       provider: 'Powered by Ramble.AI',
       color: 'blue',
       popular: true,
+      isDefault: false,
       voiceCount: '12 Elite Voices',
       languages: '15+ Languages'
     },
@@ -396,14 +391,9 @@ const VocelioVoiceMarketplace = () => {
     }
   };
 
-  const addToCart = (voice) => {
-    if (!cartItems.find(item => item.id === voice.id)) {
-      setCartItems([...cartItems, voice]);
-    }
-  };
-
-  const removeFromCart = (voiceId) => {
-    setCartItems(cartItems.filter(item => item.id !== voiceId));
+  const handleSelectVoice = (voice) => {
+    setCurrentSelectedVoice(voice.id);
+    setSelectedTier(voice.tier);
   };
 
   const addToComparison = (voice) => {
@@ -482,25 +472,46 @@ const VocelioVoiceMarketplace = () => {
 
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-3">{tier.provider}</p>
-          <button className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
-            selectedTier === tierKey
-              ? `bg-gradient-to-r ${colors.gradient} text-white`
-              : `${colors.bg} ${colors.text} hover:bg-opacity-20`
-          }`}>
-            {selectedTier === tierKey ? '✓ Selected' : 'Select Plan'}
-          </button>
+          <div className="flex flex-col space-y-2">
+            <button className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
+              selectedTier === tierKey
+                ? `bg-gradient-to-r ${colors.gradient} text-white`
+                : `${colors.bg} ${colors.text} hover:bg-opacity-20`
+            }`}>
+              {selectedTier === tierKey ? '✓ Selected Tier' : 'Select Tier'}
+            </button>
+            {tier.isDefault && (
+              <span className="text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded-full">
+                🏠 Default Tier
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
   };
 
-  const VoiceCard = ({ voice }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300 group">
+  const VoiceCard = ({ voice }) => {
+    const isSelected = currentSelectedVoice === voice.id;
+    
+    return (
+    <div className={`bg-white dark:bg-gray-800 rounded-xl border-2 p-6 hover:shadow-lg transition-all duration-300 group ${
+      isSelected 
+        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' 
+        : 'border-gray-200 dark:border-gray-700'
+    }`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="text-4xl">{voice.avatar}</div>
           <div>
-            <h3 className="font-bold text-lg">{voice.name}</h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="font-bold text-lg">{voice.name}</h3>
+              {isSelected && (
+                <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                  ✓ ACTIVE
+                </span>
+              )}
+            </div>
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>{voice.language}</span>
               <span>•</span>
@@ -562,11 +573,24 @@ const VocelioVoiceMarketplace = () => {
 
       <div className="flex space-x-2">
         <button
-          onClick={() => addToCart(voice)}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center space-x-2"
+          onClick={() => handleSelectVoice(voice)}
+          className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center space-x-2 ${
+            isSelected 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-green-500 hover:bg-green-600 text-white'
+          }`}
         >
-          <ShoppingCart className="w-4 h-4" />
-          <span>Add to Cart</span>
+          {isSelected ? (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              <span>Selected</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4" />
+              <span>Select Voice</span>
+            </>
+          )}
         </button>
         <button
           onClick={() => addToComparison(voice)}
@@ -580,6 +604,7 @@ const VocelioVoiceMarketplace = () => {
       </div>
     </div>
   );
+}
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
@@ -602,54 +627,25 @@ const VocelioVoiceMarketplace = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <button
-                  onClick={() => setShowCart(!showCart)}
-                  className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl transition-all relative"
-                >
-                  <ShoppingCart className="w-6 h-6" />
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
-                </button>
-                
-                {showCart && (
-                  <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 p-4 z-50">
-                    <h3 className="font-bold mb-3">🛒 Voice Cart ({cartItems.length})</h3>
-                    {cartItems.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">No voices selected</p>
-                    ) : (
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {cartItems.map(voice => (
-                          <div key={voice.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg">{voice.avatar}</span>
-                              <div>
-                                <div className="font-medium text-sm">{voice.name}</div>
-                                <div className="text-xs text-gray-500">${voice.price}/min</div>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => removeFromCart(voice.id)}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+              {/* Current Selected Voice */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 min-w-[200px]">
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Currently Selected Voice</div>
+                {(() => {
+                  const selectedVoice = Object.values(subVoices).flat().find(v => v.id === currentSelectedVoice);
+                  return selectedVoice ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{selectedVoice.avatar}</span>
+                      <div>
+                        <div className="font-semibold text-sm">{selectedVoice.name}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          ${selectedVoice.price}/min • {selectedVoice.tier} tier
+                        </div>
                       </div>
-                    )}
-                    {cartItems.length > 0 && (
-                      <div className="mt-4 pt-3 border-t dark:border-gray-600">
-                        <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold">
-                          Checkout & Activate
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No voice selected</div>
+                  );
+                })()}
               </div>
               
               <button className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 p-3 rounded-xl transition-all">
@@ -666,9 +662,9 @@ const VocelioVoiceMarketplace = () => {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 mb-8 text-white text-center">
-          <h2 className="text-4xl font-bold mb-4">🎯 Choose Your Perfect AI Voice</h2>
+          <h2 className="text-4xl font-bold mb-4">🎯 Select Your Perfect AI Voice</h2>
           <p className="text-xl mb-6 opacity-90">
-            From natural conversations to celebrity-quality voices • Multiple options per tier
+            Choose your voice • Auto-billing per call minute • Switch anytime
           </p>
           <div className="flex justify-center space-x-8 text-sm">
             <div className="text-center">
@@ -684,8 +680,8 @@ const VocelioVoiceMarketplace = () => {
               <div className="opacity-80">Quality Tiers</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">24/7</div>
-              <div className="opacity-80">Global Support</div>
+              <div className="text-2xl font-bold">Pay/Use</div>
+              <div className="opacity-80">Auto Billing</div>
             </div>
           </div>
         </div>
@@ -894,10 +890,14 @@ const VocelioVoiceMarketplace = () => {
                           <td className="text-center py-4 px-4">
                             <div className="flex justify-center space-x-2">
                               <button
-                                onClick={() => addToCart(voice)}
-                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                                onClick={() => handleSelectVoice(voice)}
+                                className={`px-3 py-1 rounded text-sm font-semibold ${
+                                  currentSelectedVoice === voice.id
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-green-500 hover:bg-green-600 text-white'
+                                }`}
                               >
-                                Add to Cart
+                                {currentSelectedVoice === voice.id ? 'Selected' : 'Select'}
                               </button>
                               <button
                                 onClick={() => setComparisonVoices(comparisonVoices.filter(v => v.id !== voice.id))}
@@ -921,50 +921,61 @@ const VocelioVoiceMarketplace = () => {
       {/* Client Flow Steps */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 rounded-2xl p-8 text-white">
-          <h3 className="text-2xl font-bold mb-6 text-center">🛠️ Client Setup Flow (Step-by-Step)</h3>
+          <h3 className="text-2xl font-bold mb-6 text-center">🛠️ Voice Selection Flow (Step-by-Step)</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">1</div>
               <h4 className="font-bold mb-2">Choose Tier</h4>
-              <p className="text-sm opacity-80">Select Standard, Pro, Enterprise, or Elite</p>
+              <p className="text-sm opacity-80">Standard (default), Pro, Enterprise, or Elite</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">2</div>
-              <h4 className="font-bold mb-2">Browse Sub-Voices</h4>
+              <h4 className="font-bold mb-2">Browse & Listen</h4>
               <p className="text-sm opacity-80">Filter by language, gender, and style</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">3</div>
-              <h4 className="font-bold mb-2">Preview & Compare</h4>
-              <p className="text-sm opacity-80">Click ▶ Play Demo for any voice</p>
+              <h4 className="font-bold mb-2">Select Voice</h4>
+              <p className="text-sm opacity-80">Click "Select Voice" on your preferred option</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">4</div>
-              <h4 className="font-bold mb-2">Add to Cart</h4>
-              <p className="text-sm opacity-80">Select multiple voices for different campaigns</p>
+              <h4 className="font-bold mb-2">Auto-Activation</h4>
+              <p className="text-sm opacity-80">Voice immediately available for all calls</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">5</div>
-              <h4 className="font-bold mb-2">Activate</h4>
-              <p className="text-sm opacity-80">Voice appears in AI Agents → Available Voices</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">6</div>
-              <h4 className="font-bold mb-2">Auto-Billing</h4>
-              <p className="text-sm opacity-80">Calls bill at tier rate • Switch anytime</p>
+              <h4 className="font-bold mb-2">Pay Per Use</h4>
+              <p className="text-sm opacity-80">Automatic billing at tier rate per minute</p>
             </div>
           </div>
 
           <div className="mt-8 text-center">
-            <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
-              🚀 Start Voice Selection Process
-            </button>
+            <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm inline-block">
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span>Standard: $0.08/min (Default)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>Pro: $0.18/min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                  <span>Enterprise: $0.25/min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Elite: $0.35/min</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1108,7 +1119,7 @@ const VocelioVoiceMarketplace = () => {
 
       {/* Advanced Features */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
               <TestTube className="w-6 h-6 text-white" />
@@ -1146,6 +1157,90 @@ const VocelioVoiceMarketplace = () => {
             <button className="bg-green-500/10 text-green-500 hover:bg-green-500/20 px-4 py-2 rounded-lg transition-all">
               View Analytics
             </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-4">
+              <Crown className="w-6 h-6 text-white" />
+            </div>
+            <h4 className="font-bold text-lg mb-2">🎭 Voice Personalization</h4>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Custom voice training and persona fine-tuning for your brand
+            </p>
+            <button className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 px-4 py-2 rounded-lg transition-all">
+              Customize Voice
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Voice Usage Analytics */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-800">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-4">📊 Voice Performance Analytics</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Real-time insights across all tiers • Monitor ROI and optimize voice selection
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-3xl font-bold text-blue-500 mb-2">94.2%</div>
+              <div className="font-semibold mb-1">Avg Success Rate</div>
+              <div className="text-sm text-gray-500 mb-3">Across all tiers</div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{width: '94.2%'}}></div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-3xl font-bold text-green-500 mb-2">6.3m</div>
+              <div className="font-semibold mb-1">Avg Call Duration</div>
+              <div className="text-sm text-gray-500 mb-3">Elite performs best</div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{width: '78%'}}></div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-3xl font-bold text-purple-500 mb-2">4.7⭐</div>
+              <div className="font-semibold mb-1">Customer Satisfaction</div>
+              <div className="text-sm text-gray-500 mb-3">15,847+ reviews</div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="bg-purple-500 h-2 rounded-full" style={{width: '94%'}}></div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-3xl font-bold text-orange-500 mb-2">312%</div>
+              <div className="font-semibold mb-1">ROI Improvement</div>
+              <div className="text-sm text-gray-500 mb-3">vs standard TTS</div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="bg-orange-500 h-2 rounded-full" style={{width: '100%'}}></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center space-x-6 bg-white dark:bg-gray-800 rounded-xl px-8 py-4 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-sm">Standard Tier: 68-74% success</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-sm">Pro Tier: 81-90% success</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-sm">Enterprise: 86-95% success</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="text-sm">Elite Tier: 94-98% success</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1217,7 +1312,7 @@ const VocelioVoiceMarketplace = () => {
               </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              🌍 World's #1 AI Call Center Platform • {Object.values(subVoices).flat().length}+ voices across 4 tiers • Trusted by 100,000+ businesses globally
+              🌍 World's #1 AI Call Center Platform • {Object.values(subVoices).flat().length}+ voices across 4 tiers • Pay-per-use billing • Trusted by 100,000+ businesses globally
             </p>
             <div className="flex justify-center space-x-6 text-sm text-gray-500">
               <a href="#" className="hover:text-blue-500 transition-colors">Privacy Policy</a>
