@@ -10,7 +10,7 @@ import {
   Archive, Trash2, Edit, Plus, X, ChevronDown, ChevronRight,
   Star, Heart, ThumbsUp, Mail, MessageSquare, Video, Briefcase, User
 } from 'lucide-react';
-import complianceClient from '../api/complianceClient';
+import enhancedComplianceClient from '../api/enhancedComplianceClient';
 
 const ComplianceDashboard = ({ darkMode = true }) => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -80,14 +80,14 @@ const ComplianceDashboard = ({ darkMode = true }) => {
       setLoading(true);
       
       // Check backend health
-      const isHealthy = await complianceClient.healthCheck();
+      const isHealthy = await enhancedComplianceClient.healthCheck();
       setConnected(isHealthy);
       
       if (isHealthy) {
         // Fetch dashboard and metrics data
         const [dashboard, metrics] = await Promise.all([
-          complianceClient.getComplianceDashboard(),
-          complianceClient.getComplianceMetrics()
+          enhancedComplianceClient.getComplianceDashboard(),
+          enhancedComplianceClient.getComplianceMetrics()
         ]);
         
         setDashboardData(dashboard);
@@ -95,10 +95,10 @@ const ComplianceDashboard = ({ darkMode = true }) => {
         
         // Fetch recent data for different sections
         const [events, gdpr, risks, incidents] = await Promise.all([
-          complianceClient.getAuditEvents({ limit: 50 }),
-          complianceClient.getGDPRRequests({ limit: 20 }),
-          complianceClient.getRiskAssessments({ limit: 20 }),
-          complianceClient.getIncidentReports({ limit: 10 })
+          enhancedComplianceClient.getAuditEvents({ limit: 50 }),
+          enhancedComplianceClient.getGDPRRequests({ limit: 20 }),
+          enhancedComplianceClient.getRiskAssessments({ limit: 20 }),
+          enhancedComplianceClient.getIncidentReports({ limit: 10 })
         ]);
         
         setAuditEvents(events || []);

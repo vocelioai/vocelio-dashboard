@@ -23,6 +23,7 @@ import {
 
 // Import your page components
 import SmartCampaignsDashboard from './pages/SmartCampaigns';
+import EnhancedSmartCampaignsDashboard from './pages/EnhancedSmartCampaigns';
 import LiveCallCenter from './pages/CallCenter';
 import VoiceLabPage from './pages/VoiceLab';
 import FlowBuilderPage from './pages/FlowBuilder';
@@ -45,17 +46,18 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import LeadManagement from './pages/LeadManagement';
 import UnifiedNotificationCenter from './pages/UnifiedNotificationCenter';
 import SchedulingCenter from './pages/SchedulingCenter';
-import AIAgentsEnhanced from './pages/AIAgentsEnhanced';
+import AIAgentsService from './pages/AIAgentsService';
 import WebhooksManager from './pages/WebhooksManager';
 import EnterpriseSecurityCenter from './pages/EnterpriseSecurityCenter';
+
+// Import Enhanced Overview API Client
+import enhancedOverviewApi from './api/enhancedOverviewClient';
 import SSOIdentityManager from './pages/SSOIdentityManager';
 import AuditCompliance from './pages/AuditCompliance';
 import DataWarehouse from './pages/DataWarehouse';
 import EnterprisePortal from './pages/EnterprisePortal';
 import BusinessIntelligence from './pages/BusinessIntelligence';
 import AutomationEngine from './pages/AutomationEngine';
-import UnifiedCampaignsPage from './pages/UnifiedCampaigns';
-import AIAgentPlatform from './pages/AIAgentPlatform';
 
 const VocelioUltimateDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -76,30 +78,212 @@ const VocelioUltimateDashboard = () => {
   const [liveMetrics, setLiveMetrics] = useState({
     activeCalls: 47283,
     revenueToday: 2847592,
-    successRate: 23.4,
-    bookedToday: 12847,
-    totalClients: 98547,
-    monthlyCallVolume: 87234567,
-    aiOptimizationScore: 94.7,
-    systemUptime: 99.99
+    totalClients: 132847,
+    callsToday: 298643,
+    successRate: 95.7,
+    aiOptimizationScore: 97.2,
+    monthlyCallVolume: 89500000,
+    agentsOnline: 247,
+    campaignsActive: 89
   });
 
-  useEffect(() => {
-    let interval;
-    if (activeTab === 'overview') {
-      interval = setInterval(() => {
+  // Enhanced Overview State
+  const [enhancedData, setEnhancedData] = useState({
+    overview: null,
+    liveMetrics: null,
+    aiInsights: [],
+    systemHealth: null,
+    revenueMetrics: null,
+    globalStats: null,
+    cacheStatus: null
+  });
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [websocketConnected, setWebsocketConnected] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  
+  // Organization ID (you can make this dynamic based on user)
+  const organizationId = 'default-org-123';
+
+  // Initialize Enhanced Overview Service
+  const initializeEnhancedOverview = async () => {
+    try {
+      console.log('🚀 Initializing Enhanced Overview Service...');
+      
+      // Check backend health
+      const isHealthy = await enhancedOverviewApi.healthCheck();
+      setBackendConnected(isHealthy);
+      
+      if (isHealthy) {
+        console.log('✅ Enhanced backend is healthy');
+        
+        // Load initial data
+        await loadEnhancedData();
+        
+        // Connect WebSocket for real-time updates
+        connectWebSocket();
+      } else {
+        console.log('⚠️ Enhanced backend unavailable, using fallback data');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize Enhanced Overview:', error);
+      setBackendConnected(false);
+    }
+  };
+
+  const loadEnhancedData = async () => {
+    try {
+      console.log('📊 Loading enhanced dashboard data...');
+      
+      const [
+        overview,
+        liveMetrics,
+        aiInsights,
+        systemHealth,
+        revenueMetrics,
+        globalStats,
+        cacheStatus
+      ] = await Promise.allSettled([
+        enhancedOverviewApi.getDashboardOverview(organizationId),
+        enhancedOverviewApi.getLiveMetrics(organizationId),
+        enhancedOverviewApi.getAIInsights(organizationId, 5),
+        enhancedOverviewApi.getSystemHealth(),
+        enhancedOverviewApi.getRevenueMetrics(organizationId),
+        enhancedOverviewApi.getGlobalStats(),
+        enhancedOverviewApi.getCacheStatus()
+      ]);
+
+      // Update enhanced data state
+      setEnhancedData({
+        overview: overview.status === 'fulfilled' ? overview.value : null,
+        liveMetrics: liveMetrics.status === 'fulfilled' ? liveMetrics.value : null,
+        aiInsights: aiInsights.status === 'fulfilled' ? aiInsights.value : [],
+        systemHealth: systemHealth.status === 'fulfilled' ? systemHealth.value : null,
+        revenueMetrics: revenueMetrics.status === 'fulfilled' ? revenueMetrics.value : null,
+        globalStats: globalStats.status === 'fulfilled' ? globalStats.value : null,
+        cacheStatus: cacheStatus.status === 'fulfilled' ? cacheStatus.value : null
+      });
+
+      // Update legacy metrics for backward compatibility
+      if (liveMetrics.status === 'fulfilled' && liveMetrics.value) {
+        const enhanced = liveMetrics.value;
         setLiveMetrics(prev => ({
           ...prev,
-          activeCalls: Math.max(1000, prev.activeCalls + Math.floor(Math.random() * 100) - 50),
-          revenueToday: prev.revenueToday + Math.floor(Math.random() * 1000),
-          successRate: Math.max(15, Math.min(35, prev.successRate + (Math.random() - 0.5) * 0.5)),
-          bookedToday: prev.bookedToday + Math.floor(Math.random() * 3),
-          aiOptimizationScore: Math.max(85, Math.min(100, prev.aiOptimizationScore + (Math.random() - 0.5) * 0.2))
+          totalClients: enhanced.total_clients || prev.totalClients,
+          activeCalls: enhanced.active_calls || prev.activeCalls,
+          callsToday: enhanced.calls_today || prev.callsToday,
+          revenueToday: enhanced.revenue_today || prev.revenueToday,
+          successRate: enhanced.success_rate || prev.successRate,
+          aiOptimizationScore: enhanced.ai_optimization_score || prev.aiOptimizationScore,
+          monthlyCallVolume: enhanced.monthly_call_volume || prev.monthlyCallVolume,
+          agentsOnline: enhanced.agents_active || prev.agentsOnline,
+          campaignsActive: enhanced.campaigns_running || prev.campaignsActive
         }));
-      }, 2000);
+      }
+
+      setLastUpdate(new Date());
+      console.log('✅ Enhanced dashboard data loaded successfully');
+      
+    } catch (error) {
+      console.error('❌ Failed to load enhanced data:', error);
+    }
+  };
+
+  const connectWebSocket = () => {
+    try {
+      enhancedOverviewApi.connectWebSocket(organizationId, {
+        onOpen: (event) => {
+          setWebsocketConnected(true);
+          console.log('🔌 Enhanced WebSocket connected');
+        },
+        onClose: (event) => {
+          setWebsocketConnected(false);
+          console.log('🔌 Enhanced WebSocket disconnected');
+        },
+        onError: (error) => {
+          console.error('🔌 Enhanced WebSocket error:', error);
+          setWebsocketConnected(false);
+        },
+        onInitialData: (data) => {
+          console.log('📊 Initial enhanced data received');
+          if (data.live_metrics) {
+            updateMetricsFromEnhanced(data.live_metrics);
+          }
+        },
+        onLiveUpdate: (metrics) => {
+          console.log('📡 Live metrics update received');
+          updateMetricsFromEnhanced(metrics);
+          setLastUpdate(new Date());
+        },
+        onAIInsight: (insight) => {
+          console.log('🧠 New AI insight received:', insight.title);
+          setEnhancedData(prev => ({
+            ...prev,
+            aiInsights: [insight, ...prev.aiInsights.slice(0, 4)] // Keep latest 5
+          }));
+          
+          // Show notification for high-priority insights
+          if (insight.priority === 'high' || insight.priority === 'critical') {
+            setNotifications(prev => [{
+              id: Date.now(),
+              type: insight.insight_type === 'alert' ? 'warning' : 'info',
+              message: `🧠 ${insight.title}`,
+              time: 'now',
+              unread: true
+            }, ...prev.slice(0, 4)]);
+          }
+        },
+        onAlert: (alert) => {
+          console.log('🚨 System alert received:', alert.title);
+          setNotifications(prev => [{
+            id: Date.now(),
+            type: alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info',
+            message: `🚨 ${alert.title}`,
+            time: 'now',
+            unread: true
+          }, ...prev.slice(0, 4)]);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to connect WebSocket:', error);
+    }
+  };
+
+  const updateMetricsFromEnhanced = (enhancedMetrics) => {
+    setLiveMetrics(prev => ({
+      ...prev,
+      totalClients: enhancedMetrics.total_clients || prev.totalClients,
+      activeCalls: enhancedMetrics.active_calls || prev.activeCalls,
+      callsToday: enhancedMetrics.calls_today || prev.callsToday,
+      revenueToday: enhancedMetrics.revenue_today || prev.revenueToday,
+      successRate: enhancedMetrics.success_rate || prev.successRate,
+      aiOptimizationScore: enhancedMetrics.ai_optimization_score || prev.aiOptimizationScore,
+      monthlyCallVolume: enhancedMetrics.monthly_call_volume || prev.monthlyCallVolume,
+      agentsOnline: enhancedMetrics.agents_active || prev.agentsOnline,
+      campaignsActive: enhancedMetrics.campaigns_running || prev.campaignsActive
+    }));
+  };
+
+  useEffect(() => {
+    // Initialize Enhanced Overview Service
+    initializeEnhancedOverview();
+    
+    // Cleanup on unmount
+    return () => {
+      enhancedOverviewApi.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Backup interval for enhanced metrics (if WebSocket fails)
+    let interval;
+    if (activeTab === 'overview' && backendConnected && !websocketConnected) {
+      console.log('🔄 Starting backup metrics refresh (WebSocket not connected)');
+      interval = setInterval(() => {
+        loadEnhancedData();
+      }, 10000); // Refresh every 10 seconds as backup
     }
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, [activeTab, backendConnected, websocketConnected]);
 
   const [expandedMenus, setExpandedMenus] = useState({});
 
@@ -127,9 +311,7 @@ const VocelioUltimateDashboard = () => {
       type: 'group',
       badge: 'AI',
       children: [
-        { id: 'ai-agent-platform', label: 'AI Agent Platform', icon: Sparkles, badge: 'UNIFIED' },
-        { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
-        { id: 'agents-enhanced', label: 'AI Agents Pro', icon: Brain, badge: 'NEW' },
+        { id: 'agents-enhanced', label: 'AI Agents Service', icon: Wand2, badge: 'NEW' },
         { id: 'ai-brain', label: 'AI Brain', icon: Brain, badge: '94%' },
         { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'AI' },
         { id: 'flow-builder', label: 'Flow Builder', icon: Workflow, badge: 'AI' }
@@ -143,7 +325,7 @@ const VocelioUltimateDashboard = () => {
       badge: null,
       children: [
         { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
-        { id: 'unified-campaigns', label: 'Unified Campaigns', icon: Zap, badge: 'MULTI' },
+        { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
         { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
         { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' }
       ]
@@ -196,8 +378,8 @@ const VocelioUltimateDashboard = () => {
         { id: 'enterprise-security', label: 'Security Center', icon: Shield, badge: 'NEW' },
         { id: 'sso-identity', label: 'Identity Manager', icon: Key, badge: 'NEW' },
         { id: 'audit-compliance', label: 'Audit & Compliance', icon: FileText, badge: 'NEW' },
-        { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' },
-        { id: 'compliance', label: 'Compliance', icon: Shield, badge: '100%' }
+        { id: 'compliance', label: 'Compliance', icon: Shield, badge: 'LIVE' },
+        { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' }
       ]
     },
     {
@@ -229,9 +411,8 @@ const VocelioUltimateDashboard = () => {
   // Legacy flat structure for backward compatibility
   const sidebarItems = [
     { id: 'overview', label: 'Command Center', icon: Command, badge: 'LIVE' },
-    { id: 'agents', label: 'AI Agents', icon: Bot, badge: '247' },
-    { id: 'agents-enhanced', label: 'AI Agents Pro', icon: Brain, badge: 'NEW' },
-    { id: 'unified-campaigns', label: 'Unified Campaigns', icon: Zap, badge: 'MULTI' },
+    { id: 'agents-enhanced', label: 'AI Agents Service', icon: Wand2, badge: 'NEW' },
+    { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
     { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
     { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' },
@@ -266,34 +447,10 @@ const VocelioUltimateDashboard = () => {
     { id: 'agent-store', label: 'Agent Store', icon: Store, badge: 'HOT' },
     { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
     { id: 'team-hub', label: 'Team Hub', icon: Users, badge: null },
-    { id: 'compliance', label: 'Compliance', icon: Shield, badge: '100%' },
+    { id: 'compliance', label: 'Compliance', icon: Shield, badge: 'LIVE' },
     { id: 'white-label', label: 'White Label', icon: Palette, badge: 'ENTERPRISE' },
     { id: 'developer-api', label: 'Developer API', icon: Code, badge: null },
     { id: 'settings', label: 'Settings', icon: Settings, badge: null }
-  ];
-
-  const aiAgents = [
-    {
-      id: 'agent_001', name: 'Professional Sarah', industry: 'Real Estate', 
-      voice: 'Premium Female', language: 'EN-US', performance: 94.2,
-      totalCalls: 23847, successRate: 34.5, revenue: 892340,
-      personality: ['Professional', 'Empathetic', 'Goal-Oriented'],
-      optimization: 'Active', lastOptimized: '2h ago', status: 'active'
-    },
-    {
-      id: 'agent_002', name: 'Solar Expert Mike', industry: 'Solar Energy',
-      voice: 'Confident Male', language: 'EN-US', performance: 97.1,
-      totalCalls: 18923, successRate: 42.1, revenue: 1234567,
-      personality: ['Confident', 'Technical', 'Persuasive'],
-      optimization: 'Active', lastOptimized: '30m ago', status: 'active'
-    },
-    {
-      id: 'agent_003', name: 'Insurance Pro Lisa', industry: 'Insurance',
-      voice: 'Caring Female', language: 'EN-US', performance: 89.7,
-      totalCalls: 15632, successRate: 29.8, revenue: 456789,
-      personality: ['Caring', 'Detailed', 'Trustworthy'],
-      optimization: 'Pending', lastOptimized: '1d ago', status: 'optimization'
-    }
   ];
 
   const MetricCard = ({ icon: Icon, title, value, change, color, subtitle }) => {
@@ -349,74 +506,6 @@ const VocelioUltimateDashboard = () => {
       </div>
     );
   };
-
-  const AgentCard = ({ agent }) => (
-    <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} 
-      backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-300 group`}>
-      
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
-            agent.performance >= 95 ? 'from-green-500 to-emerald-500' :
-            agent.performance >= 90 ? 'from-blue-500 to-cyan-500' :
-            'from-yellow-500 to-orange-500'
-          } flex items-center justify-center`}>
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">{agent.name}</h3>
-            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{agent.industry}</p>
-          </div>
-        </div>
-        
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-          agent.status === 'active' ? 'bg-green-500/10 text-green-500' :
-          agent.status === 'optimization' ? 'bg-yellow-500/10 text-yellow-500' :
-          'bg-gray-500/10 text-gray-500'
-        }`}>
-          {agent.status}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className={`text-2xl font-bold ${agent.performance >= 95 ? 'text-green-500' : agent.performance >= 90 ? 'text-blue-500' : 'text-yellow-500'}`}>
-            {agent.performance}%
-          </p>
-          <p className="text-sm text-gray-500">AI Performance</p>
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-purple-500">{agent.successRate}%</p>
-          <p className="text-sm text-gray-500">Success Rate</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        {agent.personality.map((trait, index) => (
-          <span key={index} className="px-2 py-1 bg-blue-500/10 text-blue-500 text-xs rounded-full">
-            {trait}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          {agent.totalCalls.toLocaleString()} calls • ${agent.revenue.toLocaleString()} revenue
-        </div>
-        <div className="flex space-x-2">
-          <button className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors">
-            <Edit className="w-4 h-4" />
-          </button>
-          <button className="p-2 rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors">
-            <Play className="w-4 h-4" />
-          </button>
-          <button className="p-2 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-colors">
-            <Wand2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderMainContent = () => {
     switch (activeTab) {
@@ -611,135 +700,234 @@ const VocelioUltimateDashboard = () => {
               </div>
             </div>
 
+            {/* Enhanced AI Insights from Backend */}
+            <div className={`${darkMode ? 'bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border-cyan-700/50' : 'bg-gradient-to-r from-cyan-50/80 to-purple-50/80 border-cyan-200/50'} 
+              rounded-2xl border p-8 backdrop-blur-xl`}>
+              
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold flex items-center space-x-3">
+                  <Brain className="w-8 h-8 text-cyan-500" />
+                  <span>🧠 Live AI Insights</span>
+                  <div className="px-3 py-1 bg-cyan-500/10 text-cyan-500 text-sm rounded-full flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                    <span>ENHANCED</span>
+                  </div>
+                  {backendConnected ? (
+                    <div className="px-3 py-1 bg-green-500/10 text-green-500 text-sm rounded-full flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>CONNECTED</span>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-1 bg-orange-500/10 text-orange-500 text-sm rounded-full flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                      <span>BACKEND OFFLINE</span>
+                    </div>
+                  )}
+                </h3>
+                <div className="flex items-center space-x-3">
+                  <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Last Updated: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
+                  </span>
+                  <button 
+                    onClick={loadEnhancedData}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Refresh</span>
+                  </button>
+                </div>
+              </div>
+
+              {backendConnected && enhancedData.aiInsights && enhancedData.aiInsights.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {enhancedData.aiInsights.slice(0, 6).map((insight, index) => (
+                    <div key={insight.id || index} className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'} backdrop-blur-sm transform transition-all hover:scale-105`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-lg ${
+                          insight.insight_type === 'optimization' ? 'bg-green-500/10 text-green-500' :
+                          insight.insight_type === 'alert' ? 'bg-red-500/10 text-red-500' :
+                          insight.insight_type === 'performance' ? 'bg-blue-500/10 text-blue-500' :
+                          insight.insight_type === 'revenue' ? 'bg-yellow-500/10 text-yellow-500' :
+                          'bg-purple-500/10 text-purple-500'
+                        }`}>
+                          {insight.insight_type === 'optimization' && <TrendingUp className="w-6 h-6" />}
+                          {insight.insight_type === 'alert' && <AlertTriangle className="w-6 h-6" />}
+                          {insight.insight_type === 'performance' && <Target className="w-6 h-6" />}
+                          {insight.insight_type === 'revenue' && <DollarSign className="w-6 h-6" />}
+                          {insight.insight_type === 'prediction' && <Brain className="w-6 h-6" />}
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          insight.priority === 'critical' ? 'bg-red-500/10 text-red-500' :
+                          insight.priority === 'high' ? 'bg-orange-500/10 text-orange-500' :
+                          insight.priority === 'medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                          'bg-blue-500/10 text-blue-500'
+                        }`}>
+                          {insight.confidence_score}% Confidence
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-lg mb-2">{insight.title}</h4>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-3`}>
+                        {insight.description}
+                      </p>
+                      <div className="space-y-2 mb-4">
+                        {insight.metrics && Object.entries(insight.metrics).slice(0, 2).map(([key, value]) => (
+                          <div key={key} className="flex justify-between text-sm">
+                            <span className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} capitalize`}>
+                              {key.replace('_', ' ')}:
+                            </span>
+                            <span className="font-semibold text-cyan-500">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        {insight.impact_value && (
+                          <span className="text-lg font-bold text-green-500">
+                            {insight.impact_value}
+                          </span>
+                        )}
+                        {insight.action_required && (
+                          <button className={`px-4 py-2 rounded-lg text-sm transition-all transform hover:scale-105 ${
+                            insight.priority === 'critical' ? 'bg-red-500 hover:bg-red-600 text-white' :
+                            insight.priority === 'high' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
+                            'bg-cyan-500 hover:bg-cyan-600 text-white'
+                          }`}>
+                            {insight.action_required}
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-3 text-xs text-gray-500">
+                        Generated: {new Date(insight.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  {!backendConnected ? (
+                    <>
+                      <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Enhanced Backend Disconnected
+                      </p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-4`}>
+                        Connect to enhanced backend to see real-time AI insights
+                      </p>
+                      <button 
+                        onClick={initializeEnhancedOverview}
+                        className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                      >
+                        🔄 Retry Connection
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        No AI insights available yet
+                      </p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        AI insights are generated every 5 minutes
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* System Health & Status */}
+            <div className={`${darkMode ? 'bg-gradient-to-r from-green-900/30 to-blue-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50/80 to-blue-50/80 border-green-200/50'} 
+              rounded-2xl border p-8 backdrop-blur-xl`}>
+              
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold flex items-center space-x-3">
+                  <Shield className="w-8 h-8 text-green-500" />
+                  <span>🛡️ Enhanced System Health</span>
+                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    backendConnected && enhancedData.systemHealth && enhancedData.systemHealth.overall_status === 'healthy' ? 'bg-green-500/10 text-green-500' :
+                    backendConnected && enhancedData.systemHealth && enhancedData.systemHealth.overall_status === 'warning' ? 'bg-yellow-500/10 text-yellow-500' :
+                    backendConnected && enhancedData.systemHealth ? 'bg-red-500/10 text-red-500' :
+                    'bg-orange-500/10 text-orange-500'
+                  }`}>
+                    {backendConnected && enhancedData.systemHealth ? 
+                      enhancedData.systemHealth.overall_status.toUpperCase() : 
+                      'BACKEND OFFLINE'
+                    }
+                  </div>
+                </h3>
+                <div className="text-sm text-gray-500">
+                  Uptime: {backendConnected && enhancedData.systemHealth ? 
+                    `${enhancedData.systemHealth.uptime_percentage}%` : 
+                    '99.9% (Legacy)'
+                  }
+                </div>
+              </div>
+
+              {backendConnected && enhancedData.systemHealth ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {Object.entries(enhancedData.systemHealth.services || {}).map(([service, status]) => (
+                      <div key={service} className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'} text-center`}>
+                        <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${
+                          status === 'healthy' ? 'bg-green-500' :
+                          status === 'warning' ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}></div>
+                        <div className="text-sm font-medium capitalize">{service.replace('_', ' ')}</div>
+                        <div className={`text-xs mt-1 ${
+                          status === 'healthy' ? 'text-green-500' :
+                          status === 'warning' ? 'text-yellow-500' :
+                          'text-red-500'
+                        }`}>
+                          {status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                      <div className="text-sm text-gray-500 mb-1">CPU Usage</div>
+                      <div className="text-2xl font-bold text-blue-500">{enhancedData.systemHealth.cpu_usage}%</div>
+                    </div>
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                      <div className="text-sm text-gray-500 mb-1">Memory Usage</div>
+                      <div className="text-2xl font-bold text-purple-500">{enhancedData.systemHealth.memory_usage}%</div>
+                    </div>
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                      <div className="text-sm text-gray-500 mb-1">Response Time</div>
+                      <div className="text-2xl font-bold text-green-500">{enhancedData.systemHealth.response_time_ms}ms</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Enhanced System Health Unavailable
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-4`}>
+                    Connect to enhanced backend for detailed system monitoring
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    {['Frontend', 'Dashboard', 'UI Services', 'Local Cache'].map((service) => (
+                      <div key={service} className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/50'} text-center`}>
+                        <div className="w-4 h-4 rounded-full mx-auto mb-2 bg-green-500"></div>
+                        <div className="text-sm font-medium">{service}</div>
+                        <div className="text-xs mt-1 text-green-500">healthy</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Service Health Monitor */}
             <ServiceHealthMonitor />
           </div>
         );
 
-      case 'ai-agent-platform':
-        return <AIAgentPlatform />;
-
-      case 'agents':
-        return (
-          <div className="space-y-8">
-            <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50/80 to-purple-50/80 border-blue-200/50'} 
-              rounded-2xl border p-8 backdrop-blur-xl`}>
-              
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
-                    🤖 AI Agents Command Center
-                  </h2>
-                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Managing 247 AI agents across 89 industries • 94.7% average performance
-                  </p>
-                </div>
-                <div className="flex space-x-3">
-                  <button className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2">
-                    <Plus className="w-5 h-5" />
-                    <span>Create AI Agent</span>
-                  </button>
-                  <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2">
-                    <Wand2 className="w-5 h-5" />
-                    <span>AI Optimization</span>
-                  </button>
-                  <button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2">
-                    <TestTube className="w-5 h-5" />
-                    <span>A/B Test</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm border border-blue-500/30">
-                  <div className="text-4xl font-bold text-blue-400 mb-2">247</div>
-                  <div className="text-sm font-medium text-blue-300">Active AI Agents</div>
-                  <div className="text-xs text-green-400 mt-1">+23 this week</div>
-                </div>
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30">
-                  <div className="text-4xl font-bold text-green-400 mb-2">94.7%</div>
-                  <div className="text-sm font-medium text-green-300">Avg Performance</div>
-                  <div className="text-xs text-green-400 mt-1">+5.2% this month</div>
-                </div>
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30">
-                  <div className="text-4xl font-bold text-purple-400 mb-2">89</div>
-                  <div className="text-sm font-medium text-purple-300">Industries Covered</div>
-                  <div className="text-xs text-green-400 mt-1">Complete coverage</div>
-                </div>
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-500/30">
-                  <div className="text-4xl font-bold text-orange-400 mb-2">$47M</div>
-                  <div className="text-sm font-medium text-orange-300">Total Revenue</div>
-                  <div className="text-xs text-green-400 mt-1">This month</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {aiAgents.map((agent) => <AgentCard key={agent.id} agent={agent} />)}
-              
-              <div className={`${darkMode ? 'bg-gray-800/30 border-gray-700/50 border-dashed' : 'bg-white/30 border-gray-300/50 border-dashed'} 
-                rounded-xl border-2 p-6 flex flex-col items-center justify-center min-h-[300px] hover:border-solid transition-all duration-300 group cursor-pointer`}>
-                <div className="p-4 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 group-hover:from-blue-500/20 group-hover:to-purple-500/20 transition-all mb-4">
-                  <Plus className="w-8 h-8 text-blue-500" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Create New AI Agent</h3>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} text-center mb-4`}>
-                  Build a custom AI agent with our advanced AI builder
-                </p>
-                <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition-all transform group-hover:scale-105">
-                  Start Building
-                </button>
-              </div>
-            </div>
-
-            <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold flex items-center space-x-2">
-                  <BarChart3 className="w-6 h-6 text-purple-500" />
-                  <span>📊 Advanced Agent Analytics</span>
-                </h3>
-                <div className="flex space-x-2">
-                  <button className="px-4 py-2 bg-blue-500/10 text-blue-500 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors">
-                    Performance
-                  </button>
-                  <button className="px-4 py-2 bg-gray-500/10 text-gray-500 rounded-lg text-sm font-medium hover:bg-gray-500/20 transition-colors">
-                    Revenue
-                  </button>
-                  <button className="px-4 py-2 bg-gray-500/10 text-gray-500 rounded-lg text-sm font-medium hover:bg-gray-500/20 transition-colors">
-                    Optimization
-                  </button>
-                </div>
-              </div>
-              
-              <div className="h-64 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Advanced Analytics Dashboard</h3>
-                  <BarChart3 className="w-8 h-8 text-blue-500" />
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Call Success Rate</p>
-                    <p className="text-2xl font-bold text-green-600">68.5%</p>
-                  </div>
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue Impact</p>
-                    <p className="text-2xl font-bold text-blue-600">$45.2K</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setActiveTab('analytics')}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  View Full Analytics
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
       // Add cases for all your page components
-      case 'unified-campaigns':
-        return <UnifiedCampaignsPage />;
+      case 'enhanced-smart-campaigns':
+        return <EnhancedSmartCampaignsDashboard />;
       
       case 'smart-campaigns':
         return <SmartCampaignsDashboard />;
@@ -885,7 +1073,7 @@ const VocelioUltimateDashboard = () => {
         return <SchedulingCenter />;
       
       case 'agents-enhanced':
-        return <AIAgentsEnhanced />;
+        return <AIAgentsService />;
       
       // Enhanced Services
       case 'webhooks-manager':
