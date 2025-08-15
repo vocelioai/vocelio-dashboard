@@ -389,54 +389,81 @@ const LiveCallCenter = () => {
 
   // Phone System Component
   const PhoneSystemComponent = () => (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Enhanced Phone System Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-8 shadow-2xl border border-blue-500/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
+              <Headphones className="w-8 h-8 text-white drop-shadow-lg" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-white">
+                Phone System Management
+              </h2>
+              <p className="text-blue-100 text-lg font-medium">Advanced telephony and communication control</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+              <div className="text-3xl font-bold text-white">47</div>
+              <div className="text-blue-100 font-medium">Active Lines</div>
+            </div>
+            <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+              <div className="text-3xl font-bold text-white">99.9%</div>
+              <div className="text-blue-100 font-medium">Uptime</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Phone Numbers & Extensions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl border border-white/10 shadow-xl p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Phone Numbers & Extensions</h3>
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-            <Plus className="w-4 h-4 inline mr-1" />
+          <h3 className="text-xl font-bold text-white">Phone Numbers & Extensions</h3>
+          <button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl">
+            <Plus className="w-4 h-4 inline mr-2" />
             Add Number
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-2">Number</th>
-                <th className="text-left py-2">Type</th>
-                <th className="text-left py-2">Assigned To</th>
-                <th className="text-left py-2">Status</th>
-                <th className="text-left py-2">Actions</th>
+              <tr className="border-b border-white/20">
+                <th className="text-left py-3 text-gray-200 font-semibold">Number</th>
+                <th className="text-left py-3 text-gray-200 font-semibold">Type</th>
+                <th className="text-left py-3 text-gray-200 font-semibold">Assigned To</th>
+                <th className="text-left py-3 text-gray-200 font-semibold">Status</th>
+                <th className="text-left py-3 text-gray-200 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
-                <td className="py-3">+1 (555) 123-4567</td>
-                <td className="py-3">Main Line</td>
-                <td className="py-3">Reception</td>
-                <td className="py-3">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <tr className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                <td className="py-4 text-white font-medium">+1 (555) 123-4567</td>
+                <td className="py-4 text-gray-300">Main Line</td>
+                <td className="py-4 text-gray-300">Reception</td>
+                <td className="py-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
                     Active
                   </span>
                 </td>
-                <td className="py-3">
-                  <button className="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-800">Delete</button>
+                <td className="py-4">
+                  <button className="text-blue-400 hover:text-blue-300 mr-3 font-medium">Edit</button>
+                  <button className="text-red-400 hover:text-red-300 font-medium">Delete</button>
                 </td>
               </tr>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
-                <td className="py-3">+1 (555) 123-4568</td>
-                <td className="py-3">Sales</td>
-                <td className="py-3">Sales Team</td>
-                <td className="py-3">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <tr className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                <td className="py-4 text-white font-medium">+1 (555) 123-4568</td>
+                <td className="py-4 text-gray-300">Sales</td>
+                <td className="py-4 text-gray-300">Sales Team</td>
+                <td className="py-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
                     Active
                   </span>
                 </td>
-                <td className="py-3">
-                  <button className="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-800">Delete</button>
+                <td className="py-4">
+                  <button className="text-blue-400 hover:text-blue-300 mr-3 font-medium">Edit</button>
+                  <button className="text-red-400 hover:text-red-300 font-medium">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -446,31 +473,31 @@ const LiveCallCenter = () => {
 
       {/* Real-time System Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">System Status</p>
-              <p className="text-lg font-bold text-green-600">All Systems Operational</p>
+              <p className="text-sm font-medium text-gray-300">System Status</p>
+              <p className="text-lg font-bold text-green-400">All Systems Operational</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
+            <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Lines</p>
-              <p className="text-2xl font-bold text-blue-600">24/30</p>
+              <p className="text-sm font-medium text-gray-300">Active Lines</p>
+              <p className="text-2xl font-bold text-blue-400">24/30</p>
             </div>
-            <Signal className="w-8 h-8 text-blue-500" />
+            <Signal className="w-8 h-8 text-blue-400" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Call Quality</p>
-              <p className="text-2xl font-bold text-purple-600">98.7%</p>
+              <p className="text-sm font-medium text-gray-300">Call Quality</p>
+              <p className="text-2xl font-bold text-purple-400">98.7%</p>
             </div>
-            <Activity className="w-8 h-8 text-purple-500" />
+            <Activity className="w-8 h-8 text-purple-400" />
           </div>
         </div>
       </div>
