@@ -1,513 +1,620 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Phone, Radio, Users, Activity, Globe, Clock, TrendingUp, BarChart3,
-  Play, Pause, PhoneCall, Headphones, UserPlus, Eye, Settings, AlertTriangle,
-  CheckCircle, XCircle, ArrowUpRight, ArrowDownRight, Volume2, VolumeX,
-  Maximize2, Minimize2, RotateCcw, Share2, Download, Upload, Filter,
-  Search, MapPin, Calendar, Target, Zap, Brain, Crown, Award, Flame,
-  Monitor, Wifi, Server, Database, Shield, Lock, Unlock, RefreshCw,
-  MessageSquare, Bell, AlertCircle, Info, Star, ThumbsUp, ThumbsDown,
-  ExternalLink, Copy, Mic, MicOff, Gauge, Timer, Crosshair, LineChart,
-  Minus, X
+  Phone, Users, TrendingUp, Clock, Play, Pause, Square, SkipForward,
+  Settings, MessageSquare, Brain, User, Star, PhoneCall, Headphones,
+  Volume2, VolumeX, Mic, MicOff, Video, VideoOff, MoreVertical,
+  Download, Upload, Filter, Search, Calendar, Target, BarChart3,
+  PieChart, Activity, Zap, Shield, Globe, MapPin, Mail, FileText,
+  CheckCircle, XCircle, AlertCircle, RefreshCw, ArrowUp, ArrowDown,
+  Plus, Minus, Edit, Trash2, Copy, X, ChevronDown, ChevronUp,
+  ThumbsUp, ThumbsDown, Flag, Tag, Bookmark, Share2, Eye, EyeOff,
+  Lock, Unlock, Save, RotateCcw, FastForward, Rewind, Home, Building2,
+  CreditCard, DollarSign, Percent, Timer, Signal, Wifi, WifiOff, Battery,
+  BellRing, Bell, Smartphone, Tablet, Monitor, Printer, HardDrive,
+  Database, Server, Cloud, CloudOff, Link, Unlink, QrCode, Scan,
+  Navigation, Compass, Map, Route, Car, Truck, Plane, Ship, Train,
+  Bus, Bike, Walk, Coffee, Utensils, ShoppingCart, Package, Box,
+  Gift, Heart, Star as StarIcon, Award, Trophy, Medal, Crown, Diamond,
+  Gem, Sparkles, Sun, Moon, CloudRain, Snowflake, Wind, Thermometer,
+  Umbrella, Rainbow, Flower, Tree, Leaf, Sprout, Mountain, Waves
 } from 'lucide-react';
 
 const LiveCallCenter = () => {
-  const [darkMode, setDarkMode] = useState(true);
+  const [activeTab, setActiveTab] = useState('live-monitoring');
   const [selectedCall, setSelectedCall] = useState(null);
-  const [activeFilters, setActiveFilters] = useState({
-    status: 'all',
-    agent: 'all',
-    industry: 'all',
-    priority: 'all'
-  });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [liveMetrics, setLiveMetrics] = useState({
-    activeCalls: 47283,
-    successRate: 23.4,
-    totalAgents: 247,
-    conversionsToday: 11234,
-    appointmentsToday: 7129,
-    queuedCalls: 5647,
-    avgWaitTime: 1.3,
-    systemLoad: 73,
-    peakTime: '2:00-4:00 PM',
-    globalCoverage: {
-      northAmerica: 32400,
-      europe: 12800,
-      asiaPacific: 8300
-    }
-  });
 
-  // Simulated live calls data
-  const [liveCalls, setLiveCalls] = useState([
-    {
-      id: 'call_001',
-      status: 'converting',
-      customerPhone: '+1 (555) 123-4567',
-      customerInfo: {
-        name: 'John Smith',
-        location: 'Los Angeles, CA',
-        type: 'Homeowner',
-        age: 45,
-        interest: 'High'
+  // Mock data for demonstration
+  const mockData = {
+    activeCalls: [
+      {
+        id: 1,
+        customerInfo: {
+          name: 'John Smith',
+          location: 'New York, NY',
+          previousCalls: 2,
+          leadSource: 'Website',
+          interestLevel: 85
+        },
+        customerPhone: '+1 (555) 123-4567',
+        agentName: 'Sarah Johnson',
+        status: 'converting',
+        duration: '05:23',
+        startTime: '10:15 AM',
+        transcript: [
+          { speaker: 'agent', text: 'Hi John, thanks for your interest in our services. How can I help you today?', timestamp: '10:15 AM' },
+          { speaker: 'customer', text: 'I\'m looking for a solution to help with my business communications.', timestamp: '10:16 AM' },
+          { speaker: 'agent', text: 'That\'s great! Can you tell me more about your current setup?', timestamp: '10:17 AM' }
+        ],
+        aiInsights: {
+          conversionProbability: 78,
+          sentiment: 4.2,
+          nextBestAction: 'Present pricing options and emphasize ROI benefits',
+          objections: ['price_concern', 'timing']
+        },
+        isAgentTyping: false
       },
-      campaign: {
-        name: 'Solar Prospects - California',
-        type: 'Solar Energy',
-        priority: 'high'
-      },
-      agent: {
-        name: 'Sarah',
-        type: 'AI Agent',
-        performance: 94.2,
-        voiceId: 'professional_female'
-      },
-      duration: '2:34',
-      sentiment: 'positive',
-      stage: 'qualification',
-      transcript: [
-        { speaker: 'agent', text: "Hi John! I'm Sarah from Solar Solutions. I see you inquired about solar panels for your home. Is this still something you're interested in exploring?" },
-        { speaker: 'customer', text: "Yes, we've been thinking about it for months. Our electric bill is getting crazy high." },
-        { speaker: 'agent', text: "I completely understand! Many homeowners in your area are saving 70-90% on their electric bills. What's your current monthly bill running?" }
-      ],
-      aiInsights: {
-        conversionProbability: 87,
-        nextBestAction: 'Continue qualification - customer shows strong buying signals',
-        objections: [],
-        sentiment: 0.8
+      {
+        id: 2,
+        customerInfo: {
+          name: 'Maria Garcia',
+          location: 'Los Angeles, CA',
+          previousCalls: 0,
+          leadSource: 'Google Ads',
+          interestLevel: 65
+        },
+        customerPhone: '+1 (555) 987-6543',
+        agentName: 'Mike Chen',
+        status: 'qualifying',
+        duration: '02:45',
+        startTime: '10:35 AM',
+        transcript: [
+          { speaker: 'agent', text: 'Hello Maria, thank you for calling. What brings you to us today?', timestamp: '10:35 AM' },
+          { speaker: 'customer', text: 'I saw your ad and wanted to learn more about your call center software.', timestamp: '10:36 AM' }
+        ],
+        aiInsights: {
+          conversionProbability: 45,
+          sentiment: 3.8,
+          nextBestAction: 'Ask discovery questions about current pain points',
+          objections: []
+        },
+        isAgentTyping: true
       }
-    },
-    {
-      id: 'call_002',
-      status: 'qualifying',
-      customerPhone: '+1 (555) 987-6543',
-      customerInfo: {
-        name: 'Maria Rodriguez',
-        location: 'Austin, TX',
-        type: 'Previous Lead',
-        age: 38,
-        interest: 'Warm'
-      },
-      campaign: {
-        name: 'Insurance Follow-up - Texas',
-        type: 'Insurance',
-        priority: 'medium'
-      },
-      agent: {
-        name: 'Mike',
-        type: 'AI Agent',
-        performance: 97.1,
-        voiceId: 'confident_male'
-      },
-      duration: '1:12',
-      sentiment: 'neutral',
-      stage: 'opening',
-      transcript: [
-        { speaker: 'agent', text: "Hi Maria, this is Mike from SecureLife Insurance. We spoke a few weeks ago about life insurance options. Do you have a moment?" },
-        { speaker: 'customer', text: "Oh yes, I remember. I was going to call back but got busy with work." }
-      ],
-      aiInsights: {
-        conversionProbability: 64,
-        nextBestAction: 'Probe for family situation and financial goals',
-        objections: ['time_constraints'],
-        sentiment: 0.6
-      }
-    },
-    {
-      id: 'call_003',
-      status: 'objection_handling',
-      customerPhone: '+1 (555) 456-7890',
-      customerInfo: {
-        name: 'Robert Chen',
-        location: 'New York, NY',
-        type: 'Investor',
-        age: 52,
-        interest: 'Price Concerned'
-      },
-      campaign: {
-        name: 'Real Estate Investors - NYC',
-        type: 'Real Estate',
-        priority: 'high'
-      },
-      agent: {
-        name: 'Lisa',
-        type: 'AI Agent',
-        performance: 89.7,
-        voiceId: 'professional_female'
-      },
-      duration: '4:52',
-      sentiment: 'concerned',
-      stage: 'pricing_discussion',
-      transcript: [
-        { speaker: 'customer', text: "I'm interested but your fees seem higher than what I'm paying my current property manager." },
-        { speaker: 'agent', text: "I understand your concern about pricing, Robert. Many investors initially focus on fees, but what matters most is your net return. Can I show you how our premium service actually increases your profits?" }
-      ],
-      aiInsights: {
-        conversionProbability: 45,
-        nextBestAction: 'Present ROI calculator and testimonials from similar investors',
-        objections: ['price_concern', 'competitor_comparison'],
-        sentiment: 0.4
-      }
-    },
-    {
-      id: 'call_004',
-      status: 'closing',
-      customerPhone: '+1 (555) 321-9876',
-      customerInfo: {
-        name: 'Jennifer Williams',
-        location: 'Miami, FL',
-        type: 'Healthcare Professional',
-        age: 41,
-        interest: 'Ready to Buy'
-      },
-      campaign: {
-        name: 'Healthcare Appointment Scheduling',
-        type: 'Healthcare',
-        priority: 'urgent'
-      },
-      agent: {
-        name: 'Emma',
-        type: 'AI Agent',
-        performance: 92.8,
-        voiceId: 'caring_female'
-      },
-      duration: '6:23',
-      sentiment: 'positive',
-      stage: 'appointment_booking',
-      transcript: [
-        { speaker: 'agent', text: "Perfect! I have availability this Friday at 2 PM or Monday at 10 AM. Which works better for your schedule?" },
-        { speaker: 'customer', text: "Friday at 2 PM would be perfect. Can you send me a confirmation?" }
-      ],
-      aiInsights: {
-        conversionProbability: 95,
-        nextBestAction: 'Confirm appointment details and send calendar invite',
-        objections: [],
-        sentiment: 0.9
-      }
-    },
-    {
-      id: 'call_005',
-      status: 'follow_up',
-      customerPhone: '+1 (555) 654-3210',
-      customerInfo: {
-        name: 'David Thompson',
-        location: 'Chicago, IL',
-        type: 'Small Business Owner',
-        age: 47,
-        interest: 'Needs Information'
-      },
-      campaign: {
-        name: 'Business Loan Qualification',
-        type: 'Finance',
-        priority: 'medium'
-      },
-      agent: {
-        name: 'Alex',
-        type: 'AI Agent',
-        performance: 88.5,
-        voiceId: 'trustworthy_male'
-      },
-      duration: '3:17',
-      sentiment: 'interested',
-      stage: 'information_gathering',
-      transcript: [
-        { speaker: 'agent', text: "Based on what you've told me about your business, it sounds like you'd qualify for our growth capital program. What's your primary use for the funding?" },
-        { speaker: 'customer', text: "We're looking to expand to a second location and need equipment financing." }
-      ],
-      aiInsights: {
-        conversionProbability: 72,
-        nextBestAction: 'Gather financial details and schedule loan officer consultation',
-        objections: ['documentation_requirements'],
-        sentiment: 0.7
-      }
-    }
-  ]);
-
-  // Top performing agents
-  const topAgents = [
-    { name: 'Sarah', specialty: 'Solar Expert', performance: 97.2, callsToday: 234, status: 'active' },
-    { name: 'Mike', specialty: 'Insurance Pro', performance: 94.8, callsToday: 189, status: 'active' },
-    { name: 'Lisa', specialty: 'Real Estate', performance: 91.5, callsToday: 156, status: 'active' },
-    { name: 'Emma', specialty: 'Healthcare', performance: 92.8, callsToday: 178, status: 'active' },
-    { name: 'Alex', specialty: 'Finance', performance: 88.5, callsToday: 143, status: 'active' }
-  ];
-
-  // Update live metrics every 2 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveMetrics(prev => ({
-        ...prev,
-        activeCalls: Math.max(40000, prev.activeCalls + Math.floor(Math.random() * 200) - 100),
-        successRate: Math.max(20, Math.min(30, prev.successRate + (Math.random() - 0.5) * 0.5)),
-        conversionsToday: prev.conversionsToday + Math.floor(Math.random() * 5),
-        appointmentsToday: prev.appointmentsToday + Math.floor(Math.random() * 3),
-        queuedCalls: Math.max(3000, prev.queuedCalls + Math.floor(Math.random() * 100) - 50)
-      }));
-      setCurrentTime(new Date());
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Filter calls based on active filters and search
-  const filteredCalls = liveCalls.filter(call => {
-    const matchesSearch = 
-      call.customerInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      call.customerPhone.includes(searchQuery) ||
-      call.campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      call.agent.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = activeFilters.status === 'all' || call.status === activeFilters.status;
-    const matchesAgent = activeFilters.agent === 'all' || call.agent.name === activeFilters.agent;
-    const matchesIndustry = activeFilters.industry === 'all' || call.campaign.type === activeFilters.industry;
-    const matchesPriority = activeFilters.priority === 'all' || call.campaign.priority === activeFilters.priority;
-
-    return matchesSearch && matchesStatus && matchesAgent && matchesIndustry && matchesPriority;
-  });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'converting': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      case 'qualifying': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-      case 'objection_handling': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-      case 'closing': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
-      case 'follow_up': return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20';
-      default: return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
-    }
+    ],
+    agents: [
+      { id: 1, name: 'Sarah Johnson', status: 'on_call', callsToday: 12, conversions: 4 },
+      { id: 2, name: 'Mike Chen', status: 'on_call', callsToday: 8, conversions: 2 },
+      { id: 3, name: 'Lisa Rodriguez', status: 'available', callsToday: 15, conversions: 6 },
+      { id: 4, name: 'David Kim', status: 'break', callsToday: 10, conversions: 3 }
+    ]
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
-      case 'converting': return 'Converting';
-      case 'qualifying': return 'Qualifying';
-      case 'objection_handling': return 'Handling Objections';
-      case 'closing': return 'Closing';
-      case 'follow_up': return 'Follow-up';
-      default: return 'Unknown';
-    }
+    const labels = {
+      'converting': 'Converting',
+      'qualifying': 'Qualifying',
+      'objection_handling': 'Handling Objections',
+      'closing': 'Closing',
+      'completed': 'Completed'
+    };
+    return labels[status] || status;
   };
 
-  const getSentimentIcon = (sentiment) => {
-    switch (sentiment) {
-      case 'positive': return <ThumbsUp className="w-4 h-4 text-green-500" />;
-      case 'neutral': return <Minus className="w-4 h-4 text-yellow-500" />;
-      case 'concerned': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
-      default: return <Info className="w-4 h-4 text-gray-500" />;
-    }
-  };
+  // Tab Navigation Component
+  const TabNavigation = () => (
+    <div className="border-b border-gray-200 dark:border-gray-700">
+      <nav className="-mb-px flex space-x-8">
+        {[
+          { id: 'live-monitoring', name: 'Live Monitoring', icon: Activity },
+          { id: 'auto-dialer', name: 'Auto Dialer', icon: Phone },
+          { id: 'inbound-center', name: 'Inbound Center', icon: PhoneCall },
+          { id: 'phone-system', name: 'Phone System', icon: Headphones },
+          { id: 'lead-management', name: 'Lead Management', icon: Users },
+          { id: 'ivr-builder', name: 'IVR Builder', icon: Settings }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Icon className={`mr-2 h-5 w-5 ${
+                activeTab === tab.id ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-500'
+              }`} />
+              {tab.name}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
 
-  // Call detail modal
-  const CallDetailModal = ({ call, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-6 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
-              call.status === 'converting' ? 'from-green-500 to-emerald-500' :
-              call.status === 'qualifying' ? 'from-blue-500 to-cyan-500' :
-              call.status === 'objection_handling' ? 'from-yellow-500 to-orange-500' :
-              call.status === 'closing' ? 'from-purple-500 to-pink-500' :
-              'from-cyan-500 to-blue-500'
-            } flex items-center justify-center`}>
-              <Phone className="w-6 h-6 text-white" />
-            </div>
+  // Auto Dialer Component
+  const AutoDialerComponent = () => {
+    const [dialerMode, setDialerMode] = useState('predictive');
+    const [isDialing, setIsDialing] = useState(false);
+    
+    return (
+      <div className="space-y-6">
+        {/* Dialer Control Panel */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold mb-4">Auto Dialer Control</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Mode Selection */}
             <div>
-              <h2 className="text-2xl font-bold">{call.customerInfo.name}</h2>
-              <p className="text-gray-600 dark:text-gray-400">{call.customerPhone} • {getStatusLabel(call.status)}</p>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Dialing Mode
+              </label>
+              <select 
+                value={dialerMode} 
+                onChange={(e) => setDialerMode(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="predictive">Predictive Dialing</option>
+                <option value="progressive">Progressive Dialing</option>
+                <option value="preview">Preview Dialing</option>
+                <option value="manual">Manual Dialing</option>
+              </select>
             </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
-              End Call
-            </button>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              <X className="w-6 h-6" />
-            </button>
+
+            {/* Campaign Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Active Campaign
+              </label>
+              <select className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option>Summer Sales Blitz</option>
+                <option>Q4 Lead Follow-up</option>
+                <option>Cold Outreach - Tech</option>
+                <option>Warm Leads - Healthcare</option>
+              </select>
+            </div>
+
+            {/* Control Buttons */}
+            <div className="flex items-end space-x-2">
+              <button 
+                onClick={() => setIsDialing(!isDialing)}
+                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  isDialing 
+                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isDialing ? (
+                  <>
+                    <Square className="w-4 h-4 inline mr-2" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 inline mr-2" />
+                    Start
+                  </>
+                )}
+              </button>
+              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Call Information */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Real-time Transcript */}
+        {/* Real-time Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
-                  Live Conversation
-                </h3>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto space-y-3">
-                  {call.transcript.map((message, index) => (
-                    <div key={index} className={`flex ${message.speaker === 'agent' ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`max-w-[80%] p-3 rounded-lg ${
-                        message.speaker === 'agent' 
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' 
-                          : 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100'
-                      }`}>
-                        <div className="text-xs text-gray-500 mb-1 capitalize">{message.speaker}</div>
-                        <div className="text-sm">{message.text}</div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex justify-start">
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 p-3 rounded-lg">
-                      <div className="text-xs text-gray-500 mb-1">Agent (typing...)</div>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                      </div>
-                    </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Calls/Hour</p>
+                <p className="text-2xl font-bold text-blue-600">127</p>
+              </div>
+              <Phone className="w-8 h-8 text-blue-500" />
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Connect Rate</p>
+                <p className="text-2xl font-bold text-green-600">34.8%</p>
+              </div>
+              <Target className="w-8 h-8 text-green-500" />
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Drop Rate</p>
+                <p className="text-2xl font-bold text-red-600">2.1%</p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversions</p>
+                <p className="text-2xl font-bold text-purple-600">18</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-purple-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* DNC and Compliance */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2 text-green-500" />
+            Compliance & DNC Management
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">99.7%</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">DNC Compliance</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">847,392</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">DNC Records</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">Last Updated</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">2 hours ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Inbound Center Component
+  const InboundCenterComponent = () => (
+    <div className="space-y-6">
+      {/* Queue Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Calls in Queue</p>
+              <p className="text-2xl font-bold text-orange-600">12</p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Wait Time</p>
+              <p className="text-2xl font-bold text-blue-600">1:43</p>
+            </div>
+            <Timer className="w-8 h-8 text-blue-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Agents</p>
+              <p className="text-2xl font-bold text-green-600">8</p>
+            </div>
+            <Users className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Service Level</p>
+              <p className="text-2xl font-bold text-purple-600">94.2%</p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-purple-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* Department Routing */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold mb-4">Department Call Distribution</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="font-medium">Sales</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">5 calls</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="font-medium">Support</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">4 calls</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span className="font-medium">Billing</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">3 calls</span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <span className="font-medium">Average Handle Time</span>
+              <span className="text-sm font-bold text-green-600">4:32</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <span className="font-medium">First Call Resolution</span>
+              <span className="text-sm font-bold text-blue-600">87%</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <span className="font-medium">Customer Satisfaction</span>
+              <span className="text-sm font-bold text-purple-600">4.6★</span>
+            </div>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <h4 className="font-medium mb-3">Queue Actions</h4>
+            <div className="space-y-2">
+              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                Force Next Call
+              </button>
+              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                Broadcast Message
+              </button>
+              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                Emergency Override
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Phone System Component
+  const PhoneSystemComponent = () => (
+    <div className="space-y-6">
+      {/* Phone Numbers & Extensions */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Phone Numbers & Extensions</h3>
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+            <Plus className="w-4 h-4 inline mr-1" />
+            Add Number
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2">Number</th>
+                <th className="text-left py-2">Type</th>
+                <th className="text-left py-2">Assigned To</th>
+                <th className="text-left py-2">Status</th>
+                <th className="text-left py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <td className="py-3">+1 (555) 123-4567</td>
+                <td className="py-3">Main Line</td>
+                <td className="py-3">Reception</td>
+                <td className="py-3">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Active
+                  </span>
+                </td>
+                <td className="py-3">
+                  <button className="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                  <button className="text-red-600 hover:text-red-800">Delete</button>
+                </td>
+              </tr>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <td className="py-3">+1 (555) 123-4568</td>
+                <td className="py-3">Sales</td>
+                <td className="py-3">Sales Team</td>
+                <td className="py-3">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Active
+                  </span>
+                </td>
+                <td className="py-3">
+                  <button className="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                  <button className="text-red-600 hover:text-red-800">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Real-time System Status */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">System Status</p>
+              <p className="text-lg font-bold text-green-600">All Systems Operational</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Lines</p>
+              <p className="text-2xl font-bold text-blue-600">24/30</p>
+            </div>
+            <Signal className="w-8 h-8 text-blue-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Call Quality</p>
+              <p className="text-2xl font-bold text-purple-600">98.7%</p>
+            </div>
+            <Activity className="w-8 h-8 text-purple-500" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Lead Management Component
+  const LeadManagementComponent = () => (
+    <div className="space-y-6">
+      {/* Lead Import/Export */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Lead Database Management</h3>
+          <div className="space-x-2">
+            <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+              <Upload className="w-4 h-4 inline mr-1" />
+              Import Leads
+            </button>
+            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+              <Download className="w-4 h-4 inline mr-1" />
+              Export Data
+            </button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">12,847</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Total Leads</div>
+          </div>
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">3,492</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Qualified</div>
+          </div>
+          <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-orange-600">1,847</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">In Progress</div>
+          </div>
+          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">892</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Converted</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Campaign Performance */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold mb-4">Campaign Performance</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div>
+              <h4 className="font-medium">Summer Sales Blitz</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">2,847 leads • 23.4% conversion rate</p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-green-600">+$127K</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue</div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div>
+              <h4 className="font-medium">Q4 Lead Follow-up</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">1,492 leads • 18.7% conversion rate</p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-green-600">+$89K</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // IVR Builder Component
+  const IVRBuilderComponent = () => (
+    <div className="space-y-6">
+      {/* IVR Flow Builder */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">IVR Flow Builder</h3>
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+            <Plus className="w-4 h-4 inline mr-1" />
+            New Flow
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium mb-3">Active IVR Flows</h4>
+            <div className="space-y-3">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h5 className="font-medium">Main Reception</h5>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">English/Spanish • 5 options</p>
+                  </div>
+                  <div className="space-x-2">
+                    <button className="text-blue-600 hover:text-blue-800">Edit</button>
+                    <button className="text-green-600 hover:text-green-800">Test</button>
                   </div>
                 </div>
               </div>
-
-              {/* AI Insights */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Brain className="w-5 h-5 mr-2 text-purple-500" />
-                  AI Insights & Recommendations
-                </h3>
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-500">{call.aiInsights.conversionProbability}%</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Probability</div>
-                    </div>
-                    <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                      <div className="text-2xl font-bold text-green-500">{call.aiInsights.sentiment.toFixed(1)}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Sentiment Score</div>
-                    </div>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h5 className="font-medium">Sales Department</h5>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">English only • 3 options</p>
                   </div>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Next Best Action:</span>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{call.aiInsights.nextBestAction}</p>
-                    </div>
-                    {call.aiInsights.objections.length > 0 && (
-                      <div>
-                        <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Detected Objections:</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {call.aiInsights.objections.map((objection, index) => (
-                            <span key={index} className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
-                              {objection.replace('_', ' ')}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <div className="space-x-2">
+                    <button className="text-blue-600 hover:text-blue-800">Edit</button>
+                    <button className="text-green-600 hover:text-green-800">Test</button>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Customer Info */}
+          <div>
+            <h4 className="font-medium mb-3">IVR Analytics</h4>
+            <div className="space-y-3">
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-semibold mb-3">Customer Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Name:</span>
-                    <span className="font-medium">{call.customerInfo.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Location:</span>
-                    <span className="font-medium">{call.customerInfo.location}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                    <span className="font-medium">{call.customerInfo.type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Interest Level:</span>
-                    <span className="font-medium">{call.customerInfo.interest}</span>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Option 1 (Sales)</span>
+                  <span className="text-sm font-bold">42%</span>
                 </div>
               </div>
-
-              {/* Campaign Info */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-semibold mb-3">Campaign Details</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Campaign:</span>
-                    <span className="font-medium">{call.campaign.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Industry:</span>
-                    <span className="font-medium">{call.campaign.type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Priority:</span>
-                    <span className={`font-medium capitalize ${
-                      call.campaign.priority === 'high' ? 'text-red-500' :
-                      call.campaign.priority === 'medium' ? 'text-yellow-500' :
-                      'text-green-500'
-                    }`}>{call.campaign.priority}</span>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Option 2 (Support)</span>
+                  <span className="text-sm font-bold">31%</span>
                 </div>
               </div>
-
-              {/* Agent Info */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-semibold mb-3">AI Agent</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Agent:</span>
-                    <span className="font-medium">{call.agent.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Performance:</span>
-                    <span className="font-medium text-green-500">{call.agent.performance}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Voice:</span>
-                    <span className="font-medium">{call.agent.voiceId.replace('_', ' ')}</span>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Option 0 (Operator)</span>
+                  <span className="text-sm font-bold">18%</span>
                 </div>
               </div>
-
-              {/* Quick Actions */}
-              <div className="space-y-3">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2">
-                  <Headphones className="w-5 h-5" />
-                  <span>Listen In</span>
-                </button>
-                <button className="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2">
-                  <UserPlus className="w-5 h-5" />
-                  <span>Transfer to Human</span>
-                </button>
-                <button className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2">
-                  <Download className="w-5 h-5" />
-                  <span>Export Call Data</span>
-                </button>
-              </div>
-
-              {/* Call Statistics */}
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-semibold mb-3">Call Statistics</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                    <span className="font-medium">{call.duration}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Stage:</span>
-                    <span className="font-medium capitalize">{call.stage.replace('_', ' ')}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Sentiment:</span>
-                    <div className="flex items-center space-x-1">
-                      {getSentimentIcon(call.sentiment)}
-                      <span className="font-medium capitalize">{call.sentiment}</span>
-                    </div>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Hang-ups</span>
+                  <span className="text-sm font-bold text-red-600">9%</span>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Multi-language Support */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold mb-4">Multi-language Support</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <Globe className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+            <div className="text-lg font-bold text-blue-600">English</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Primary Language</div>
+          </div>
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <Globe className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <div className="text-lg font-bold text-green-600">Spanish</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Secondary Language</div>
+          </div>
+          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <Plus className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <div className="text-lg font-bold text-purple-600">Add Language</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Configure New</div>
           </div>
         </div>
       </div>
@@ -516,522 +623,348 @@ const LiveCallCenter = () => {
 
   return (
     <div className="space-y-8">
-      {/* Live Command Center Header */}
-      <div className={`${darkMode ? 'bg-gradient-to-r from-red-900/30 to-orange-900/30 border-red-700/50' : 'bg-gradient-to-r from-red-50/80 to-orange-50/80 border-red-200/50'} 
-        rounded-2xl border p-8 backdrop-blur-xl relative overflow-hidden`}>
-        
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-red-500/10 animate-pulse"></div>
-        
-        <div className="relative z-10">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-              <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-red-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
-                LIVE CALL CENTER
-              </h1>
-              <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-            </div>
-            <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
-              Real-time AI Call Monitoring • {liveMetrics.activeCalls.toLocaleString()} Active Calls Worldwide
-            </p>
-            <p className="text-sm text-red-500 font-medium">
-              🔴 LIVE • Updates every 2 seconds • Global Coverage Active • {currentTime.toLocaleTimeString()}
-            </p>
-          </div>
+      {/* Tab Navigation */}
+      <TabNavigation />
 
-          {/* Live Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 backdrop-blur-sm border border-red-500/30">
-              <div className="text-5xl font-bold text-red-400 mb-2 animate-pulse">
-                {(liveMetrics.activeCalls / 1000).toFixed(1)}K
+      {/* Render active tab content */}
+      {activeTab === 'live-monitoring' && (
+        <div className="space-y-8">
+          {/* Live Command Center Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Phone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Live Call Monitoring</h2>
+                  <p className="text-blue-100">Real-time oversight and assistance</p>
+                </div>
               </div>
-              <div className="text-sm font-medium text-red-300">📞 Live Calls</div>
-              <div className="text-xs text-green-400 mt-1">+{Math.floor(Math.random() * 50) + 10}/sec</div>
-            </div>
-            
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30">
-              <div className="text-5xl font-bold text-green-400 mb-2">
-                {liveMetrics.successRate.toFixed(1)}%
+              <div className="flex items-center space-x-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{mockData.activeCalls.length}</div>
+                  <div className="text-sm text-blue-100">Active Calls</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{mockData.agents.filter(a => a.status === 'on_call').length}</div>
+                  <div className="text-sm text-blue-100">Agents Online</div>
+                </div>
               </div>
-              <div className="text-sm font-medium text-green-300">✅ Success Rate</div>
-              <div className="text-xs text-green-400 mt-1">Real-time average</div>
-            </div>
-            
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm border border-blue-500/30">
-              <div className="text-5xl font-bold text-blue-400 mb-2">
-                {liveMetrics.conversionsToday.toLocaleString()}
-              </div>
-              <div className="text-sm font-medium text-blue-300">⚡ Conversions</div>
-              <div className="text-xs text-green-400 mt-1">Today so far</div>
-            </div>
-            
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30">
-              <div className="text-5xl font-bold text-purple-400 mb-2">
-                {liveMetrics.appointmentsToday.toLocaleString()}
-              </div>
-              <div className="text-sm font-medium text-purple-300">🎯 Appointments</div>
-              <div className="text-xs text-green-400 mt-1">Booked today</div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-3 shadow-2xl">
-              <Radio className="w-6 h-6 animate-pulse" />
-              <span>🔴 Monitor Live Calls</span>
-            </button>
-            <button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-3 shadow-2xl">
-              <PhoneCall className="w-6 h-6" />
-              <span>📞 Start Emergency Blast</span>
-            </button>
-            <button className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-3 shadow-2xl">
-              <Users className="w-6 h-6" />
-              <span>👥 Agent Performance</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search calls, agents, customers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 pr-4 py-3 rounded-lg border w-full ${
-                  darkMode 
-                    ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400' 
-                    : 'bg-gray-100/50 border-gray-200/50 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <select 
-                value={activeFilters.status}
-                onChange={(e) => setActiveFilters({...activeFilters, status: e.target.value})}
-                className={`px-3 py-3 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700/50 border-gray-600/50 text-white' 
-                    : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}
-              >
-                <option value="all">All Status</option>
-                <option value="converting">Converting</option>
-                <option value="qualifying">Qualifying</option>
-                <option value="objection_handling">Handling Objections</option>
-                <option value="closing">Closing</option>
-                <option value="follow_up">Follow-up</option>
-              </select>
-
-              <select 
-                value={activeFilters.industry}
-                onChange={(e) => setActiveFilters({...activeFilters, industry: e.target.value})}
-                className={`px-3 py-3 rounded-lg border ${
-                  darkMode 
-                    ? 'bg-gray-700/50 border-gray-600/50 text-white' 
-                    : 'bg-gray-100/50 border-gray-200/50 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/50`}
-              >
-                <option value="all">All Industries</option>
-                <option value="Solar Energy">Solar Energy</option>
-                <option value="Insurance">Insurance</option>
-                <option value="Real Estate">Real Estate</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Finance">Finance</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              Showing {filteredCalls.length} of {liveCalls.length} active calls
-            </div>
-            <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'} transition-colors`}>
-              <Filter className="w-5 h-5" />
-            </button>
-            <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'} transition-colors`}>
-              <RefreshCw className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Call Monitoring Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Calls Panel */}
-        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold flex items-center space-x-2">
-              <Radio className="w-6 h-6 text-red-500 animate-pulse" />
-              <span>🔴 Live Active Calls</span>
-              <div className="px-3 py-1 bg-red-500/10 text-red-500 text-sm rounded-full">
-                {Math.floor(liveMetrics.activeCalls / 100)} calls/sec
-              </div>
-            </h3>
-            <div className="flex space-x-2">
-              <button className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors">
-                Live View
-              </button>
-              <button className="px-4 py-2 bg-gray-500/10 text-gray-500 rounded-lg text-sm font-medium hover:bg-gray-500/20 transition-colors">
-                All Calls
-              </button>
-              <button className="px-4 py-2 bg-gray-500/10 text-gray-500 rounded-lg text-sm font-medium hover:bg-gray-500/20 transition-colors">
-                Issues
-              </button>
-            </div>
-          </div>
-
-          {/* Live Calls List */}
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {filteredCalls.map((call) => (
-              <div key={call.id} className={`p-4 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
-                darkMode ? 'bg-gray-700/50 border-gray-600/50 hover:border-blue-500/50' : 'bg-gray-50 border-gray-200 hover:border-blue-500/50'
-              }`} onClick={() => setSelectedCall(call)}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${
-                      call.status === 'converting' ? 'bg-green-500' :
-                      call.status === 'qualifying' ? 'bg-blue-500' :
-                      call.status === 'objection_handling' ? 'bg-yellow-500' :
-                      call.status === 'closing' ? 'bg-purple-500' :
-                      'bg-cyan-500'
-                    }`}></div>
-                    <div>
-                      <h4 className="font-semibold">{call.campaign.name}</h4>
-                      <p className="text-sm text-gray-500">Agent: {call.agent.name} • Campaign: {call.campaign.type}</p>
+          {/* Active Calls Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {mockData.activeCalls.map((call) => (
+              <div key={call.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        call.status === 'converting' ? 'bg-green-500' :
+                        call.status === 'qualifying' ? 'bg-blue-500' :
+                        call.status === 'objection_handling' ? 'bg-yellow-500' :
+                        call.status === 'closing' ? 'bg-purple-500' :
+                        'bg-gray-500'
+                      }`}></div>
+                      <span className="font-medium">{call.customerInfo.name}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs rounded-full border ${getStatusColor(call.status)}`}>
-                      {getStatusLabel(call.status)}
-                    </span>
                     <span className="text-sm text-gray-500">{call.duration}</span>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span className="text-gray-500">📞 {call.customerPhone}</span>
-                    <span className="text-blue-500">{call.customerInfo.type}, {call.customerInfo.location}</span>
-                    <span className={`${
-                      call.customerInfo.interest === 'High' ? 'text-green-500' :
-                      call.customerInfo.interest === 'Warm' ? 'text-yellow-500' :
-                      'text-blue-500'
-                    }`}>{call.customerInfo.interest} Interest</span>
-                    <div className="flex items-center space-x-1">
-                      {getSentimentIcon(call.sentiment)}
-                      <span className="capitalize">{call.sentiment}</span>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={(e) => {e.stopPropagation(); setSelectedCall(call);}}
-                      className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors" 
-                      title="Listen In"
-                    >
-                      <Headphones className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 transition-colors" title="Transfer">
-                      <UserPlus className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors" title="End Call">
-                      <PhoneCall className="w-4 h-4" />
-                    </button>
+                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <span>{call.agentName}</span>
+                    <span className="capitalize">{call.status.replace('_', ' ')}</span>
                   </div>
                 </div>
-
-                {/* AI Insights Preview */}
-                <div className="mt-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Brain className="w-4 h-4 text-purple-500" />
-                      <span className="text-sm font-medium text-purple-600">AI: {call.aiInsights.conversionProbability}% conversion probability</span>
-                    </div>
-                    <div className="text-xs text-gray-500">Click to view details</div>
+                
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Score:</span>
+                    <span className="font-medium">{Math.floor(Math.random() * 40) + 60}%</span>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{call.aiInsights.nextBestAction}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Sentiment:</span>
+                    <span className={`font-medium ${
+                      Math.random() > 0.6 ? 'text-green-600' :
+                      Math.random() > 0.3 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {Math.random() > 0.6 ? 'Positive' : Math.random() > 0.3 ? 'Neutral' : 'Negative'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => setSelectedCall(call)}
+                        className="flex-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Listen In
+                      </button>
+                      <button className="flex-1 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        Assist
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
-
-            {/* Load More */}
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-2">
-                Showing {filteredCalls.length} of {(liveMetrics.activeCalls / 1000).toFixed(1)}K active calls
-              </p>
-              <button className="text-blue-500 hover:text-blue-600 text-sm font-medium">
-                Load More Active Calls →
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time Metrics Sidebar */}
-        <div className="space-y-6">
-          {/* Call Queue Status */}
-          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-blue-500" />
-              📋 Call Queue Status
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Queued Calls:</span>
-                <span className="font-bold text-blue-500">{liveMetrics.queuedCalls.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Avg Wait Time:</span>
-                <span className="font-bold text-green-500">{liveMetrics.avgWaitTime}s</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Peak Time:</span>
-                <span className="font-bold text-orange-500">{liveMetrics.peakTime}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">System Load:</span>
-                <span className="font-bold text-purple-500">{liveMetrics.systemLoad}%</span>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-500">Capacity Usage</span>
-                <span className="text-sm font-medium">{liveMetrics.systemLoad}%</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-1000" style={{width: `${liveMetrics.systemLoad}%`}}></div>
-              </div>
-            </div>
           </div>
 
-          {/* Agent Performance */}
-          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-green-500" />
-              👥 Top Agents Live
-            </h3>
-            
-            <div className="space-y-3">
-              {topAgents.map((agent, index) => (
-                <div key={agent.name} className={`flex items-center justify-between p-3 rounded-lg ${
-                  index === 0 ? 'bg-green-500/5 border border-green-500/20' :
-                  index === 1 ? 'bg-blue-500/5 border border-blue-500/20' :
-                  index === 2 ? 'bg-purple-500/5 border border-purple-500/20' :
-                  'bg-gray-500/5 border border-gray-500/20'
-                }`}>
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${
-                      index === 0 ? 'bg-green-500' :
-                      index === 1 ? 'bg-blue-500' :
-                      index === 2 ? 'bg-purple-500' :
-                      'bg-gray-500'
-                    }`}></div>
-                    <div>
-                      <div className="font-semibold flex items-center space-x-1">
-                        <span>{agent.name}</span>
-                        {index === 0 && <Crown className="w-3 h-3 text-yellow-500" />}
-                      </div>
-                      <div className="text-xs text-gray-500">{agent.specialty}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-bold ${
-                      index === 0 ? 'text-green-500' :
-                      index === 1 ? 'text-blue-500' :
-                      index === 2 ? 'text-purple-500' :
-                      'text-gray-500'
-                    }`}>{agent.performance}%</div>
-                    <div className="text-xs text-gray-500">{agent.callsToday} calls</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button className="w-full mt-4 py-2 text-sm text-blue-500 hover:text-blue-600 font-medium">
-              View All Agent Performance →
-            </button>
-          </div>
-
-          {/* System Health */}
-          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-green-500" />
-              🔧 System Health
-            </h3>
-            
-            <div className="space-y-3">
+          {/* Performance Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <span className="text-sm flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  API Status
-                </span>
-                <span className="text-green-500 font-medium">Operational</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  Voice Services
-                </span>
-                <span className="text-green-500 font-medium">99.99%</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  AI Models
-                </span>
-                <span className="text-green-500 font-medium">Optimal</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm flex items-center">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
-                  Call Routing
-                </span>
-                <span className="text-yellow-500 font-medium">High Load</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-            <h3 className="text-lg font-bold mb-4">⚡ Quick Actions</h3>
-            <div className="space-y-3">
-              <button className="w-full bg-red-500/10 text-red-500 hover:bg-red-500/20 px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Emergency Stop All</span>
-              </button>
-              <button className="w-full bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
-                <Zap className="w-5 h-5" />
-                <span>Boost Performance</span>
-              </button>
-              <button className="w-full bg-green-500/10 text-green-500 hover:bg-green-500/20 px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
-                <Download className="w-5 h-5" />
-                <span>Export Live Data</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Global Call Map & Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Call Map */}
-        <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-          <h3 className="text-xl font-bold mb-6 flex items-center">
-            <Globe className="w-6 h-6 mr-2 text-blue-500" />
-            🌍 Global Call Activity
-          </h3>
-          
-          <div className="h-64 bg-gradient-to-br from-blue-500/10 to-green-500/10 rounded-xl flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-green-500/5 animate-pulse"></div>
-            <div className="text-center z-10">
-              <Globe className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" style={{animationDuration: '20s'}} />
-              <p className="text-lg font-semibold mb-2">Live Global Coverage</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Active in 47 countries • 23 time zones
-              </p>
-              <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <div className="font-bold text-blue-500">{(liveMetrics.globalCoverage.northAmerica / 1000).toFixed(1)}K</div>
-                  <div className="text-gray-500">North America</div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</p>
+                  <p className="text-2xl font-bold text-green-600">24.3%</p>
                 </div>
+                <TrendingUp className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-green-500">{(liveMetrics.globalCoverage.europe / 1000).toFixed(1)}K</div>
-                  <div className="text-gray-500">Europe</div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Call Time</p>
+                  <p className="text-2xl font-bold text-blue-600">8:32</p>
                 </div>
+                <Clock className="w-8 h-8 text-blue-500" />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-purple-500">{(liveMetrics.globalCoverage.asiaPacific / 1000).toFixed(1)}K</div>
-                  <div className="text-gray-500">Asia Pacific</div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Queue Wait</p>
+                  <p className="text-2xl font-bold text-orange-600">2:14</p>
                 </div>
+                <Users className="w-8 h-8 text-orange-500" />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Satisfaction</p>
+                  <p className="text-2xl font-bold text-purple-600">4.7★</p>
+                </div>
+                <Star className="w-8 h-8 text-purple-500" />
               </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Real-time Analytics */}
-        <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/50 border-gray-200/50'} rounded-2xl border p-6 backdrop-blur-sm`}>
-          <h3 className="text-xl font-bold mb-6 flex items-center">
-            <BarChart3 className="w-6 h-6 mr-2 text-green-500" />
-            📊 Real-time Analytics
-          </h3>
-          
-          <div className="space-y-6">
-            {/* Conversion Funnel */}
-            <div>
-              <h4 className="font-semibold mb-3">Today's Conversion Funnel</h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Calls Initiated</span>
-                  <span className="font-bold">{liveMetrics.activeCalls.toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full transition-all duration-1000" style={{width: '100%'}}></div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Answered</span>
-                  <span className="font-bold">{Math.floor(liveMetrics.activeCalls * 0.73).toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000" style={{width: '73%'}}></div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Qualified</span>
-                  <span className="font-bold">{Math.floor(liveMetrics.activeCalls * 0.45).toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full transition-all duration-1000" style={{width: '45%'}}></div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Converted</span>
-                  <span className="font-bold">{Math.floor(liveMetrics.activeCalls * 0.234).toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full transition-all duration-1000" style={{width: '23.4%'}}></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Call Outcomes */}
-            <div>
-              <h4 className="font-semibold mb-3">Call Outcomes (Last Hour)</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 rounded-lg bg-green-500/10">
-                  <div className="text-lg font-bold text-green-500">23.4%</div>
-                  <div className="text-xs text-gray-500">Appointments</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-blue-500/10">
-                  <div className="text-lg font-bold text-blue-500">18.7%</div>
-                  <div className="text-xs text-gray-500">Follow-ups</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-yellow-500/10">
-                  <div className="text-lg font-bold text-yellow-500">12.3%</div>
-                  <div className="text-xs text-gray-500">Callbacks</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-purple-500/10">
-                  <div className="text-lg font-bold text-purple-500">8.9%</div>
-                  <div className="text-xs text-gray-500">Transfers</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {activeTab === 'auto-dialer' && <AutoDialerComponent />}
+      {activeTab === 'inbound-center' && <InboundCenterComponent />}
+      {activeTab === 'phone-system' && <PhoneSystemComponent />}
+      {activeTab === 'lead-management' && <LeadManagementComponent />}
+      {activeTab === 'ivr-builder' && <IVRBuilderComponent />}
 
       {/* Call Detail Modal */}
       {selectedCall && (
-        <CallDetailModal call={selectedCall} onClose={() => setSelectedCall(null)} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
+                  selectedCall.status === 'converting' ? 'from-green-500 to-emerald-500' :
+                  selectedCall.status === 'qualifying' ? 'from-blue-500 to-cyan-500' :
+                  selectedCall.status === 'objection_handling' ? 'from-yellow-500 to-orange-500' :
+                  selectedCall.status === 'closing' ? 'from-purple-500 to-pink-500' :
+                  'from-gray-500 to-slate-500'
+                } flex items-center justify-center`}>
+                  <Phone className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedCall.customerInfo.name}</h2>
+                  <p className="text-gray-600 dark:text-gray-400">{selectedCall.customerPhone} • {getStatusLabel(selectedCall.status)}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
+                  End Call
+                </button>
+                <button onClick={() => setSelectedCall(null)} className="text-gray-500 hover:text-gray-700">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Call Information */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Real-time Transcript */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
+                      Live Conversation
+                    </h3>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-64 overflow-y-auto p-4">
+                      {selectedCall.transcript.map((message, index) => (
+                        <div key={index} className={`mb-3 ${message.speaker === 'agent' ? 'text-right' : 'text-left'}`}>
+                          <div className={`inline-block max-w-xs p-3 rounded-lg ${
+                            message.speaker === 'agent' 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                          }`}>
+                            <div className="text-xs opacity-75 mb-1 font-medium">
+                              {message.speaker === 'agent' ? 'Agent' : 'Customer'}
+                            </div>
+                            <p className="text-sm">{message.text}</p>
+                            <div className="text-xs opacity-75 mt-1">{message.timestamp}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {selectedCall.isAgentTyping && (
+                        <div className="text-left">
+                          <div className="inline-block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">Agent is typing...</div>
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* AI Insights */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Brain className="w-5 h-5 mr-2 text-purple-500" />
+                      AI Insights & Recommendations
+                    </h3>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                          <div className="text-2xl font-bold text-purple-500">{selectedCall.aiInsights.conversionProbability}%</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Probability</div>
+                        </div>
+                        <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                          <div className="text-2xl font-bold text-green-500">{selectedCall.aiInsights.sentiment.toFixed(1)}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Sentiment Score</div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Next Best Action:</span>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{selectedCall.aiInsights.nextBestAction}</p>
+                        </div>
+                        {selectedCall.aiInsights.objections.length > 0 && (
+                          <div>
+                            <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Detected Objections:</span>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {selectedCall.aiInsights.objections.map((objection, index) => (
+                                <span key={index} className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
+                                  {objection.replace('_', ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sidebar */}
+                <div className="space-y-6">
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-gray-500" />
+                      Customer Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Name</label>
+                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.name}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</label>
+                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerPhone}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Location</label>
+                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.location}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Previous Calls</label>
+                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.previousCalls}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Lead Source</label>
+                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.leadSource}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Interest Level</label>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full" 
+                              style={{width: `${selectedCall.customerInfo.interestLevel}%`}}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{selectedCall.customerInfo.interestLevel}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Call Actions */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Settings className="w-5 h-5 mr-2 text-gray-500" />
+                      Actions
+                    </h3>
+                    <div className="space-y-2">
+                      <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        Join Call
+                      </button>
+                      <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        Send Message
+                      </button>
+                      <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        Transfer Call
+                      </button>
+                      <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        End Call
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Call Started:</span>
+                        <span className="font-medium">{selectedCall.startTime}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Duration:</span>
+                        <span className="font-medium">{selectedCall.duration}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                        <span className="font-medium capitalize">{getStatusLabel(selectedCall.status)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Recording:</span>
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-red-500 font-medium text-xs">LIVE</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -24,7 +24,7 @@ import {
 // Import your page components
 import SmartCampaignsDashboard from './pages/SmartCampaigns';
 import EnhancedSmartCampaignsDashboard from './pages/EnhancedSmartCampaigns';
-import LiveCallCenter from './pages/CallCenter';
+import LiveCallCenter from './pages/CallCenter-new';
 import VoiceLabPage from './pages/VoiceLab';
 import FlowBuilderPage from './pages/FlowBuilder';
 import AnalyticsProPage from './pages/AnalyticsPro';
@@ -34,7 +34,7 @@ import IntegrationsCenter from './pages/IntegrationsCenter';
 import AgentStore from './pages/AgentStore';
 import BillingProCenter from './pages/BillingPro';
 import TeamHubDashboard from './pages/TeamHub';
-import ComplianceDashboard from './pages/Compliance';
+import EnhancedComplianceDashboard from './pages/EnhancedCompliance';
 import WhiteLabelDashboard from './pages/WhiteLabelDashboard';
 import TwilioNumberPurchase from './pages/PhoneNumbers';
 import VocelioSettingsDashboard from './pages/SettingsPage';
@@ -378,7 +378,7 @@ const VocelioUltimateDashboard = () => {
         { id: 'enterprise-security', label: 'Security Center', icon: Shield, badge: 'NEW' },
         { id: 'sso-identity', label: 'Identity Manager', icon: Key, badge: 'NEW' },
         { id: 'audit-compliance', label: 'Audit & Compliance', icon: FileText, badge: 'NEW' },
-        { id: 'compliance', label: 'Compliance', icon: Shield, badge: 'LIVE' },
+        { id: 'enhanced-compliance', label: 'Enhanced Compliance', icon: Shield, badge: 'LIVE' },
         { id: 'enterprise-portal', label: 'Enterprise Portal', icon: Building, badge: 'NEW' }
       ]
     },
@@ -447,7 +447,7 @@ const VocelioUltimateDashboard = () => {
     { id: 'agent-store', label: 'Agent Store', icon: Store, badge: 'HOT' },
     { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
     { id: 'team-hub', label: 'Team Hub', icon: Users, badge: null },
-    { id: 'compliance', label: 'Compliance', icon: Shield, badge: 'LIVE' },
+    { id: 'enhanced-compliance', label: 'Enhanced Compliance', icon: Shield, badge: 'LIVE' },
     { id: 'white-label', label: 'White Label', icon: Palette, badge: 'ENTERPRISE' },
     { id: 'developer-api', label: 'Developer API', icon: Code, badge: null },
     { id: 'settings', label: 'Settings', icon: Settings, badge: null }
@@ -965,8 +965,8 @@ const VocelioUltimateDashboard = () => {
       case 'team-hub':
         return <TeamHubDashboard />;
       
-      case 'compliance':
-        return <ComplianceDashboard />;
+      case 'enhanced-compliance':
+        return <EnhancedComplianceDashboard />;
       
       case 'white-label':
         return (
@@ -1324,64 +1324,58 @@ const VocelioUltimateDashboard = () => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-700/50 space-y-4">
-          <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/30' : 'bg-gray-100/30'} border border-green-500/20`}>
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              {!sidebarCollapsed && (
-                <div>
-                  <p className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Global System Health
-                  </p>
-                  <p className="text-xs text-green-500 font-medium">
-                    99.99% Uptime • All Systems Operational
-                  </p>
-                </div>
-              )}
+        <div className="p-2 border-t border-gray-700/50 space-y-2">
+          {/* Compact System Health & Profile Section */}
+          <div className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700/20' : 'bg-gray-100/20'} border border-green-500/10`}>
+            <div className="flex items-center justify-between">
+              {/* System Health Indicator - Compact */}
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                {!sidebarCollapsed && (
+                  <span className="text-xs text-green-500 font-medium">99.99%</span>
+                )}
+              </div>
+              
+              {/* Dark Mode Toggle - Compact */}
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600/50' : 'hover:bg-gray-200/50'} 
+                transition-all group`}
+                title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                <span className="text-lg group-hover:scale-110 transition-transform">
+                  {darkMode ? '🌞' : '🌙'}
+                </span>
+              </button>
             </div>
           </div>
 
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className={`w-full p-4 rounded-xl ${darkMode ? 'bg-gray-700/30 hover:bg-gray-700/50' : 'bg-gray-100/30 hover:bg-gray-100/50'} 
-            transition-all flex items-center justify-center space-x-3 group`}
-          >
-            <span className="text-2xl group-hover:scale-110 transition-transform">
-              {darkMode ? '🌞' : '🌙'}
-            </span>
-            {!sidebarCollapsed && (
-              <span className="font-semibold">
-                {darkMode ? 'Light Mode' : 'Dark Mode'}
-              </span>
-            )}
-          </button>
-
-          <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/30' : 'bg-gray-100/30'} border border-purple-500/20`}>
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
+          {/* Minimized Profile Section */}
+          <div className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700/20' : 'bg-gray-100/20'} border border-purple-500/10`}>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Crown className="w-4 h-4 text-white" />
               </div>
               {!sidebarCollapsed && (
-                <div className="flex-1">
-                  <p className={`font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                    Enterprise Admin
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-bold truncate ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Admin
                   </p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Global Control Access
-                  </p>
-                  <div className="flex items-center mt-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                    <span className="text-xs text-green-500 font-medium">Online</span>
+                  <div className="flex items-center">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                    <span className="text-xs text-green-500">Online</span>
                   </div>
                 </div>
               )}
+              {!sidebarCollapsed && (
+                <button 
+                  className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-md transition-all"
+                  title="Secure Logout"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            {!sidebarCollapsed && (
-              <button className="mt-4 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 rounded-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-2 font-semibold">
-                <LogOut className="w-5 h-5" />
-                <span>Secure Logout</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

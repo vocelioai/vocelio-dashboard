@@ -10,7 +10,7 @@ import {
   Archive, Trash2, Edit, Plus, X, ChevronDown, ChevronRight,
   Star, Heart, ThumbsUp, Mail, MessageSquare, Video, Briefcase, User
 } from 'lucide-react';
-import enhancedComplianceClient from '../api/enhancedComplianceClient';
+import enhancedComplianceClient from '../api/complianceClient';
 
 const ComplianceDashboard = ({ darkMode = true }) => {
   const [activeSection, setActiveSection] = useState('overview');
