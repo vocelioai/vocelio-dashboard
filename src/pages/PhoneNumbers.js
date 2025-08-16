@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Search, Filter, Globe, Phone, MessageSquare, Headphones, ChevronDown, Star, ArrowUpRight, DollarSign, MapPin, Clock, CheckCircle, XCircle, RefreshCw, Zap, Shield, Mail, FileText, CreditCard, X } from 'lucide-react';
 import { createPaymentIntent, mockStripeConfirmPayment } from '../api/payment';
-import twilioAPI from '../lib/twilioAPI';
+import realTwilioAPI from '../lib/realTwilioAPI';
 
 const PhoneNumberPurchasePage = () => {
   const [selectedCountry, setSelectedCountry] = useState('US (+1) United States - US');
@@ -118,21 +118,91 @@ const PhoneNumberPurchasePage = () => {
   const [purchasedNumbers, setPurchasedNumbers] = useState([]);
   const [showMyNumbers, setShowMyNumbers] = useState(false);
 
-  // Load purchased numbers from localStorage on component mount
+  // Load purchased numbers from Real Twilio API on component mount
   useEffect(() => {
-    const stored = localStorage.getItem('vocelio-purchased-numbers');
-    if (stored) {
-      try {
-        setPurchasedNumbers(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading purchased numbers from localStorage:', error);
-      }
-    }
+    loadPurchasedNumbers();
   }, []);
 
-  // Save purchased numbers to localStorage whenever it changes
+  // Function to load purchased numbers from Real Twilio API
+  const loadPurchasedNumbers = async () => {
+    if (!realTwilioAPI.isConfigured) {
+      console.warn('⚠️ Twilio not configured, loading from localStorage as fallback');
+      // Fallback to localStorage if Twilio is not configured
+      const stored = localStorage.getItem('vocelio-purchased-numbers');
+      if (stored) {
+        try {
+          setPurchasedNumbers(JSON.parse(stored));
+        } catch (error) {
+          console.error('Error loading purchased numbers from localStorage:', error);
+        }
+      }
+      return;
+    }
+
+    try {
+      console.log('📞 Loading purchased numbers from Real Twilio API...');
+      const response = await realTwilioAPI.getOwnedNumbers();
+      
+      if (response.incoming_phone_numbers && response.incoming_phone_numbers.length > 0) {
+        // Transform Twilio owned numbers to our format
+        const ownedNumbers = response.incoming_phone_numbers.map(number => ({
+          number: number.phone_number,
+          friendlyName: number.friendly_name || number.phone_number,
+          type: 'Local', // Default type
+          location: `${number.region || 'Unknown'}, ${number.iso_country || 'US'}`,
+          capabilities: {
+            voice: number.capabilities?.voice !== false,
+            sms: number.capabilities?.sms !== false,
+            mms: number.capabilities?.mms !== false,
+            fax: number.capabilities?.fax !== false
+          },
+          addressRequirement: 'None',
+          monthlyFee: '$1.15',
+          isBeta: false,
+          emergencyCapable: number.capabilities?.voice !== false,
+          // Real Twilio fields
+          twilioSid: number.sid,
+          accountSid: number.account_sid,
+          dateCreated: number.date_created,
+          dateUpdated: number.date_updated,
+          status: number.status || 'in-use',
+          voiceUrl: number.voice_url,
+          smsUrl: number.sms_url,
+          purchaseDate: number.date_created, // Use creation date as purchase date
+          purchaseId: number.sid,
+          monthlyRate: '$1.15',
+          usageCount: 0 // This would need separate API call to get usage
+        }));
+        
+        console.log(`✅ Loaded ${ownedNumbers.length} purchased numbers from Real Twilio API`);
+        setPurchasedNumbers(ownedNumbers);
+        
+        // Also save to localStorage as backup
+        localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(ownedNumbers));
+      } else {
+        console.log('📝 No purchased numbers found in Twilio account');
+        setPurchasedNumbers([]);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load purchased numbers from Twilio:', error);
+      // Fallback to localStorage
+      const stored = localStorage.getItem('vocelio-purchased-numbers');
+      if (stored) {
+        try {
+          setPurchasedNumbers(JSON.parse(stored));
+          console.log('📦 Loaded purchased numbers from localStorage as fallback');
+        } catch (storageError) {
+          console.error('Error loading from localStorage fallback:', storageError);
+        }
+      }
+    }
+  };
+
+  // Save purchased numbers to localStorage whenever it changes (backup)
   useEffect(() => {
-    localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(purchasedNumbers));
+    if (purchasedNumbers.length > 0) {
+      localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(purchasedNumbers));
+    }
   }, [purchasedNumbers]);
 
   // Fetch phone numbers from Twilio API
@@ -147,69 +217,86 @@ const PhoneNumberPurchasePage = () => {
       const options = {
         areaCode: searchQuery && matchCriteria === 'First part of number' ? searchQuery : undefined,
         contains: matchCriteria === 'Contains' ? searchQuery : undefined,
-        nearNumber: undefined, // Can be implemented for location-based search
-        limit: 50 // Twilio limit
+        limit: 50, // Twilio limit
+        smsEnabled: selectedCapabilities.sms || undefined,
+        voiceEnabled: selectedCapabilities.voice || undefined,
+        mmsEnabled: selectedCapabilities.mms || undefined
       };
 
-      console.log('📞 Calling twilioAPI.searchAvailableNumbers with:', { country, options });
+      console.log('📞 Calling realTwilioAPI.searchAvailableNumbers with:', { country, options });
       
       // Add debug info about API state
       const apiStatus = {
-        hasCredentials: !!twilioAPI.accountSid && !!twilioAPI.authToken,
-        hasBackend: !!twilioAPI.railwayBaseURL,
-        accountSid: twilioAPI.accountSid ? `${twilioAPI.accountSid.substring(0, 10)}...` : 'MISSING',
-        authToken: twilioAPI.authToken ? 'PRESENT' : 'MISSING',
-        railwayURL: twilioAPI.railwayBaseURL || 'MISSING'
+        hasCredentials: realTwilioAPI.isConfigured,
+        accountSid: realTwilioAPI.accountSid ? `${realTwilioAPI.accountSid.substring(0, 10)}...` : 'MISSING',
+        authToken: realTwilioAPI.authToken ? 'PRESENT' : 'MISSING'
       };
-      console.log('🔧 API Status:', apiStatus);
+      console.log('🔧 Real API Status:', apiStatus);
       setDebugInfo(apiStatus);
 
       // Map our number types to Twilio types
       const typeMapping = {
         local: 'Local',
-        mobile: 'Mobile',
+        mobile: 'Mobile', 
         tollFree: 'TollFree'
       };
       
-      // Get enabled number types
+      // Get enabled number types - search each type separately since Twilio requires one type per request
       const enabledTypes = Object.entries(numberTypes)
         .filter(([key, value]) => value)
         .map(([key]) => typeMapping[key])
         .filter(Boolean);
 
-      if (enabledTypes.length > 0) {
-        options.type = enabledTypes;
-      }
-
-      const response = await twilioAPI.searchAvailableNumbers(country, options);
-      console.log('📈 Raw API response:', response);
+      let allNumbers = [];
       
-      if (response.success && response.data) {
-        console.log(`✅ Successfully fetched ${response.data.length} phone numbers`);
-        // Transform Twilio data to our format
-        const transformedNumbers = response.data.map(number => ({
-          number: number.phone_number,
-          type: number.type || 'Local',
-          location: number.locality ? `${number.locality}, ${number.region} ${country}` : country,
-          capabilities: {
-            voice: number.capabilities?.voice || false,
-            sms: number.capabilities?.SMS || false,
-            mms: number.capabilities?.MMS || false,
-            fax: number.capabilities?.fax || false
-          },
-          addressRequirement: number.address_requirements?.length > 0 ? 'Local' : 'None',
-          monthlyFee: '$1.15', // Default Twilio pricing, could be dynamic
-          isBeta: number.beta || false,
-          emergencyCapable: number.capabilities?.voice || false
-        }));
-        
-        setPhoneNumbers(transformedNumbers);
-        console.log('🎯 Transformed numbers:', transformedNumbers.length);
-      } else {
-        const errorMsg = response.error || 'Failed to fetch phone numbers';
-        console.error('❌ API Error:', errorMsg, response);
-        throw new Error(errorMsg);
+      // Search each enabled number type
+      for (const numberType of enabledTypes.length > 0 ? enabledTypes : ['Local']) {
+        try {
+          const response = await realTwilioAPI.searchAvailableNumbers(country, numberType, options);
+          console.log(`📈 Raw API response for ${numberType}:`, response);
+          
+          if (response.available_phone_numbers && response.available_phone_numbers.length > 0) {
+            // Transform Twilio data to our format
+            const transformedNumbers = response.available_phone_numbers.map(number => ({
+              number: number.phone_number,
+              friendlyName: number.friendly_name || number.phone_number,
+              type: numberType,
+              location: number.locality ? `${number.locality}, ${number.region} ${country}` : country,
+              capabilities: {
+                voice: number.capabilities?.voice !== false,
+                sms: number.capabilities?.SMS !== false,
+                mms: number.capabilities?.MMS !== false,
+                fax: number.capabilities?.fax !== false
+              },
+              addressRequirement: (number.address_requirements && number.address_requirements.length > 0) ? 'Local' : 'None',
+              monthlyFee: '$1.15', // Default Twilio pricing
+              isBeta: number.beta || false,
+              emergencyCapable: number.capabilities?.voice !== false,
+              lata: number.lata,
+              rateCenter: number.rate_center,
+              latitude: number.latitude,
+              longitude: number.longitude,
+              region: number.region,
+              postalCode: number.postal_code,
+              isoCountry: number.iso_country
+            }));
+            
+            allNumbers = [...allNumbers, ...transformedNumbers];
+          }
+        } catch (typeError) {
+          console.warn(`⚠️ Failed to search ${numberType} numbers:`, typeError.message);
+          // Continue with other types
+        }
       }
+      
+      if (allNumbers.length > 0) {
+        console.log(`✅ Successfully fetched ${allNumbers.length} phone numbers from real Twilio API`);
+        setPhoneNumbers(allNumbers);
+      } else {
+        console.log('📝 No available numbers found');
+        setPhoneNumbers([]);
+      }
+      
     } catch (err) {
       console.error('💥 Error fetching phone numbers:', err);
       setError(`Failed to load phone numbers: ${err.message}`);
@@ -217,7 +304,7 @@ const PhoneNumberPurchasePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCountry, searchQuery, matchCriteria, numberTypes]);
+  }, [selectedCountry, searchQuery, matchCriteria, numberTypes, selectedCapabilities]);
 
   // Load initial data
   useEffect(() => {
@@ -280,34 +367,34 @@ const PhoneNumberPurchasePage = () => {
       
       console.log('✅ Payment confirmed:', paymentResult);
       
-      // Step 3: Purchase the phone number from Twilio
-      const purchaseResult = await twilioAPI.purchaseNumber(selectedNumber.number, {
+      // Step 3: Purchase the phone number from Real Twilio API
+      const purchaseResult = await realTwilioAPI.purchaseNumber(selectedNumber.number, {
         friendlyName: `Purchased Number ${selectedNumber.number}`,
         voiceUrl: '', // Add your webhook URLs here
         smsUrl: '',
       });
       
-      console.log('📞 Twilio purchase result:', purchaseResult);
+      console.log('📞 Real Twilio purchase result:', purchaseResult);
       
-      // Check if purchase was successful (handle both real API and mock responses)
-      const isSuccess = purchaseResult.success !== false && (
-        purchaseResult.sid || // Real Twilio response has 'sid'
-        purchaseResult.phone_number || // Mock response structure
-        purchaseResult.mock // Mock indicator
-      );
-      
-      if (isSuccess) {
-        console.log('📞 Phone number purchased successfully from Twilio');
+      // Real Twilio API returns a successful response with 'sid' field
+      if (purchaseResult && purchaseResult.sid) {
+        console.log('📞 Phone number purchased successfully from Real Twilio API');
         setPaymentSuccess(true);
         
         // Add the purchased number to the purchased numbers list
         const purchasedNumber = {
           ...selectedNumber,
           purchaseDate: new Date().toISOString(),
-          purchaseId: purchaseResult.sid || `mock_${Date.now()}`,
-          status: 'active',
+          purchaseId: purchaseResult.sid,
+          status: 'in-use', // Twilio status
           monthlyRate: '$1.15',
-          usageCount: 0
+          usageCount: 0,
+          twilioSid: purchaseResult.sid,
+          accountSid: purchaseResult.account_sid,
+          dateCreated: purchaseResult.date_created,
+          dateUpdated: purchaseResult.date_updated,
+          voiceUrl: purchaseResult.voice_url,
+          smsUrl: purchaseResult.sms_url
         };
         setPurchasedNumbers(prev => [...prev, purchasedNumber]);
         
@@ -329,6 +416,75 @@ const PhoneNumberPurchasePage = () => {
       setPaymentError(error.message || 'Purchase failed. Please try again.');
     } finally {
       setIsProcessingPayment(false);
+    }
+  };
+
+  // Phone Number Management Functions
+
+  // Update phone number configuration
+  const updatePhoneNumber = async (numberSid, updates) => {
+    if (!realTwilioAPI.isConfigured) {
+      throw new Error('Twilio not configured');
+    }
+
+    try {
+      console.log('📝 Updating phone number configuration:', { numberSid, updates });
+      const result = await realTwilioAPI.updateNumber(numberSid, updates);
+      
+      // Update the local state
+      setPurchasedNumbers(prev => 
+        prev.map(num => 
+          num.twilioSid === numberSid 
+            ? { ...num, ...updates, dateUpdated: new Date().toISOString() }
+            : num
+        )
+      );
+      
+      console.log('✅ Phone number updated successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to update phone number:', error);
+      throw error;
+    }
+  };
+
+  // Release/delete a phone number
+  const releasePhoneNumber = async (numberSid) => {
+    if (!realTwilioAPI.isConfigured) {
+      throw new Error('Twilio not configured');
+    }
+
+    if (!window.confirm('Are you sure you want to release this phone number? This action cannot be undone.')) {
+      return false;
+    }
+
+    try {
+      console.log('🗑️ Releasing phone number:', numberSid);
+      await realTwilioAPI.releaseNumber(numberSid);
+      
+      // Remove from local state
+      setPurchasedNumbers(prev => prev.filter(num => num.twilioSid !== numberSid));
+      
+      console.log('✅ Phone number released successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to release phone number:', error);
+      throw error;
+    }
+  };
+
+  // Get phone number details and usage
+  const getNumberDetails = async (numberSid) => {
+    if (!realTwilioAPI.isConfigured) {
+      throw new Error('Twilio not configured');
+    }
+
+    try {
+      const details = await realTwilioAPI.getNumberDetails(numberSid);
+      return details;
+    } catch (error) {
+      console.error('❌ Failed to get number details:', error);
+      throw error;
     }
   };
 
@@ -507,19 +663,24 @@ const PhoneNumberPurchasePage = () => {
             ) : (
               <div className="space-y-4">
                 {purchasedNumbers.map((number, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+                  <div key={number.twilioSid || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <Phone className="h-5 w-5 text-blue-600" />
                           <span className="text-lg font-semibold text-gray-900">{number.number}</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            number.status === 'active' 
+                            number.status === 'in-use' || number.status === 'active'
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-gray-100 text-gray-700'
                           }`}>
-                            {number.status}
+                            {number.status === 'in-use' ? 'Active' : number.status}
                           </span>
+                          {number.friendlyName && number.friendlyName !== number.number && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                              {number.friendlyName}
+                            </span>
+                          )}
                         </div>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
@@ -537,7 +698,7 @@ const PhoneNumberPurchasePage = () => {
                           </div>
                           <div>
                             <span className="font-medium">Purchased:</span>
-                            <div>{new Date(number.purchaseDate).toLocaleDateString()}</div>
+                            <div>{new Date(number.purchaseDate || number.dateCreated).toLocaleDateString()}</div>
                           </div>
                         </div>
 
@@ -549,17 +710,41 @@ const PhoneNumberPurchasePage = () => {
                             {number.capabilities?.fax && <div className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">Fax</div>}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Calls: {number.usageCount || 0} this month
+                            SID: {number.twilioSid ? `${number.twilioSid.substring(0, 10)}...` : 'N/A'}
                           </div>
                         </div>
+
+                        {/* Configuration URLs if set */}
+                        {(number.voiceUrl || number.smsUrl) && (
+                          <div className="mt-3 p-2 bg-gray-50 rounded text-xs">
+                            {number.voiceUrl && (
+                              <div><span className="font-medium">Voice URL:</span> {number.voiceUrl}</div>
+                            )}
+                            {number.smsUrl && (
+                              <div><span className="font-medium">SMS URL:</span> {number.smsUrl}</div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex flex-col gap-2 ml-4">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        <button 
+                          onClick={() => setSelectedNumber(number)}
+                          className="px-3 py-1 text-blue-600 hover:text-white hover:bg-blue-600 border border-blue-600 rounded text-sm font-medium transition-colors"
+                        >
                           Configure
                         </button>
-                        <button className="text-gray-600 hover:text-gray-800 text-sm font-medium">
-                          Usage
+                        <button 
+                          onClick={() => getNumberDetails(number.twilioSid)}
+                          className="px-3 py-1 text-gray-600 hover:text-white hover:bg-gray-600 border border-gray-600 rounded text-sm font-medium transition-colors"
+                        >
+                          Details
+                        </button>
+                        <button 
+                          onClick={() => releasePhoneNumber(number.twilioSid)}
+                          className="px-3 py-1 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded text-sm font-medium transition-colors"
+                        >
+                          Release
                         </button>
                       </div>
                     </div>

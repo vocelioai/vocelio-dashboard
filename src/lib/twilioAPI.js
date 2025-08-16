@@ -1,9 +1,9 @@
-// Twilio API Integration for Phone Number Management
+// Real Twilio API Integration for Phone Number Management
 class TwilioAPI {
   constructor() {
     this.accountSid = process.env.REACT_APP_TWILIO_ACCOUNT_SID;
-    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN; // Available for direct API calls
-    this.railwayBaseURL = process.env.REACT_APP_API_URL; // Use main API URL
+    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN;
+    this.railwayBaseURL = process.env.REACT_APP_API_URL;
     
     // Debug environment variable loading
     console.log('🔍 TwilioAPI Constructor - Environment Variables:', {
@@ -13,84 +13,46 @@ class TwilioAPI {
       allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_TWILIO'))
     });
     
-    // Primary: Route through secure backend, Fallback: Direct API for development
-    this.backendEndpoint = `${this.railwayBaseURL}/api/v1/twilio`;
+    // Twilio REST API endpoints
     this.directTwilioBase = 'https://api.twilio.com/2010-04-01';
     this.lookupBase = 'https://lookups.twilio.com/v1';
     
-    // Enhanced configuration validation
+    // Configuration validation
     this.isFullyConfigured = !!(this.accountSid && this.authToken);
-    this.hasBackendAccess = !!(this.railwayBaseURL);
+    
+    if (!this.isFullyConfigured) {
+      console.warn('⚠️ Twilio credentials not fully configured. Add REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN to environment variables for real API access.');
+    } else {
+      console.log('✅ Twilio API configured for real phone number operations');
+    }
   }
 
-  // Generic API request method through Railway backend with direct Twilio fallback
+  // Real Twilio API request method
   async request(endpoint, options = {}) {
     console.log('🔍 TwilioAPI Request:', {
       endpoint,
-      hasBackendAccess: this.hasBackendAccess,
       isFullyConfigured: this.isFullyConfigured,
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing',
-      authToken: this.authToken ? 'present' : 'missing',
-      railwayURL: this.railwayBaseURL
+      method: options.method || 'GET'
     });
     
-    // If we have Twilio credentials, prioritize direct API calls
+    // Use real Twilio API if configured
     if (this.isFullyConfigured) {
       try {
-        console.log('� Using direct Twilio API (primary method)...');
+        console.log('📞 Using real Twilio API...');
         const result = await this.requestDirectTwilio(endpoint, options);
-        console.log('✅ Direct Twilio API success:', result);
+        console.log('✅ Real Twilio API success');
         return result;
       } catch (error) {
-        console.error('❌ Direct Twilio API failed:', error);
-        // Continue to try backend as fallback
+        console.error('❌ Real Twilio API failed:', error);
+        throw error; // Don't fallback to mock for real implementation
       }
+    } else {
+      // Return error for missing credentials instead of mock data
+      throw new Error('Twilio credentials not configured. Please set REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN environment variables.');
     }
-    
-    // Try backend as secondary option
-    if (this.hasBackendAccess && process.env.REACT_APP_AUTH_TOKEN) {
-      try {
-        console.log('� Trying backend as fallback...');
-        return await this.requestViaBackend(endpoint, options);
-      } catch (error) {
-        console.warn('⚠️ Backend also unavailable:', error.message);
-      }
-    }
-    
-    // Final fallback to mock data only if both methods fail
-    console.warn('🧪 Both Twilio API and backend failed, using mock data');
-    return this.getMockData(endpoint, options);
   }
   
-  // Backend request method (original secure approach)
-  async requestViaBackend(endpoint, options = {}) {
-    const url = `${this.backendEndpoint}${endpoint}`;
-    
-    const config = {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_AUTH_TOKEN}`,
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    if (options.body) {
-      config.body = JSON.stringify(options.body);
-    }
-
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Backend API Error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    return await response.json();
-  }
-  
-  // Direct Twilio API request method  
+  // Direct Twilio REST API request method  
   async requestDirectTwilio(endpoint, options = {}) {
     if (!this.isFullyConfigured) {
       throw new Error('Twilio credentials not configured for direct API access');
@@ -98,6 +60,41 @@ class TwilioAPI {
     
     // Convert our generic endpoint to actual Twilio API endpoint
     const twilioEndpoint = this.convertToTwilioEndpoint(endpoint, options);
+    const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
+    
+    // Create basic auth header
+    const credentials = btoa(`${this.accountSid}:${this.authToken}`);
+    
+    const config = {
+      method: options.method || 'GET',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...options.headers,
+      },
+    };
+
+    // Convert JSON body to URL-encoded for Twilio API
+    if (options.body && options.method !== 'GET') {
+      const formData = new URLSearchParams();
+      Object.entries(options.body).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+      config.body = formData.toString();
+    }
+
+    console.log('📞 Making Twilio API request:', { url, method: config.method });
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Twilio API Error: ${response.status} - ${errorData.message || response.statusText}`);
+    }
+    
+    return await response.json();
+  }
     const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
     
     // Create basic auth header
