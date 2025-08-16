@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Search, Filter, Globe, Phone, MessageSquare, Headphones, ChevronDown, Star, ArrowUpRight, DollarSign, MapPin, Clock, CheckCircle, XCircle, RefreshCw, Zap, Shield, Mail, FileText } from 'lucide-react';
+import { Search, Filter, Globe, Phone, MessageSquare, Headphones, ChevronDown, Star, ArrowUpRight, DollarSign, MapPin, Clock, CheckCircle, XCircle, RefreshCw, Zap, Shield, Mail, FileText, CreditCard, X } from 'lucide-react';
+import { createPaymentIntent, mockStripeConfirmPayment } from '../api/payment';
 import twilioAPI from '../lib/twilioAPI';
 
 const PhoneNumberPurchasePage = () => {
@@ -106,6 +107,34 @@ const PhoneNumberPurchasePage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
 
+  // Payment State Management
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // Purchased Numbers State Management
+  const [purchasedNumbers, setPurchasedNumbers] = useState([]);
+  const [showMyNumbers, setShowMyNumbers] = useState(false);
+
+  // Load purchased numbers from localStorage on component mount
+  useEffect(() => {
+    const stored = localStorage.getItem('vocelio-purchased-numbers');
+    if (stored) {
+      try {
+        setPurchasedNumbers(JSON.parse(stored));
+      } catch (error) {
+        console.error('Error loading purchased numbers from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save purchased numbers to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(purchasedNumbers));
+  }, [purchasedNumbers]);
+
   // Fetch phone numbers from Twilio API
   const fetchPhoneNumbers = useCallback(async () => {
     console.log('🔍 fetchPhoneNumbers called with:', { selectedCountry, searchQuery, matchCriteria, numberTypes });
@@ -209,6 +238,107 @@ const PhoneNumberPurchasePage = () => {
     setIsSearching(false);
   };
 
+  // Purchase handlers
+  const handlePurchaseClick = (number) => {
+    setSelectedNumber(number);
+    setShowPurchaseModal(true);
+  };
+
+  const handlePurchaseConfirm = async () => {
+    if (!selectedNumber) return;
+    
+    setIsProcessingPayment(true);
+    setPaymentError(null);
+    
+    try {
+      console.log('🛒 Starting purchase process for:', selectedNumber.number);
+      
+      // Step 1: Create payment intent
+      const paymentData = await createPaymentIntent({
+        phoneNumber: selectedNumber.number,
+        amount: 115, // $1.15 in cents
+        currency: 'usd',
+        description: `Phone Number: ${selectedNumber.number}`,
+      });
+      
+      console.log('💳 Payment intent created:', paymentData);
+      
+      // Step 2: Process payment (mock Stripe confirmation)
+      const paymentResult = await mockStripeConfirmPayment(paymentData.clientSecret, {
+        type: 'card',
+        card: {
+          number: '4242424242424242', // Test card number
+          exp_month: 12,
+          exp_year: 2030,
+          cvc: '123',
+        },
+        billing_details: {
+          name: 'Demo User',
+          email: 'demo@example.com',
+        },
+      });
+      
+      console.log('✅ Payment confirmed:', paymentResult);
+      
+      // Step 3: Purchase the phone number from Twilio
+      const purchaseResult = await twilioAPI.purchaseNumber(selectedNumber.number, {
+        friendlyName: `Purchased Number ${selectedNumber.number}`,
+        voiceUrl: '', // Add your webhook URLs here
+        smsUrl: '',
+      });
+      
+      console.log('📞 Twilio purchase result:', purchaseResult);
+      
+      // Check if purchase was successful (handle both real API and mock responses)
+      const isSuccess = purchaseResult.success !== false && (
+        purchaseResult.sid || // Real Twilio response has 'sid'
+        purchaseResult.phone_number || // Mock response structure
+        purchaseResult.mock // Mock indicator
+      );
+      
+      if (isSuccess) {
+        console.log('📞 Phone number purchased successfully from Twilio');
+        setPaymentSuccess(true);
+        
+        // Add the purchased number to the purchased numbers list
+        const purchasedNumber = {
+          ...selectedNumber,
+          purchaseDate: new Date().toISOString(),
+          purchaseId: purchaseResult.sid || `mock_${Date.now()}`,
+          status: 'active',
+          monthlyRate: '$1.15',
+          usageCount: 0
+        };
+        setPurchasedNumbers(prev => [...prev, purchasedNumber]);
+        
+        // Remove the purchased number from the available list
+        setPhoneNumbers(prev => prev.filter(num => num.number !== selectedNumber.number));
+        
+        // Auto-close modal after 3 seconds
+        setTimeout(() => {
+          setShowPurchaseModal(false);
+          setSelectedNumber(null);
+          setPaymentSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(purchaseResult.error || 'Failed to purchase phone number from Twilio');
+      }
+      
+    } catch (error) {
+      console.error('❌ Purchase failed:', error);
+      setPaymentError(error.message || 'Purchase failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handlePurchaseCancel = () => {
+    setShowPurchaseModal(false);
+    setSelectedNumber(null);
+    setPaymentError(null);
+    setPaymentSuccess(false);
+  };
+
   const filteredNumbers = useMemo(() => {
     return phoneNumbers.filter(num => {
       // Search filter
@@ -298,26 +428,150 @@ const PhoneNumberPurchasePage = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-gray-900">Buy a Phone Number</h1>
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all duration-200 ${
-                isRefreshing 
-                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm transform hover:scale-105'
-              }`}
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {showMyNumbers ? 'My Phone Numbers' : 'Buy a Phone Number'}
+            </h1>
+            
+            {/* Toggle between Available and My Numbers */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setShowMyNumbers(false)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  !showMyNumbers 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Available Numbers
+              </button>
+              <button
+                onClick={() => setShowMyNumbers(true)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  showMyNumbers 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                My Numbers ({purchasedNumbers.length})
+              </button>
+            </div>
+
+            {!showMyNumbers && (
+              <button
+                onClick={() => fetchPhoneNumbers()}
+                disabled={isLoading}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all duration-200 ${
+                  isLoading 
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm transform hover:scale-105'
+                }`}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            )}
           </div>
-          <button className="text-blue-600 hover:text-blue-800 font-semibold bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105">
-            Can't find a number?
-          </button>
+          
+          {!showMyNumbers && (
+            <button className="text-blue-600 hover:text-blue-800 font-semibold bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105">
+              Can't find a number?
+            </button>
+          )}
         </div>
 
-        {/* Country Selection */}
+        {/* Purchased Numbers View */}
+        {showMyNumbers ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Your Purchased Numbers</h2>
+              <p className="text-gray-600">
+                {purchasedNumbers.length === 0 
+                  ? "You haven't purchased any phone numbers yet." 
+                  : `You have ${purchasedNumbers.length} active phone ${purchasedNumbers.length === 1 ? 'number' : 'numbers'}.`
+                }
+              </p>
+            </div>
+
+            {purchasedNumbers.length === 0 ? (
+              <div className="text-center py-12">
+                <Phone className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Numbers Yet</h3>
+                <p className="text-gray-600 mb-6">Start by purchasing your first phone number.</p>
+                <button
+                  onClick={() => setShowMyNumbers(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Browse Available Numbers
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {purchasedNumbers.map((number, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Phone className="h-5 w-5 text-blue-600" />
+                          <span className="text-lg font-semibold text-gray-900">{number.number}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            number.status === 'active' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {number.status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                          <div>
+                            <span className="font-medium">Type:</span>
+                            <div>{number.type || 'Local'}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium">Location:</span>
+                            <div>{number.location || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium">Monthly Rate:</span>
+                            <div>{number.monthlyRate}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium">Purchased:</span>
+                            <div>{new Date(number.purchaseDate).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-3">
+                          <div className="flex gap-2">
+                            {number.capabilities?.voice && <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Voice</div>}
+                            {number.capabilities?.sms && <div className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">SMS</div>}
+                            {number.capabilities?.mms && <div className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">MMS</div>}
+                            {number.capabilities?.fax && <div className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">Fax</div>}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Calls: {number.usageCount || 0} this month
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 ml-4">
+                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                          Configure
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-800 text-sm font-medium">
+                          Usage
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Available Numbers View */}
+            {/* Country Selection */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-800 mb-3">Select Country</label>
@@ -624,7 +878,11 @@ const PhoneNumberPurchasePage = () => {
                       {number.monthlyFee}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                      <button 
+                        onClick={() => handlePurchaseClick(number)}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                      >
+                        <CreditCard className="h-4 w-4 mr-1 inline" />
                         Buy
                       </button>
                     </td>
@@ -722,6 +980,88 @@ const PhoneNumberPurchasePage = () => {
           <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
             <span>Showing {filteredNumbers.length} available numbers</span>
             <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+          </div>
+        )}
+          </>
+        )}
+
+        {/* Purchase Confirmation Modal */}
+        {showPurchaseModal && selectedNumber && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              {!paymentSuccess ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Purchase Phone Number</h3>
+                    <button
+                      onClick={handlePurchaseCancel}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Phone className="h-5 w-5 text-blue-600" />
+                      <span className="text-lg font-semibold text-gray-900">{selectedNumber.number}</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Type:</span> {selectedNumber.type}
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Location:</span> {selectedNumber.location}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      Monthly rate: $1.15/month
+                    </div>
+                  </div>
+
+                  {paymentError && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
+                      {paymentError}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handlePurchaseCancel}
+                      className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handlePurchaseConfirm}
+                      disabled={isProcessingPayment}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
+                    >
+                      {isProcessingPayment ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4" />
+                          Purchase Now
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Purchase Successful!</h4>
+                  <p className="text-gray-600 mb-4">
+                    Phone number <strong>{selectedNumber.number}</strong> has been purchased successfully.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    This modal will close automatically in a few seconds.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

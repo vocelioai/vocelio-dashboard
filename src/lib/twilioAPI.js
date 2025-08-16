@@ -325,7 +325,9 @@ class TwilioAPI {
       }
       
       if (options.method === 'POST') {
+        // Simulate successful phone number purchase
         return {
+          success: true,
           sid: 'PN' + Math.random().toString(36).substr(2, 32),
           phone_number: options.body.PhoneNumber,
           friendly_name: options.body.FriendlyName || 'New Number',
@@ -338,7 +340,8 @@ class TwilioAPI {
           date_created: new Date().toISOString(),
           date_updated: new Date().toISOString(),
           voice_url: options.body.VoiceUrl || '',
-          sms_url: options.body.SmsUrl || ''
+          sms_url: options.body.SmsUrl || '',
+          mock: true
         };
       }
     }
