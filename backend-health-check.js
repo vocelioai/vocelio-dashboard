@@ -12,13 +12,22 @@ const API_CONFIG = {
   API_MANAGEMENT: 'https://apimanagement.vocelio.ai',
   ENTERPRISE_SECURITY: 'https://security.vocelio.ai',
   AUDIT_COMPLIANCE: 'https://compliance.vocelio.ai',
-  AI_AGENTS: 'https://ai-agents-service.vocelio.ai',
-  AI_BRAIN: 'https://ai-brain.vocelio.ai',
-  VOICE_LAB: 'https://voice-lab.vocelio.ai',
-  SMART_CAMPAIGNS: 'https://smart-campaigns.vocelio.ai',
-  CALL_CENTER: 'https://call-center.vocelio.ai',
-  PHONE_NUMBERS: 'https://phone-numbers.vocelio.ai',
-  NOTIFICATIONS: 'https://notifications.vocelio.ai'
+  AI_AGENTS: 'https://agents.vocelio.ai',
+  AI_BRAIN: 'https://brain.vocelio.ai',
+  VOICE_LAB: 'https://voicelab.vocelio.ai',
+  SMART_CAMPAIGNS: 'https://campaigns.vocelio.ai',
+  CALL_CENTER: 'https://call.vocelio.ai',
+  PHONE_NUMBERS: 'https://numbers.vocelio.ai',
+  NOTIFICATIONS: 'https://notifications.vocelio.ai',
+  BILLING: 'https://billing.vocelio.ai',
+  LEAD_MANAGEMENT: 'https://lead.vocelio.ai',
+  SCHEDULING: 'https://scheduling.vocelio.ai',
+  INTEGRATIONS: 'https://integrations.vocelio.ai',
+  FLOW_BUILDER: 'https://flowbuilder.vocelio.ai',
+  VOICE_MARKETPLACE: 'https://voicemarketplace.vocelio.ai',
+  DEVELOPER_API: 'https://developer.vocelio.ai',
+  WHITE_LABEL: 'https://whitelabel.vocelio.ai',
+  SETTINGS: 'https://settings.vocelio.ai'
 };
 
 // Test endpoints for each service
