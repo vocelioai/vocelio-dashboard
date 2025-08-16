@@ -325,7 +325,7 @@ const PhoneNumberPurchasePage = () => {
               <select 
                 value={selectedCountry}
                 onChange={(e) => setSelectedCountry(e.target.value)}
-                className="w-full max-w-md px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full max-w-md px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 {availableCountries.map((country) => (
                   <option key={country.code} value={`${country.code} (${country.dialCode}) ${country.name} - ${country.code}`} className="text-gray-700 font-medium py-2">
@@ -333,7 +333,7 @@ const PhoneNumberPurchasePage = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-gray-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
 
@@ -365,12 +365,12 @@ const PhoneNumberPurchasePage = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Search criteria</label>
               <div className="relative">
-                <select className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                <select className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
                   <option className="text-gray-700 font-medium py-2">Number</option>
                   <option className="text-gray-700 font-medium py-2">Area Code</option>
                   <option className="text-gray-700 font-medium py-2">City</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-gray-500 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
             </div>
             <div>
@@ -379,13 +379,13 @@ const PhoneNumberPurchasePage = () => {
                 <select 
                   value={matchCriteria}
                   onChange={(e) => setMatchCriteria(e.target.value)}
-                  className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 >
                   <option className="text-gray-700 font-medium py-2">First part of number</option>
                   <option className="text-gray-700 font-medium py-2">Contains</option>
                   <option className="text-gray-700 font-medium py-2">Ends with</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-gray-500 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -394,12 +394,12 @@ const PhoneNumberPurchasePage = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by digits or phrases"
-                className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               />
               <button 
                 onClick={handleSearch}
                 disabled={isSearching}
-                className={`px-6 py-3 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 ${
+                className={`px-4 py-2 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 ${
                   isSearching 
                     ? 'bg-gray-400 text-white cursor-not-allowed' 
                     : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
@@ -417,7 +417,7 @@ const PhoneNumberPurchasePage = () => {
                   setEmergencyOnly(false);
                   setCurrentPage(1);
                 }}
-                className="px-4 py-3 text-gray-700 font-semibold bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                className="px-3 py-2 text-gray-700 font-semibold bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
               >
                 Reset filters
               </button>
@@ -472,14 +472,14 @@ const PhoneNumberPurchasePage = () => {
                   <select 
                     value={addressRequirement}
                     onChange={(e) => setAddressRequirement(e.target.value)}
-                    className="w-full max-w-xs px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    className="w-full max-w-xs px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   >
                     <option value="Any" className="text-gray-700 font-medium py-2">Any</option>
                     <option value="None" className="text-gray-700 font-medium py-2">None</option>
                     <option value="Exclude local requirements" className="text-gray-700 font-medium py-2">Exclude local requirements</option>
                     <option value="Exclude foreign requirements" className="text-gray-700 font-medium py-2">Exclude foreign requirements</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
                 </div>
               </div>
 
