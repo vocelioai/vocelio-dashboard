@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Search, Filter, Globe, Phone, MessageSquare, Headphones, ChevronDown, Star, ArrowUpRight, DollarSign, MapPin, Clock, CheckCircle, XCircle, RefreshCw, Zap, Shield, Mail, FileText } from 'lucide-react';
 import twilioAPI from '../lib/twilioAPI';
-import '../debug-env'; // Add environment debug
 
 const PhoneNumberPurchasePage = () => {
   const [selectedCountry, setSelectedCountry] = useState('US (+1) United States - US');
