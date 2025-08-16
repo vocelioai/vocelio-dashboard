@@ -11,7 +11,7 @@ class VoiceService {
     this.isInitialized = false;
     this.isConnected = false;
     this.isMuted = false;
-    this.railwayBackendUrl = process.env.REACT_APP_CALL_CENTER_API || 'https://vocelio-dashboard-n856762i7-vocelioais-projects.vercel.app';
+    this.railwayBackendUrl = process.env.REACT_APP_CALL_CENTER_API || 'https://vocelio-dashboard-5vugp8166-vocelioais-projects.vercel.app';
     this.listeners = {
       ready: [],
       error: [],
