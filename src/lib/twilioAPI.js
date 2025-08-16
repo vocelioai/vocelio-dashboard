@@ -348,24 +348,51 @@ class TwilioAPI {
 
   // Search for available phone numbers
   async searchAvailableNumbers(country = 'US', options = {}) {
-    const params = new URLSearchParams({
-      ...options,
-      Country: country,
-      Limit: options.limit || 10
-    });
+    try {
+      const params = new URLSearchParams({
+        ...options,
+        Country: country,
+        Limit: options.limit || 10
+      });
 
-    if (options.areaCode) {
-      params.append('AreaCode', options.areaCode);
-    }
-    
-    if (options.contains) {
-      params.append('Contains', options.contains);
-    }
+      if (options.areaCode) {
+        params.append('AreaCode', options.areaCode);
+      }
+      
+      if (options.contains) {
+        params.append('Contains', options.contains);
+      }
 
-    const numberType = options.type || 'Local';
-    const endpoint = `/available-phone-numbers/${country}/${numberType}?${params}`;
-    
-    return this.request(endpoint);
+      const numberType = options.type || 'Local';
+      const endpoint = `/available-phone-numbers/${country}/${numberType}?${params}`;
+      
+      const rawResponse = await this.request(endpoint);
+      
+      // Transform response to expected format
+      if (rawResponse.available_phone_numbers) {
+        return {
+          success: true,
+          data: rawResponse.available_phone_numbers,
+          mock: rawResponse.mock || false
+        };
+      } else if (rawResponse.success) {
+        // Already in correct format from backend
+        return rawResponse;
+      } else {
+        return {
+          success: false,
+          error: rawResponse.error || 'No phone numbers found',
+          data: []
+        };
+      }
+    } catch (error) {
+      console.error('Error in searchAvailableNumbers:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to search phone numbers',
+        data: []
+      };
+    }
   }
 
   // Alias for searchAvailableNumbers for compatibility
