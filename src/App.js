@@ -48,6 +48,7 @@ import UnifiedNotificationCenter from './pages/UnifiedNotificationCenter';
 import SchedulingCenter from './pages/SchedulingCenter';
 import AIAgentsService from './pages/AIAgentsService';
 import WebhooksManager from './pages/WebhooksManager';
+import ServiceTestingPage from './pages/ServiceTestingPage';
 
 // Import new API test component
 import APITestComponent from './components/APITestComponent';
@@ -403,6 +404,7 @@ const VocelioUltimateDashboard = () => {
       type: 'group',
       badge: null,
       children: [
+        { id: 'service-testing', label: 'Service Testing', icon: TestTube, badge: 'NEW' },
         { id: 'notifications-center', label: 'Notification Center', icon: Bell, badge: 'UNIFIED' },
         { id: 'billing-pro', label: 'Billing Pro', icon: CreditCard, badge: null },
         { id: 'developer-api', label: 'Developer API', icon: Code, badge: null },
@@ -414,6 +416,7 @@ const VocelioUltimateDashboard = () => {
   // Legacy flat structure for backward compatibility
   const sidebarItems = [
     { id: 'overview', label: 'Command Center', icon: Command, badge: 'LIVE' },
+    { id: 'service-testing', label: 'Service Testing', icon: TestTube, badge: 'NEW' },
     { id: 'agents-enhanced', label: 'AI Agents Service', icon: Wand2, badge: 'NEW' },
     { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
@@ -1060,6 +1063,9 @@ const VocelioUltimateDashboard = () => {
       
       case 'settings':
         return <VocelioSettingsDashboard />;
+      
+      case 'service-testing':
+        return <ServiceTestingPage darkMode={darkMode} />;
 
       // New Priority 1 Services (Core Missing)
       case 'knowledge-base':

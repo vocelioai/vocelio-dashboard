@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import twilioAPI from '../lib/twilioAPI';
+import TwilioDebugger from '../components/TwilioDebugger';
 import { 
   Phone, Plus, Search, Filter, Globe, CreditCard, Check, X, 
   ArrowRight, MapPin, Shield, Clock, Star, AlertCircle, Info,
@@ -25,11 +26,26 @@ const TwilioNumberPurchase = () => {
   const [myNumbers, setMyNumbers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUsingMockData, setIsUsingMockData] = useState(false);
+  const [twilioStatus, setTwilioStatus] = useState(null);
 
-  // Load owned numbers on component mount
+  // Load owned numbers on component mount and check Twilio status
   useEffect(() => {
     loadOwnedNumbers();
+    checkTwilioConnection();
   }, []);
+
+  // Check Twilio connection status
+  const checkTwilioConnection = async () => {
+    try {
+      const status = await twilioAPI.testConnection();
+      setTwilioStatus(status);
+      setIsUsingMockData(!status.isReal);
+    } catch (error) {
+      console.error('Failed to check Twilio connection:', error);
+      setTwilioStatus({ success: false, mode: 'failed', isReal: false });
+      setIsUsingMockData(true);
+    }
+  };
 
   // Load owned numbers from Twilio API
   const loadOwnedNumbers = async () => {
@@ -133,11 +149,10 @@ const TwilioNumberPurchase = () => {
 
       const response = await twilioAPI.searchAvailableNumbers(selectedCountry, searchOptions);
       
-      // Check if this is mock data (indicated by consistent patterns or specific messages)
-      const isMockData = response.available_phone_numbers && 
-                        (response.available_phone_numbers.length > 0 && 
-                         response.available_phone_numbers[0].phone_number.includes('555') ||
-                         !process.env.REACT_APP_RAILWAY_API_URL);
+      // Check if this is mock data
+      const isMockData = response.mock || (response.available_phone_numbers && 
+                        response.available_phone_numbers.length > 0 && 
+                        response.available_phone_numbers[0].phone_number.includes('555'));
       
       setIsUsingMockData(isMockData);
       
@@ -391,15 +406,35 @@ const TwilioNumberPurchase = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   📞 Manage your Twilio phone numbers • Global coverage • Instant provisioning
                 </p>
-                {/* Connection Status Indicator */}
-                {isUsingMockData && (
-                  <div className="flex items-center space-x-2 mt-1">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
-                      Demo Mode: Backend API not configured - showing sample data
+                
+                {/* Enhanced Connection Status Indicator */}
+                <div className="flex items-center space-x-4 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      twilioStatus?.success && twilioStatus?.isReal ? 'bg-green-500' : 
+                      twilioStatus?.success && !twilioStatus?.isReal ? 'bg-yellow-500 animate-pulse' : 
+                      'bg-red-500 animate-pulse'
+                    }`}></div>
+                    <span className={`text-xs font-medium ${
+                      twilioStatus?.success && twilioStatus?.isReal ? 'text-green-600 dark:text-green-400' :
+                      twilioStatus?.success && !twilioStatus?.isReal ? 'text-yellow-600 dark:text-yellow-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>
+                      {twilioStatus?.success && twilioStatus?.isReal ? 'Live Twilio API Connected' :
+                       twilioStatus?.success && !twilioStatus?.isReal ? 'Demo Mode - Configure Twilio for real numbers' :
+                       'Twilio API Connection Failed'}
                     </span>
                   </div>
-                )}
+                  
+                  {/* Refresh Status Button */}
+                  <button
+                    onClick={checkTwilioConnection}
+                    className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    title="Refresh Twilio connection status"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -442,6 +477,54 @@ const TwilioNumberPurchase = () => {
             <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">NEW</span>
           </button>
         </div>
+
+        {/* Demo Mode Warning Banner */}
+        {isUsingMockData && (
+          <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                  Demo Mode Active
+                </h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                  You're currently viewing demo phone numbers. To search and purchase real Twilio numbers, ensure your Twilio credentials are properly configured.
+                </p>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={checkTwilioConnection}
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200 rounded-lg text-xs font-medium hover:bg-yellow-200 dark:hover:bg-yellow-800/50 transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Test Connection</span>
+                  </button>
+                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                    Status: {twilioStatus?.mode || 'Unknown'} | {twilioStatus?.message || 'Checking...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Real Twilio Success Banner */}
+        {!isUsingMockData && twilioStatus?.isReal && (
+          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div>
+                <h3 className="text-sm font-semibold text-green-800 dark:text-green-200">
+                  Live Twilio Integration Active
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Connected to Twilio API. You can search and purchase real phone numbers.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* My Numbers Tab */}
         {activeTab === 'my-numbers' && (
@@ -1053,6 +1136,9 @@ const TwilioNumberPurchase = () => {
           </div>
         </div>
       </footer>
+      
+      {/* Temporary Debug Component */}
+      <TwilioDebugger />
     </div>
   );
 };
