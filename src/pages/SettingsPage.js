@@ -901,7 +901,7 @@ const VocelioSettingsDashboard = () => {
                 <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'}`}>
                   <h4 className="font-medium mb-2">Connection Settings</h4>
                   <div className="space-y-2 text-sm">
-                    <div><strong>API Gateway:</strong> https://api-gateway-production-588d.up.railway.app</div>
+                    <div><strong>API Gateway:</strong> https://api-gateway.vocelio.ai</div>
                     <div><strong>API Version:</strong> v1</div>
                     <div><strong>Microservices:</strong> 20 services deployed</div>
                     <div><strong>Status:</strong> <span className="text-green-500">Connected</span></div>

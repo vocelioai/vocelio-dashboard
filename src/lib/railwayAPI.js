@@ -1,7 +1,7 @@
-// Vocelio API Client for Railway Backend Integration
+// Vocelio API Client for Production Backend Integration
 class VocelioAPIClient {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'https://api-gateway-production-588d.up.railway.app';
+    this.baseURL = process.env.REACT_APP_API_URL || 'https://api-gateway.vocelio.ai';
     this.apiVersion = process.env.REACT_APP_API_VERSION || 'v1';
     this.authToken = process.env.REACT_APP_AUTH_TOKEN || 'test-token';
     this.overviewService = process.env.REACT_APP_OVERVIEW_SERVICE || 'overview';

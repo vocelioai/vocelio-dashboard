@@ -18,6 +18,13 @@
 .env.test.local
 .env.production.local
 
+# CRITICAL: Never commit production environment files with API keys
+.env.production
+.env
+backend/.env
+backend/.env.local
+backend/.env.production
+
 # Environment variables export files (contain sensitive data)
 vercel-env-variables.txt
 

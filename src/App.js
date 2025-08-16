@@ -48,6 +48,9 @@ import UnifiedNotificationCenter from './pages/UnifiedNotificationCenter';
 import SchedulingCenter from './pages/SchedulingCenter';
 import AIAgentsService from './pages/AIAgentsService';
 import WebhooksManager from './pages/WebhooksManager';
+
+// Import new API test component
+import APITestComponent from './components/APITestComponent';
 import EnterpriseSecurityCenter from './pages/EnterpriseSecurityCenter';
 
 // Import Enhanced Overview API Client
@@ -1095,6 +1098,10 @@ const VocelioUltimateDashboard = () => {
       
       case 'enterprise-portal':
         return <EnterprisePortal />;
+
+      // API Integration Testing
+      case 'api-test':
+        return <APITestComponent />;
       
       case 'business-intelligence':
         return <BusinessIntelligence />;
