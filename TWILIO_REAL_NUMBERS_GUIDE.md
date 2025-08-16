@@ -27,7 +27,7 @@ Your Vocelio Dashboard now has **enhanced Twilio integration** that can search a
 
 ### Twilio Credentials (Already Configured)
 ```bash
-REACT_APP_TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (configured)
+REACT_APP_TWILIO_ACCOUNT_SID=ACb1e054... (configured)
 REACT_APP_TWILIO_AUTH_TOKEN=********** (configured)
 REACT_APP_TWILIO_PHONE_NUMBER=+13072262228
 REACT_APP_TWILIO_VOICE_WEBHOOK=https://api.vocelio.ai/api/v1/twilio/voice

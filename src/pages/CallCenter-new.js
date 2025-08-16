@@ -19,10 +19,17 @@ import {
   Umbrella, Rainbow, Flower, Tree, Leaf, Sprout, Mountain, Waves,
   Fingerprint
 } from 'lucide-react';
+import VoiceCallingWidget from '../components/VoiceCallingWidget';
 
 const LiveCallCenter = () => {
   const [activeTab, setActiveTab] = useState('live-monitoring');
   const [selectedCall, setSelectedCall] = useState(null);
+  const [showVoiceWidget, setShowVoiceWidget] = useState(false);
+  const [voiceWidgetMinimized, setVoiceWidgetMinimized] = useState(false);
+  const [currentCallStatus, setCurrentCallStatus] = useState(null);
+
+  // Debug logging
+  console.log('CallCenter render - showVoiceWidget:', showVoiceWidget, 'voiceWidgetMinimized:', voiceWidgetMinimized);
 
   // Enhanced modern color scheme
   const colorScheme = {
@@ -2129,6 +2136,23 @@ const LiveCallCenter = () => {
                   <div className="text-3xl font-bold text-green-300">98.7%</div>
                   <div className="text-blue-100 font-medium">Call Quality</div>
                 </div>
+                <button
+                  onClick={(e) => {
+                    console.log('Make Call button clicked!', e);
+                    console.log('Button element:', e.target);
+                    console.log('Current showVoiceWidget state:', showVoiceWidget);
+                    setShowVoiceWidget(true);
+                    setVoiceWidgetMinimized(false);
+                  }}
+                  onMouseDown={() => console.log('Button mouse down')}
+                  onMouseUp={() => console.log('Button mouse up')}
+                  onMouseEnter={() => console.log('Button mouse enter')}
+                  style={{ pointerEvents: 'auto', zIndex: 1000 }}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  <PhoneCall className="w-5 h-5" />
+                  <span>Make Call</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2351,13 +2375,11 @@ const LiveCallCenter = () => {
                               ))}
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sidebar */}
+        )}
+          </div>
+        </div>
+      </div>
+    </div>                {/* Sidebar */}
                 <div className="space-y-6">
                   {/* Customer Info */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -2456,6 +2478,36 @@ const LiveCallCenter = () => {
           </div>
         </div>
       </div>
+      
+      {/* Voice Calling Widget Modal - ACTUAL COMPONENT */}
+      {showVoiceWidget && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => {
+            console.log('🎯 Modal overlay clicked - closing modal');
+            setShowVoiceWidget(false);
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full mx-4"
+            onClick={(e) => {
+              console.log('🎯 Modal content clicked - preventing close');
+              e.stopPropagation();
+            }}
+          >
+            <VoiceCallingWidget
+              onClose={() => {
+                console.log('🎯 VoiceCallingWidget onClose called');
+                setShowVoiceWidget(false);
+              }}
+              isMinimized={voiceWidgetMinimized}
+              onMinimize={() => setVoiceWidgetMinimized(!voiceWidgetMinimized)}
+              callStatus={currentCallStatus}
+              onCallStatusChange={setCurrentCallStatus}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

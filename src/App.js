@@ -328,7 +328,7 @@ const VocelioUltimateDashboard = () => {
       type: 'group',
       badge: null,
       children: [
-        { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
+        { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: 'ATK' },
         { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
         { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
         { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' }
@@ -419,7 +419,7 @@ const VocelioUltimateDashboard = () => {
     { id: 'service-testing', label: 'Service Testing', icon: TestTube, badge: 'NEW' },
     { id: 'agents-enhanced', label: 'AI Agents Service', icon: Wand2, badge: 'NEW' },
     { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
-    { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: liveMetrics.activeCalls > 1000 ? `${Math.floor(liveMetrics.activeCalls/1000)}k` : liveMetrics.activeCalls },
+    { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: 'ATK' },
     { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
     { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' },
     { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'AI' },

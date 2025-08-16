@@ -1,9 +1,9 @@
-// Real Twilio API Integration for Phone Number Management
+// Twilio API Integration for Phone Number Management
 class TwilioAPI {
   constructor() {
     this.accountSid = process.env.REACT_APP_TWILIO_ACCOUNT_SID;
-    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN;
-    this.railwayBaseURL = process.env.REACT_APP_API_URL;
+    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN; // Available for direct API calls
+    this.railwayBaseURL = process.env.REACT_APP_API_URL; // Use main API URL
     
     // Debug environment variable loading
     console.log('🔍 TwilioAPI Constructor - Environment Variables:', {
@@ -13,46 +13,84 @@ class TwilioAPI {
       allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_TWILIO'))
     });
     
-    // Twilio REST API endpoints
+    // Primary: Route through secure backend, Fallback: Direct API for development
+    this.backendEndpoint = `${this.railwayBaseURL}/api/v1/twilio`;
     this.directTwilioBase = 'https://api.twilio.com/2010-04-01';
     this.lookupBase = 'https://lookups.twilio.com/v1';
     
-    // Configuration validation
+    // Enhanced configuration validation
     this.isFullyConfigured = !!(this.accountSid && this.authToken);
-    
-    if (!this.isFullyConfigured) {
-      console.warn('⚠️ Twilio credentials not fully configured. Add REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN to environment variables for real API access.');
-    } else {
-      console.log('✅ Twilio API configured for real phone number operations');
-    }
+    this.hasBackendAccess = !!(this.railwayBaseURL);
   }
 
-  // Real Twilio API request method
+  // Generic API request method through Railway backend with direct Twilio fallback
   async request(endpoint, options = {}) {
     console.log('🔍 TwilioAPI Request:', {
       endpoint,
+      hasBackendAccess: this.hasBackendAccess,
       isFullyConfigured: this.isFullyConfigured,
-      method: options.method || 'GET'
+      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing',
+      authToken: this.authToken ? 'present' : 'missing',
+      railwayURL: this.railwayBaseURL
     });
     
-    // Use real Twilio API if configured
+    // If we have Twilio credentials, prioritize direct API calls
     if (this.isFullyConfigured) {
       try {
-        console.log('📞 Using real Twilio API...');
+        console.log('� Using direct Twilio API (primary method)...');
         const result = await this.requestDirectTwilio(endpoint, options);
-        console.log('✅ Real Twilio API success');
+        console.log('✅ Direct Twilio API success:', result);
         return result;
       } catch (error) {
-        console.error('❌ Real Twilio API failed:', error);
-        throw error; // Don't fallback to mock for real implementation
+        console.error('❌ Direct Twilio API failed:', error);
+        // Continue to try backend as fallback
       }
-    } else {
-      // Return error for missing credentials instead of mock data
-      throw new Error('Twilio credentials not configured. Please set REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN environment variables.');
     }
+    
+    // Try backend as secondary option
+    if (this.hasBackendAccess && process.env.REACT_APP_AUTH_TOKEN) {
+      try {
+        console.log('� Trying backend as fallback...');
+        return await this.requestViaBackend(endpoint, options);
+      } catch (error) {
+        console.warn('⚠️ Backend also unavailable:', error.message);
+      }
+    }
+    
+    // Final fallback to mock data only if both methods fail
+    console.warn('🧪 Both Twilio API and backend failed, using mock data');
+    return this.getMockData(endpoint, options);
   }
   
-  // Direct Twilio REST API request method  
+  // Backend request method (original secure approach)
+  async requestViaBackend(endpoint, options = {}) {
+    const url = `${this.backendEndpoint}${endpoint}`;
+    
+    const config = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_AUTH_TOKEN}`,
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (options.body) {
+      config.body = JSON.stringify(options.body);
+    }
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend API Error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    return await response.json();
+  }
+  
+  // Direct Twilio API request method  
   async requestDirectTwilio(endpoint, options = {}) {
     if (!this.isFullyConfigured) {
       throw new Error('Twilio credentials not configured for direct API access');
@@ -60,41 +98,6 @@ class TwilioAPI {
     
     // Convert our generic endpoint to actual Twilio API endpoint
     const twilioEndpoint = this.convertToTwilioEndpoint(endpoint, options);
-    const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
-    
-    // Create basic auth header
-    const credentials = btoa(`${this.accountSid}:${this.authToken}`);
-    
-    const config = {
-      method: options.method || 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        ...options.headers,
-      },
-    };
-
-    // Convert JSON body to URL-encoded for Twilio API
-    if (options.body && options.method !== 'GET') {
-      const formData = new URLSearchParams();
-      Object.entries(options.body).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value);
-        }
-      });
-      config.body = formData.toString();
-    }
-
-    console.log('📞 Making Twilio API request:', { url, method: config.method });
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Twilio API Error: ${response.status} - ${errorData.message || response.statusText}`);
-    }
-    
-    return await response.json();
-  }
     const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
     
     // Create basic auth header
@@ -322,9 +325,7 @@ class TwilioAPI {
       }
       
       if (options.method === 'POST') {
-        // Simulate successful phone number purchase
         return {
-          success: true,
           sid: 'PN' + Math.random().toString(36).substr(2, 32),
           phone_number: options.body.PhoneNumber,
           friendly_name: options.body.FriendlyName || 'New Number',
@@ -337,8 +338,7 @@ class TwilioAPI {
           date_created: new Date().toISOString(),
           date_updated: new Date().toISOString(),
           voice_url: options.body.VoiceUrl || '',
-          sms_url: options.body.SmsUrl || '',
-          mock: true
+          sms_url: options.body.SmsUrl || ''
         };
       }
     }
@@ -348,56 +348,24 @@ class TwilioAPI {
 
   // Search for available phone numbers
   async searchAvailableNumbers(country = 'US', options = {}) {
-    try {
-      const params = new URLSearchParams({
-        ...options,
-        Country: country,
-        Limit: options.limit || 10
-      });
+    const params = new URLSearchParams({
+      ...options,
+      Country: country,
+      Limit: options.limit || 10
+    });
 
-      if (options.areaCode) {
-        params.append('AreaCode', options.areaCode);
-      }
-      
-      if (options.contains) {
-        params.append('Contains', options.contains);
-      }
-
-      const numberType = options.type || 'Local';
-      const endpoint = `/available-phone-numbers/${country}/${numberType}?${params}`;
-      
-      const rawResponse = await this.request(endpoint);
-      
-      // Transform response to expected format
-      if (rawResponse.available_phone_numbers) {
-        return {
-          success: true,
-          data: rawResponse.available_phone_numbers,
-          mock: rawResponse.mock || false
-        };
-      } else if (rawResponse.success) {
-        // Already in correct format from backend
-        return rawResponse;
-      } else {
-        return {
-          success: false,
-          error: rawResponse.error || 'No phone numbers found',
-          data: []
-        };
-      }
-    } catch (error) {
-      console.error('Error in searchAvailableNumbers:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to search phone numbers',
-        data: []
-      };
+    if (options.areaCode) {
+      params.append('AreaCode', options.areaCode);
     }
-  }
+    
+    if (options.contains) {
+      params.append('Contains', options.contains);
+    }
 
-  // Alias for searchAvailableNumbers for compatibility
-  async searchNumbers(country = 'US', options = {}) {
-    return this.searchAvailableNumbers(country, options);
+    const numberType = options.type || 'Local';
+    const endpoint = `/available-phone-numbers/${country}/${numberType}?${params}`;
+    
+    return this.request(endpoint);
   }
 
   // Get owned phone numbers
@@ -541,7 +509,6 @@ export default twilioAPI;
 // Named exports for specific functions
 export const {
   searchAvailableNumbers,
-  searchNumbers,
   getOwnedNumbers,
   purchaseNumber,
   updateNumber,

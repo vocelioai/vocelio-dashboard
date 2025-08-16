@@ -25,7 +25,7 @@ Combine both approaches with intelligent fallback.
 
 ✅ **Twilio Credentials**: Found in .env.local
 ```
-REACT_APP_TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (configured)
+REACT_APP_TWILIO_ACCOUNT_SID=ACb1e054... (configured)
 REACT_APP_TWILIO_AUTH_TOKEN=********** (configured)
 REACT_APP_TWILIO_PHONE_NUMBER=+13072262228
 ```
