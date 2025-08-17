@@ -15,7 +15,7 @@ class TwilioVoiceService {
       authToken: process.env.REACT_APP_TWILIO_AUTH_TOKEN,
       phoneNumber: process.env.REACT_APP_TWILIO_PHONE_NUMBER,
       apiUrl: process.env.REACT_APP_CALL_CENTER_API || 'https://call.vocelio.ai',
-      voiceWebhook: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || 'https://api.vocelio.ai/api/v1/twilio/voice'
+      voiceWebhook: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || 'https://call.vocelio.ai/api/v1/twilio/voice'
     };
     
     console.log('🎯 TwilioVoiceService initialized:', {
@@ -107,6 +107,46 @@ class TwilioVoiceService {
   }
 
   /**
+   * Refresh access token and update device
+   */
+  async refreshAccessToken() {
+    try {
+      console.log('🔄 Refreshing Twilio access token...');
+      
+      // Get new token
+      await this.getAccessToken();
+      
+      // Update device with new token
+      if (this.device && this.token) {
+        await this.device.updateToken(this.token);
+        console.log('✅ Access token refreshed and device updated');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ Failed to refresh access token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle token expiration and retry operation
+   */
+  async handleTokenExpiration(operation, ...args) {
+    try {
+      console.log('🔄 Token expired, attempting to refresh...');
+      await this.refreshAccessToken();
+      
+      // Retry the original operation
+      return await operation.apply(this, args);
+    } catch (error) {
+      console.error('❌ Failed to handle token expiration:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Set up Twilio Device event listeners
    */
   setupDeviceListeners() {
@@ -118,9 +158,22 @@ class TwilioVoiceService {
     });
 
     // Device error
-    this.device.on('error', (error) => {
+    this.device.on('error', async (error) => {
       console.error('📱 Twilio Device error:', error);
-      this.onError && this.onError(`Device error: ${error.message}`);
+      
+      // Handle token expiration errors
+      if (error.code === 20104 || error.message.includes('AccessTokenExpired')) {
+        console.log('🔄 Handling access token expiration...');
+        try {
+          await this.refreshAccessToken();
+          console.log('✅ Token refreshed successfully, device should recover');
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh expired token:', refreshError);
+          this.onError && this.onError(`Token refresh failed: ${refreshError.message}`);
+        }
+      } else {
+        this.onError && this.onError(`Device error: ${error.message}`);
+      }
     });
 
     // Incoming call
@@ -223,6 +276,21 @@ class TwilioVoiceService {
 
     } catch (error) {
       console.error('❌ Failed to make call:', error);
+      
+      // Handle token expiration during call attempt
+      if (error.code === 20104 || error.message.includes('AccessTokenExpired')) {
+        console.log('🔄 Call failed due to expired token, attempting refresh...');
+        try {
+          await this.refreshAccessToken();
+          console.log('🔄 Token refreshed, retrying call...');
+          return await this.makeCall(phoneNumber, options);
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh token and retry call:', refreshError);
+          this.onError && this.onError(`Call failed and token refresh failed: ${refreshError.message}`);
+          return { success: false, error: refreshError.message };
+        }
+      }
+      
       this.onError && this.onError(`Failed to make call: ${error.message}`);
       return {
         success: false,
