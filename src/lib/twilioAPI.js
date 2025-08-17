@@ -3,39 +3,73 @@ class TwilioAPI {
   constructor() {
     this.accountSid = process.env.REACT_APP_TWILIO_ACCOUNT_SID;
     this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN;
-    this.railwayBaseURL = process.env.REACT_APP_API_URL;
+    this.phoneNumbersAPI = process.env.REACT_APP_PHONE_NUMBERS_API || 'https://numbers.vocelio.ai';
+    this.railwayBaseURL = process.env.REACT_APP_API_GATEWAY || 'https://api.vocelio.ai';
     
     // Debug environment variable loading
     console.log('🔍 TwilioAPI Constructor - Environment Variables:', {
       accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'MISSING',
       authToken: this.authToken ? 'PRESENT' : 'MISSING', 
-      apiUrl: this.railwayBaseURL || 'MISSING',
-      allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_TWILIO'))
+      phoneNumbersAPI: this.phoneNumbersAPI,
+      apiGateway: this.railwayBaseURL,
+      allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
     });
     
-    // API configuration
-    this.backendEndpoint = `${this.railwayBaseURL}/api/v1/twilio`;
+    // API configuration - Use vocelio.ai backend services
+    this.backendEndpoint = `${this.phoneNumbersAPI}/api/v1`;
     this.directTwilioBase = 'https://api.twilio.com/2010-04-01';
     this.lookupBase = 'https://lookups.twilio.com/v1';
     
     // Configuration validation
-    this.isFullyConfigured = !!(this.accountSid && this.authToken);
-    this.hasBackendAccess = !!(this.railwayBaseURL);
+    this.isFullyConfigured = !!(this.phoneNumbersAPI);
+    this.hasBackendAccess = !!(this.phoneNumbersAPI);
   }
 
-  // Main API request method - Direct Twilio API only
+  // Main API request method - Use vocelio.ai backend services
   async request(endpoint, options = {}) {
     console.log('🔍 TwilioAPI Request:', {
       endpoint,
-      hasCredentials: this.isFullyConfigured,
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing',
-      authToken: this.authToken ? 'present' : 'missing'
+      hasBackendAccess: this.hasBackendAccess,
+      phoneNumbersAPI: this.phoneNumbersAPI,
+      backendEndpoint: this.backendEndpoint
     });
     
-    // Primary: Direct Twilio API calls
-    if (this.isFullyConfigured) {
+    // Primary: Use vocelio.ai backend services
+    if (this.hasBackendAccess) {
       try {
-        console.log('🚀 Using direct Twilio API...');
+        console.log('🚀 Using vocelio.ai backend services...');
+        const result = await this.requestVocelioBackend(endpoint, options);
+        
+        // Mark backend responses as non-mock
+        if (result && typeof result === 'object') {
+          result.mock = false;
+        }
+        
+        console.log('✅ Vocelio backend API success:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Vocelio backend API failed:', error.message);
+        // Fall back to direct Twilio if backend fails and we have credentials
+        if (this.accountSid && this.authToken) {
+          console.log('🔄 Falling back to direct Twilio API...');
+          try {
+            const result = await this.requestDirectTwilio(endpoint, options);
+            if (result && typeof result === 'object') {
+              result.mock = false;
+            }
+            return result;
+          } catch (directError) {
+            console.error('❌ Direct Twilio API also failed:', directError.message);
+          }
+        }
+        throw error;
+      }
+    }
+    
+    // Fallback: Direct Twilio API calls if we have credentials
+    if (this.accountSid && this.authToken) {
+      try {
+        console.log('🚀 Using direct Twilio API as fallback...');
         const result = await this.requestDirectTwilio(endpoint, options);
         
         // Mark real API responses as non-mock
@@ -47,13 +81,55 @@ class TwilioAPI {
         return result;
       } catch (error) {
         console.error('❌ Direct Twilio API failed:', error.message);
-        // Don't expose technical details to user, throw the cleaned error message
         throw error;
       }
     }
     
-    // No credentials available
-    throw new Error('Twilio credentials not configured. Please set REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN');
+    // No backend or credentials available
+    throw new Error('Phone numbers service not configured. Please check your configuration.');
+  }
+  
+  // Vocelio backend API request method
+  async requestVocelioBackend(endpoint, options = {}) {
+    if (!this.phoneNumbersAPI) {
+      throw new Error('Phone numbers backend service not configured');
+    }
+    
+    const url = `${this.phoneNumbersAPI}${endpoint}`;
+    console.log('🔗 Vocelio Backend API URL:', url);
+    
+    const config = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Use environment API key if available
+        ...(process.env.REACT_APP_VOCELIO_API_KEY && {
+          'Authorization': `Bearer ${process.env.REACT_APP_VOCELIO_API_KEY}`
+        }),
+        ...options.headers,
+      },
+    };
+
+    // Add JSON body if provided
+    if (options.body && options.method !== 'GET') {
+      config.body = JSON.stringify(options.body);
+    }
+
+    console.log('🚀 Making Vocelio Backend request:', { url, method: config.method });
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Vocelio Backend API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Vocelio Backend API error: ${response.status} - ${errorText}`);
+    }
+    
+    return response.json();
   }
   
   // Direct Twilio API request method  
