@@ -48,6 +48,7 @@ import UnifiedNotificationCenter from './pages/UnifiedNotificationCenter';
 import SchedulingCenter from './pages/SchedulingCenter';
 import AIAgentsService from './pages/AIAgentsService';
 import WebhooksManager from './pages/WebhooksManager';
+import TwilioIntegrationTest from './components/TwilioIntegrationTest';
 import ServiceTestingPage from './pages/ServiceTestingPage';
 
 // Import new API test component
@@ -331,6 +332,7 @@ const VocelioUltimateDashboard = () => {
         { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: 'ATK' },
         { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
         { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
+        { id: 'twilio-test', label: 'Twilio Test', icon: TestTube, badge: 'TEST' },
         { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' }
       ]
     },
@@ -943,6 +945,9 @@ const VocelioUltimateDashboard = () => {
       
       case 'phone-numbers':
         return <TwilioNumberPurchase />;
+      
+      case 'twilio-test':
+        return <TwilioIntegrationTest />;
       
       case 'voice-marketplace':
         return <VocelioVoiceMarketplace />;

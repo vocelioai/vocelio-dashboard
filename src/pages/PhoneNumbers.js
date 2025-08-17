@@ -1,21 +1,25 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Search, Filter, Globe, Phone, MessageSquare, Headphones, ChevronDown, Star, ArrowUpRight, DollarSign, MapPin, Clock, CheckCircle, XCircle, RefreshCw, Zap, Shield, Mail, FileText, CreditCard, X } from 'lucide-react';
-import { createPaymentIntent, mockStripeConfirmPayment } from '../api/payment';
-import realTwilioAPI from '../lib/realTwilioAPI';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, Phone, MessageSquare, Mail, FileText, RefreshCw } from 'lucide-react';
+import twilioAPI from '../lib/twilioAPI';
 
 const PhoneNumberPurchasePage = () => {
   const [selectedCountry, setSelectedCountry] = useState('US (+1) United States - US');
   const [searchQuery, setSearchQuery] = useState('');
   const [matchCriteria, setMatchCriteria] = useState('First part of number');
   const [selectedCapabilities, setSelectedCapabilities] = useState({
-    voice: false, // Don't require voice by default
-    sms: false,   // Don't require SMS by default  
-    mms: false,   // Don't require MMS by default
-    fax: false    // Don't require fax by default
+    voice: true,
+    sms: false,
+    mms: false,
+    fax: false
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  
+  // API and data state - using singleton instance
+  const [phoneNumbers, setPhoneNumbers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
   // Advanced search filters
   const [numberTypes, setNumberTypes] = useState({
@@ -100,431 +104,138 @@ const PhoneNumberPurchasePage = () => {
     { code: 'VE', name: 'Venezuela', dialCode: '+58' }
   ];
 
-  // API State Management
-  const [phoneNumbers, setPhoneNumbers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null);
-
-  // Payment State Management
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  // Purchased Numbers State Management
-  const [purchasedNumbers, setPurchasedNumbers] = useState([]);
-  const [showMyNumbers, setShowMyNumbers] = useState(false);
-
-  // Load purchased numbers from Real Twilio API on component mount
-  useEffect(() => {
-    loadPurchasedNumbers();
-  }, []);
-
-  // Function to load purchased numbers from Real Twilio API
-  const loadPurchasedNumbers = async () => {
-    if (!realTwilioAPI.isConfigured) {
-      console.warn('⚠️ Twilio not configured, loading from localStorage as fallback');
-      // Fallback to localStorage if Twilio is not configured
-      const stored = localStorage.getItem('vocelio-purchased-numbers');
-      if (stored) {
-        try {
-          setPurchasedNumbers(JSON.parse(stored));
-        } catch (error) {
-          console.error('Error loading purchased numbers from localStorage:', error);
-        }
-      }
-      return;
-    }
-
-    try {
-      console.log('📞 Loading purchased numbers from Real Twilio API...');
-      const response = await realTwilioAPI.getOwnedNumbers();
-      
-      if (response.incoming_phone_numbers && response.incoming_phone_numbers.length > 0) {
-        // Transform Twilio owned numbers to our format
-        const ownedNumbers = response.incoming_phone_numbers.map(number => ({
-          number: number.phone_number,
-          friendlyName: number.friendly_name || number.phone_number,
-          type: 'Local', // Default type
-          location: `${number.region || 'Unknown'}, ${number.iso_country || 'US'}`,
-          capabilities: {
-            voice: number.capabilities?.voice !== false,
-            sms: number.capabilities?.sms !== false,
-            mms: number.capabilities?.mms !== false,
-            fax: number.capabilities?.fax !== false
-          },
-          addressRequirement: 'None',
-          monthlyFee: '$1.15',
-          isBeta: false,
-          emergencyCapable: number.capabilities?.voice !== false,
-          // Real Twilio fields
-          twilioSid: number.sid,
-          accountSid: number.account_sid,
-          dateCreated: number.date_created,
-          dateUpdated: number.date_updated,
-          status: number.status || 'in-use',
-          voiceUrl: number.voice_url,
-          smsUrl: number.sms_url,
-          purchaseDate: number.date_created, // Use creation date as purchase date
-          purchaseId: number.sid,
-          monthlyRate: '$1.15',
-          usageCount: 0 // This would need separate API call to get usage
-        }));
-        
-        console.log(`✅ Loaded ${ownedNumbers.length} purchased numbers from Real Twilio API`);
-        setPurchasedNumbers(ownedNumbers);
-        
-        // Also save to localStorage as backup
-        localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(ownedNumbers));
-      } else {
-        console.log('📝 No purchased numbers found in Twilio account');
-        setPurchasedNumbers([]);
-      }
-    } catch (error) {
-      console.error('❌ Failed to load purchased numbers from Twilio:', error);
-      // Fallback to localStorage
-      const stored = localStorage.getItem('vocelio-purchased-numbers');
-      if (stored) {
-        try {
-          setPurchasedNumbers(JSON.parse(stored));
-          console.log('📦 Loaded purchased numbers from localStorage as fallback');
-        } catch (storageError) {
-          console.error('Error loading from localStorage fallback:', storageError);
-        }
-      }
-    }
-  };
-
-  // Save purchased numbers to localStorage whenever it changes (backup)
-  useEffect(() => {
-    if (purchasedNumbers.length > 0) {
-      localStorage.setItem('vocelio-purchased-numbers', JSON.stringify(purchasedNumbers));
-    }
-  }, [purchasedNumbers]);
-
-  // Fetch phone numbers from Twilio API
-  const fetchPhoneNumbers = useCallback(async () => {
-    console.log('🔍 fetchPhoneNumbers called with:', { selectedCountry, searchQuery, matchCriteria, numberTypes });
+  // Load phone numbers from Twilio API
+  const loadPhoneNumbers = async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError(null);
-    setDebugInfo(null);
     
     try {
-      const country = selectedCountry.split(' - ')[1] || 'US';
-      const options = {
-        areaCode: searchQuery && matchCriteria === 'First part of number' ? searchQuery : undefined,
-        contains: matchCriteria === 'Contains' ? searchQuery : undefined,
-        limit: 50, // Twilio limit
-        smsEnabled: selectedCapabilities.sms || undefined,
-        voiceEnabled: selectedCapabilities.voice || undefined,
-        mmsEnabled: selectedCapabilities.mms || undefined
-      };
-
-      console.log('📞 Calling realTwilioAPI.searchAvailableNumbers with:', { country, options });
+      // Extract country code properly - format is "Country Name - XX"
+      const countryParts = selectedCountry.split(' - ');
+      const country = countryParts.length > 1 ? countryParts[1] : 'US';
       
-      // Add debug info about API state
-      const apiStatus = {
-        hasCredentials: realTwilioAPI.isConfigured,
-        accountSid: realTwilioAPI.accountSid ? `${realTwilioAPI.accountSid.substring(0, 10)}...` : 'MISSING',
-        authToken: realTwilioAPI.authToken ? 'PRESENT' : 'MISSING'
-      };
-      console.log('🔧 Real API Status:', apiStatus);
-      setDebugInfo(apiStatus);
-
-      // Map our number types to Twilio types
-      const typeMapping = {
-        local: 'Local',
-        mobile: 'Mobile', 
-        tollFree: 'TollFree'
+      console.log('🔍 Selected country:', selectedCountry, '-> Country code:', country);
+      
+      const searchOptions = {
+        limit: pageSize,
       };
       
-      // Get enabled number types - search each type separately since Twilio requires one type per request
-      const enabledTypes = Object.entries(numberTypes)
-        .filter(([key, value]) => value)
-        .map(([key]) => typeMapping[key])
-        .filter(Boolean);
-
-      let allNumbers = [];
-      
-      // Search each enabled number type
-      for (const numberType of enabledTypes.length > 0 ? enabledTypes : ['Local']) {
-        try {
-          const response = await realTwilioAPI.searchAvailableNumbers(country, numberType, options);
-          console.log(`📈 Raw API response for ${numberType}:`, response);
-          
-          if (response.available_phone_numbers && response.available_phone_numbers.length > 0) {
-            // Transform Twilio data to our format
-            const transformedNumbers = response.available_phone_numbers.map(number => ({
-              number: number.phone_number,
-              friendlyName: number.friendly_name || number.phone_number,
-              type: numberType,
-              location: number.locality ? `${number.locality}, ${number.region} ${country}` : country,
-              capabilities: {
-                voice: number.capabilities?.voice !== false,
-                sms: number.capabilities?.SMS !== false,
-                mms: number.capabilities?.MMS !== false,
-                fax: number.capabilities?.fax !== false
-              },
-              addressRequirement: (number.address_requirements && number.address_requirements.length > 0) ? 'Local' : 'None',
-              monthlyFee: '$1.15', // Default Twilio pricing
-              isBeta: number.beta || false,
-              emergencyCapable: number.capabilities?.voice !== false,
-              lata: number.lata,
-              rateCenter: number.rate_center,
-              latitude: number.latitude,
-              longitude: number.longitude,
-              region: number.region,
-              postalCode: number.postal_code,
-              isoCountry: number.iso_country
-            }));
-            
-            allNumbers = [...allNumbers, ...transformedNumbers];
-          }
-        } catch (typeError) {
-          console.warn(`⚠️ Failed to search ${numberType} numbers:`, typeError.message);
-          // Continue with other types
+      // Add search criteria
+      if (searchQuery && searchQuery.trim()) {
+        const cleanSearch = searchQuery.replace(/[^\d]/g, '');
+        console.log('🔍 Search query:', searchQuery, '-> Clean search:', cleanSearch);
+        
+        if (matchCriteria === 'First part of number' && cleanSearch.length >= 3) {
+          // For area code search, use the first 3 digits
+          searchOptions.AreaCode = cleanSearch.substring(0, 3);
+          console.log('🔍 Using area code search:', searchOptions.AreaCode);
+        } else if (matchCriteria === 'Contains' && cleanSearch.length > 0) {
+          // For contains search, use the clean digits
+          searchOptions.Contains = cleanSearch;
+          console.log('🔍 Using contains search:', searchOptions.Contains);
+        } else if (matchCriteria === 'Ends with' && cleanSearch.length > 0) {
+          // For ends with, we'll use contains for now as Twilio doesn't have "ends with"
+          searchOptions.Contains = cleanSearch;
+          console.log('🔍 Using ends with (via contains) search:', searchOptions.Contains);
         }
       }
       
-      if (allNumbers.length > 0) {
-        console.log(`✅ Successfully fetched ${allNumbers.length} phone numbers from real Twilio API`);
-        setPhoneNumbers(allNumbers);
+      // Determine number type based on filters
+      let numberType = 'Local';
+      if (!numberTypes.local && numberTypes.mobile) {
+        numberType = 'Mobile';
+      } else if (!numberTypes.local && !numberTypes.mobile && numberTypes.tollFree) {
+        numberType = 'TollFree';
+      }
+      
+      searchOptions.type = numberType;
+      
+      console.log('🔍 Final search options:', { country, searchOptions });
+      
+      const response = await twilioAPI.searchAvailableNumbers(country, searchOptions);
+      
+      if (response && response.available_phone_numbers) {
+        // Transform Twilio API response to our format
+        const transformedNumbers = response.available_phone_numbers.map(num => ({
+          number: num.phone_number,
+          friendlyName: num.friendly_name || num.phone_number,
+          type: numberType,
+          location: `${num.locality || ''}, ${num.region || ''} ${num.iso_country || ''}`.trim(),
+          capabilities: {
+            voice: num.capabilities?.voice || true,
+            sms: num.capabilities?.sms || true,
+            mms: num.capabilities?.mms || false,
+            fax: false // Twilio doesn't typically provide fax capability info
+          },
+          addressRequirement: 'None', // Default for most numbers
+          monthlyFee: `$${parseFloat(num.price || '1.15').toFixed(2)}`,
+          isBeta: num.beta || false,
+          emergencyCapable: true, // Most Twilio numbers support emergency calling
+          sid: num.sid,
+          priceUnit: num.price_unit || 'USD'
+        }));
+        
+        setPhoneNumbers(transformedNumbers);
+        console.log(`✅ Loaded ${transformedNumbers.length} phone numbers from Twilio API`);
       } else {
-        console.log('📝 No available numbers found');
+        console.warn('⚠️ No phone numbers returned from API');
         setPhoneNumbers([]);
       }
       
-    } catch (err) {
-      console.error('💥 Error fetching phone numbers:', err);
-      setError(`Failed to load phone numbers: ${err.message}`);
-      setPhoneNumbers([]); // Clear existing data on error
+    } catch (error) {
+      console.error('❌ Error loading phone numbers:', error);
+      setError(error.message);
+      setPhoneNumbers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCountry, searchQuery, matchCriteria, numberTypes, selectedCapabilities]);
+  };
 
-  // Load initial data
+  // Load numbers on component mount and when filters change
   useEffect(() => {
-    // Debug: Log environment variables
-    console.log('=== ENVIRONMENT VARIABLES DEBUG ===');
-    console.log('REACT_APP_TWILIO_ACCOUNT_SID:', process.env.REACT_APP_TWILIO_ACCOUNT_SID);
-    console.log('REACT_APP_TWILIO_AUTH_TOKEN exists:', !!process.env.REACT_APP_TWILIO_AUTH_TOKEN);
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('All environment variables:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_TWILIO')));
-    
-    fetchPhoneNumbers();
-  }, [fetchPhoneNumbers]); // Now uses fetchPhoneNumbers with proper dependencies
+    loadPhoneNumbers();
+  }, [selectedCountry, searchQuery, matchCriteria, numberTypes, pageSize]);
 
-  // Search function
-  const handleSearch = async () => {
-    setIsSearching(true);
-    await fetchPhoneNumbers();
-    setIsSearching(false);
-  };
-
-  // Purchase handlers
-  const handlePurchaseClick = (number) => {
-    setSelectedNumber(number);
-    setShowPurchaseModal(true);
-  };
-
-  const handlePurchaseConfirm = async () => {
-    if (!selectedNumber) return;
-    
-    setIsProcessingPayment(true);
-    setPaymentError(null);
-    
+  // Purchase a phone number
+  const purchaseNumber = async (phoneNumber, friendlyName = '') => {
     try {
-      console.log('🛒 Starting purchase process for:', selectedNumber.number);
+      setIsLoading(true);
       
-      // Step 1: Create payment intent
-      const paymentData = await createPaymentIntent({
-        phoneNumber: selectedNumber.number,
-        amount: 115, // $1.15 in cents
-        currency: 'usd',
-        description: `Phone Number: ${selectedNumber.number}`,
-      });
+      const purchaseOptions = {
+        friendlyName: friendlyName || `Number ${phoneNumber}`,
+        voiceUrl: process.env.REACT_APP_VOICE_WEBHOOK_URL,
+        smsUrl: process.env.REACT_APP_SMS_WEBHOOK_URL
+      };
       
-      console.log('💳 Payment intent created:', paymentData);
+      console.log('💰 Purchasing phone number:', phoneNumber, purchaseOptions);
       
-      // Step 2: Process payment (mock Stripe confirmation)
-      const paymentResult = await mockStripeConfirmPayment(paymentData.clientSecret, {
-        type: 'card',
-        card: {
-          number: '4242424242424242', // Test card number
-          exp_month: 12,
-          exp_year: 2030,
-          cvc: '123',
-        },
-        billing_details: {
-          name: 'Demo User',
-          email: 'demo@example.com',
-        },
-      });
+      const result = await twilioAPI.purchaseNumber(phoneNumber, purchaseOptions);
       
-      console.log('✅ Payment confirmed:', paymentResult);
-      
-      // Step 3: Purchase the phone number from Real Twilio API
-      const purchaseResult = await realTwilioAPI.purchaseNumber(selectedNumber.number, {
-        friendlyName: `Purchased Number ${selectedNumber.number}`,
-        voiceUrl: '', // Add your webhook URLs here
-        smsUrl: '',
-      });
-      
-      console.log('📞 Real Twilio purchase result:', purchaseResult);
-      
-      // Real Twilio API returns a successful response with 'sid' field
-      if (purchaseResult && purchaseResult.sid) {
-        console.log('📞 Phone number purchased successfully from Real Twilio API');
-        setPaymentSuccess(true);
-        
-        // Add the purchased number to the purchased numbers list
-        const purchasedNumber = {
-          ...selectedNumber,
-          purchaseDate: new Date().toISOString(),
-          purchaseId: purchaseResult.sid,
-          status: 'in-use', // Twilio status
-          monthlyRate: '$1.15',
-          usageCount: 0,
-          twilioSid: purchaseResult.sid,
-          accountSid: purchaseResult.account_sid,
-          dateCreated: purchaseResult.date_created,
-          dateUpdated: purchaseResult.date_updated,
-          voiceUrl: purchaseResult.voice_url,
-          smsUrl: purchaseResult.sms_url
-        };
-        setPurchasedNumbers(prev => [...prev, purchasedNumber]);
-        
-        // Remove the purchased number from the available list
-        setPhoneNumbers(prev => prev.filter(num => num.number !== selectedNumber.number));
-        
-        // Auto-close modal after 3 seconds
-        setTimeout(() => {
-          setShowPurchaseModal(false);
-          setSelectedNumber(null);
-          setPaymentSuccess(false);
-        }, 3000);
+      if (result && result.sid) {
+        alert(`✅ Successfully purchased ${phoneNumber}!`);
+        // Reload numbers to show updated list
+        await loadPhoneNumbers();
       } else {
-        throw new Error(purchaseResult.error || 'Failed to purchase phone number from Twilio');
+        throw new Error('Purchase failed - no SID returned');
       }
       
     } catch (error) {
-      console.error('❌ Purchase failed:', error);
-      setPaymentError(error.message || 'Purchase failed. Please try again.');
+      console.error('❌ Error purchasing phone number:', error);
+      alert(`❌ Failed to purchase ${phoneNumber}: ${error.message}`);
     } finally {
-      setIsProcessingPayment(false);
+      setIsLoading(false);
     }
-  };
-
-  // Phone Number Management Functions
-
-  // Update phone number configuration
-  const updatePhoneNumber = async (numberSid, updates) => {
-    if (!realTwilioAPI.isConfigured) {
-      throw new Error('Twilio not configured');
-    }
-
-    try {
-      console.log('📝 Updating phone number configuration:', { numberSid, updates });
-      const result = await realTwilioAPI.updateNumber(numberSid, updates);
-      
-      // Update the local state
-      setPurchasedNumbers(prev => 
-        prev.map(num => 
-          num.twilioSid === numberSid 
-            ? { ...num, ...updates, dateUpdated: new Date().toISOString() }
-            : num
-        )
-      );
-      
-      console.log('✅ Phone number updated successfully');
-      return result;
-    } catch (error) {
-      console.error('❌ Failed to update phone number:', error);
-      throw error;
-    }
-  };
-
-  // Release/delete a phone number
-  const releasePhoneNumber = async (numberSid) => {
-    if (!realTwilioAPI.isConfigured) {
-      throw new Error('Twilio not configured');
-    }
-
-    if (!window.confirm('Are you sure you want to release this phone number? This action cannot be undone.')) {
-      return false;
-    }
-
-    try {
-      console.log('🗑️ Releasing phone number:', numberSid);
-      await realTwilioAPI.releaseNumber(numberSid);
-      
-      // Remove from local state
-      setPurchasedNumbers(prev => prev.filter(num => num.twilioSid !== numberSid));
-      
-      console.log('✅ Phone number released successfully');
-      return true;
-    } catch (error) {
-      console.error('❌ Failed to release phone number:', error);
-      throw error;
-    }
-  };
-
-  // Get phone number details and usage
-  const getNumberDetails = async (numberSid) => {
-    if (!realTwilioAPI.isConfigured) {
-      throw new Error('Twilio not configured');
-    }
-
-    try {
-      const details = await realTwilioAPI.getNumberDetails(numberSid);
-      return details;
-    } catch (error) {
-      console.error('❌ Failed to get number details:', error);
-      throw error;
-    }
-  };
-
-  const handlePurchaseCancel = () => {
-    setShowPurchaseModal(false);
-    setSelectedNumber(null);
-    setPaymentError(null);
-    setPaymentSuccess(false);
   };
 
   const filteredNumbers = useMemo(() => {
     return phoneNumbers.filter(num => {
-      // Search filter
-      if (searchQuery) {
-        const cleanNumber = num.number.replace(/[^\d]/g, '');
-        const cleanSearch = searchQuery.replace(/[^\d]/g, '');
-        
-        if (matchCriteria === 'First part of number') {
-          // For US/Canada numbers, skip country code and check area code
-          const areaCodeStart = cleanNumber.startsWith('1') ? cleanNumber.substring(1) : cleanNumber;
-          if (!areaCodeStart.startsWith(cleanSearch)) {
-            return false;
-          }
-        } else if (matchCriteria === 'Contains' && !cleanNumber.includes(cleanSearch)) {
-          return false;
-        } else if (matchCriteria === 'Ends with' && !cleanNumber.endsWith(cleanSearch)) {
-          return false;
-        }
-      }
-
       // Capability filters
       if (selectedCapabilities.voice && !num.capabilities.voice) return false;
       if (selectedCapabilities.sms && !num.capabilities.sms) return false;
       if (selectedCapabilities.mms && !num.capabilities.mms) return false;
       if (selectedCapabilities.fax && !num.capabilities.fax) return false;
-
-      // Number type filters (Advanced)
-      if (!numberTypes.local && num.type === 'Local') return false;
-      if (!numberTypes.mobile && num.type === 'Mobile') return false;
-      if (!numberTypes.tollFree && num.type === 'Toll-free') return false;
 
       // Address requirement filter (Advanced)
       if (addressRequirement !== 'Any') {
@@ -541,7 +252,7 @@ const PhoneNumberPurchasePage = () => {
 
       return true;
     });
-  }, [searchQuery, matchCriteria, selectedCapabilities, numberTypes, addressRequirement, excludeBeta, emergencyOnly, phoneNumbers]);
+  }, [phoneNumbers, selectedCapabilities, addressRequirement, excludeBeta, emergencyOnly]);
 
   // Pagination logic
   const startIndex = (currentPage - 1) * pageSize;
@@ -551,8 +262,8 @@ const PhoneNumberPurchasePage = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchPhoneNumbers();
     setLastRefresh(new Date());
+    await loadPhoneNumbers();
     setIsRefreshing(false);
   };
 
@@ -579,301 +290,186 @@ const PhoneNumberPurchasePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">      
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error loading phone numbers
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  {error}
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={loadPhoneNumbers}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && phoneNumbers.length === 0 && (
+          <div className="text-center py-12">
+            <RefreshCw className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading phone numbers...</h3>
+            <p className="text-gray-500">Searching Twilio for available numbers</p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {showMyNumbers ? 'My Phone Numbers' : 'Buy a Phone Number'}
-            </h1>
-            
-            {/* Toggle between Available and My Numbers */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setShowMyNumbers(false)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  !showMyNumbers 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Available Numbers
-              </button>
-              <button
-                onClick={() => setShowMyNumbers(true)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  showMyNumbers 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                My Numbers ({purchasedNumbers.length})
-              </button>
-            </div>
-
-            {!showMyNumbers && (
-              <button
-                onClick={() => fetchPhoneNumbers()}
-                disabled={isLoading}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all duration-200 ${
-                  isLoading 
-                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm transform hover:scale-105'
-                }`}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? 'Refreshing...' : 'Refresh'}
-              </button>
-            )}
-          </div>
-          
-          {!showMyNumbers && (
-            <button className="text-blue-600 hover:text-blue-800 font-semibold bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105">
-              Can't find a number?
+            <h1 className="text-3xl font-bold text-gray-900">Buy a Number</h1>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing || isLoading}
+              className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border transition-all ${
+                isRefreshing || isLoading
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+              }`}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-          )}
+          </div>
+          <button className="text-blue-600 hover:text-blue-800 font-medium">
+            Can't find a number?
+          </button>
         </div>
 
-        {/* Purchased Numbers View */}
-        {showMyNumbers ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Your Purchased Numbers</h2>
-              <p className="text-gray-600">
-                {purchasedNumbers.length === 0 
-                  ? "You haven't purchased any phone numbers yet." 
-                  : `You have ${purchasedNumbers.length} active phone ${purchasedNumbers.length === 1 ? 'number' : 'numbers'}.`
-                }
-              </p>
-            </div>
-
-            {purchasedNumbers.length === 0 ? (
-              <div className="text-center py-12">
-                <Phone className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Numbers Yet</h3>
-                <p className="text-gray-600 mb-6">Start by purchasing your first phone number.</p>
-                <button
-                  onClick={() => setShowMyNumbers(false)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Browse Available Numbers
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {purchasedNumbers.map((number, index) => (
-                  <div key={number.twilioSid || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Phone className="h-5 w-5 text-blue-600" />
-                          <span className="text-lg font-semibold text-gray-900">{number.number}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            number.status === 'in-use' || number.status === 'active'
-                              ? 'bg-green-100 text-green-700' 
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {number.status === 'in-use' ? 'Active' : number.status}
-                          </span>
-                          {number.friendlyName && number.friendlyName !== number.number && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                              {number.friendlyName}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                          <div>
-                            <span className="font-medium">Type:</span>
-                            <div>{number.type || 'Local'}</div>
-                          </div>
-                          <div>
-                            <span className="font-medium">Location:</span>
-                            <div>{number.location || 'N/A'}</div>
-                          </div>
-                          <div>
-                            <span className="font-medium">Monthly Rate:</span>
-                            <div>{number.monthlyRate}</div>
-                          </div>
-                          <div>
-                            <span className="font-medium">Purchased:</span>
-                            <div>{new Date(number.purchaseDate || number.dateCreated).toLocaleDateString()}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 mt-3">
-                          <div className="flex gap-2">
-                            {number.capabilities?.voice && <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Voice</div>}
-                            {number.capabilities?.sms && <div className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">SMS</div>}
-                            {number.capabilities?.mms && <div className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">MMS</div>}
-                            {number.capabilities?.fax && <div className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">Fax</div>}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            SID: {number.twilioSid ? `${number.twilioSid.substring(0, 10)}...` : 'N/A'}
-                          </div>
-                        </div>
-
-                        {/* Configuration URLs if set */}
-                        {(number.voiceUrl || number.smsUrl) && (
-                          <div className="mt-3 p-2 bg-gray-50 rounded text-xs">
-                            {number.voiceUrl && (
-                              <div><span className="font-medium">Voice URL:</span> {number.voiceUrl}</div>
-                            )}
-                            {number.smsUrl && (
-                              <div><span className="font-medium">SMS URL:</span> {number.smsUrl}</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col gap-2 ml-4">
-                        <button 
-                          onClick={() => setSelectedNumber(number)}
-                          className="px-3 py-1 text-blue-600 hover:text-white hover:bg-blue-600 border border-blue-600 rounded text-sm font-medium transition-colors"
-                        >
-                          Configure
-                        </button>
-                        <button 
-                          onClick={() => getNumberDetails(number.twilioSid)}
-                          className="px-3 py-1 text-gray-600 hover:text-white hover:bg-gray-600 border border-gray-600 rounded text-sm font-medium transition-colors"
-                        >
-                          Details
-                        </button>
-                        <button 
-                          onClick={() => releasePhoneNumber(number.twilioSid)}
-                          className="px-3 py-1 text-red-600 hover:text-white hover:bg-red-600 border border-red-600 rounded text-sm font-medium transition-colors"
-                        >
-                          Release
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
+        {/* Main Content - Only show when not in initial loading state */}
+        {!(isLoading && phoneNumbers.length === 0) && (
           <>
-            {/* Available Numbers View */}
             {/* Country Selection */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">Select Country</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
             <div className="relative">
               <select 
                 value={selectedCountry}
                 onChange={(e) => setSelectedCountry(e.target.value)}
-                className="w-full max-w-md px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-900"
               >
                 {availableCountries.map((country) => (
-                  <option key={country.code} value={`${country.code} (${country.dialCode}) ${country.name} - ${country.code}`} className="text-gray-700 font-medium py-2">
+                  <option key={country.code} value={`${country.code} (${country.dialCode}) ${country.name} - ${country.code}`} className="text-gray-900 bg-white">
                     {country.code} ({country.dialCode}) {country.name} - {country.code}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
           {/* Capabilities */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">Required Capabilities</label>
-            <div className="flex gap-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Capabilities</label>
+            <div className="flex gap-4">
               {[
                 { key: 'voice', label: 'Voice', icon: 'voice' },
                 { key: 'sms', label: 'SMS', icon: 'sms' },
                 { key: 'mms', label: 'MMS', icon: 'mms' },
                 { key: 'fax', label: 'Fax', icon: 'fax' }
               ].map(({ key, label, icon }) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedCapabilities[key]}
                     onChange={() => handleCapabilityChange(key)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors duration-200"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">{label}</span>
+                  <span className="text-sm font-medium text-gray-700">{label}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Search Criteria */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Search criteria</label>
-              <div className="relative">
-                <select className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
-                  <option className="text-gray-700 font-medium py-2">Number</option>
-                  <option className="text-gray-700 font-medium py-2">Area Code</option>
-                  <option className="text-gray-700 font-medium py-2">City</option>
+          {/* Search Criteria - Two Row Layout */}
+          <div className="space-y-4 mb-6">
+            {/* First Row: Search Criteria and Match To */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search criteria</label>
+                <select className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900">
+                  <option className="text-gray-900 bg-white">Number</option>
+                  <option className="text-gray-900 bg-white">Area Code</option>
+                  <option className="text-gray-900 bg-white">City</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Match to</label>
-              <div className="relative">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Match to</label>
                 <select 
                   value={matchCriteria}
                   onChange={(e) => setMatchCriteria(e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                 >
-                  <option className="text-gray-700 font-medium py-2">First part of number</option>
-                  <option className="text-gray-700 font-medium py-2">Contains</option>
-                  <option className="text-gray-700 font-medium py-2">Ends with</option>
+                  <option className="text-gray-900 bg-white">First part of number</option>
+                  <option className="text-gray-900 bg-white">Contains</option>
+                  <option className="text-gray-900 bg-white">Ends with</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by digits or phrases"
-                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              />
-              <button 
-                onClick={handleSearch}
-                disabled={isSearching}
-                className={`px-4 py-2 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 ${
-                  isSearching 
-                    ? 'bg-gray-400 text-white cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
-                }`}
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </button>
-              <button 
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCapabilities({ voice: true, sms: true, mms: true, fax: true });
-                  setNumberTypes({ local: true, mobile: true, tollFree: true });
-                  setAddressRequirement('Any');
-                  setExcludeBeta(false);
-                  setEmergencyOnly(false);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 text-gray-700 font-semibold bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-              >
-                Reset filters
-              </button>
+            
+            {/* Second Row: Search Input and Buttons */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search query</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      loadPhoneNumbers();
+                    }
+                  }}
+                  placeholder="Enter digits or phrases to search"
+                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                />
+              </div>
+              <div className="flex gap-2 items-end">
+                <button 
+                  onClick={loadPhoneNumbers}
+                  disabled={isLoading}
+                  className="h-10 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+                >
+                  {isLoading ? 'Searching...' : 'Search'}
+                </button>
+                {searchQuery && (
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      // The useEffect will automatically trigger loadPhoneNumbers when searchQuery changes
+                    }}
+                    className="h-10 px-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium whitespace-nowrap"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          <p className="text-sm text-gray-600 mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            💡 <strong>Search Tip:</strong> Search by area code, prefix, or specific digits you want in your phone number
+          <p className="text-sm text-gray-600 mb-4">
+            Search by area code, prefix, or characters you want in your phone number
           </p>
 
           {/* Advanced Search Toggle */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold text-sm bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105"
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
           >
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
-            Advanced Search Options
+            <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+            Advanced Search
           </button>
 
           {/* Advanced Search Section */}
@@ -881,21 +477,21 @@ const PhoneNumberPurchasePage = () => {
             <div className="mt-6 space-y-6 border-t border-gray-200 pt-6">
               {/* Number Type */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">Number type</label>
-                <div className="flex gap-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Number type</label>
+                <div className="flex gap-4">
                   {[
                     { key: 'local', label: 'Local' },
                     { key: 'mobile', label: 'Mobile' },
                     { key: 'tollFree', label: 'Toll-free' }
                   ].map(({ key, label }) => (
-                    <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={numberTypes[key]}
                         onChange={(e) => setNumberTypes(prev => ({ ...prev, [key]: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors duration-200"
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">{label}</span>
+                      <span className="text-sm font-medium text-gray-700">{label}</span>
                     </label>
                   ))}
                 </div>
@@ -903,53 +499,50 @@ const PhoneNumberPurchasePage = () => {
 
               {/* Address Requirements */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address requirements
-                  <span className="ml-2 text-gray-400 cursor-help" title="Some numbers require address verification">ⓘ</span>
+                  <span className="ml-1 text-gray-400 cursor-help" title="Some numbers require address verification">ⓘ</span>
                 </label>
-                <div className="relative">
-                  <select 
-                    value={addressRequirement}
-                    onChange={(e) => setAddressRequirement(e.target.value)}
-                    className="w-full max-w-xs px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  >
-                    <option value="Any" className="text-gray-700 font-medium py-2">Any</option>
-                    <option value="None" className="text-gray-700 font-medium py-2">None</option>
-                    <option value="Exclude local requirements" className="text-gray-700 font-medium py-2">Exclude local requirements</option>
-                    <option value="Exclude foreign requirements" className="text-gray-700 font-medium py-2">Exclude foreign requirements</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
-                </div>
+                <select 
+                  value={addressRequirement}
+                  onChange={(e) => setAddressRequirement(e.target.value)}
+                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                >
+                  <option value="Any" className="text-gray-900 bg-white">Any</option>
+                  <option value="None" className="text-gray-900 bg-white">None</option>
+                  <option value="Exclude local requirements" className="text-gray-900 bg-white">Exclude local requirements</option>
+                  <option value="Exclude foreign requirements" className="text-gray-900 bg-white">Exclude foreign requirements</option>
+                </select>
               </div>
 
               {/* Beta Numbers */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Beta numbers
-                  <span className="ml-2 text-gray-400 cursor-help" title="Beta numbers may have limited features">ⓘ</span>
+                  <span className="ml-1 text-gray-400 cursor-help" title="Beta numbers may have limited features">ⓘ</span>
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={excludeBeta}
                     onChange={(e) => setExcludeBeta(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors duration-200"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">Exclude beta phone numbers in search results.</span>
+                  <span className="text-sm text-gray-700">Exclude beta phone numbers in search results.</span>
                 </label>
               </div>
 
               {/* Emergency Calling */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">Emergency Calling</label>
-                <label className="flex items-center gap-3 cursor-pointer group">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Calling</label>
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={emergencyOnly}
                     onChange={(e) => setEmergencyOnly(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors duration-200"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">Only include phone numbers capable of emergency calling.</span>
+                  <span className="text-sm text-gray-700">Only include phone numbers capable of emergency calling.</span>
                 </label>
               </div>
             </div>
@@ -958,57 +551,7 @@ const PhoneNumberPurchasePage = () => {
 
         {/* Results Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-gray-600">Loading phone numbers...</span>
-              </div>
-            </div>
-          ) : error ? (
-            /* Error State */
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="text-red-500 mb-2">
-                <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Phone Numbers</h3>
-              <p className="text-gray-600 mb-4 text-center max-w-md">{error}</p>
-              
-              {/* Debug Information */}
-              {debugInfo && (
-                <div className="bg-gray-50 p-4 rounded-lg mb-4 max-w-md w-full text-left">
-                  <h4 className="font-medium text-gray-900 mb-2">Debug Information:</h4>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>Has Credentials: <span className={debugInfo.hasCredentials ? 'text-green-600' : 'text-red-600'}>{debugInfo.hasCredentials ? 'Yes' : 'No'}</span></div>
-                    <div>Account SID: <span className="font-mono">{debugInfo.accountSid}</span></div>
-                    <div>Auth Token: <span className={debugInfo.authToken === 'PRESENT' ? 'text-green-600' : 'text-red-600'}>{debugInfo.authToken}</span></div>
-                    <div>Backend URL: <span className="font-mono text-xs break-all">{debugInfo.railwayURL}</span></div>
-                  </div>
-                </div>
-              )}
-              
-              <button
-                onClick={fetchPhoneNumbers}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : phoneNumbers.length === 0 ? (
-            /* No Results State */
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="text-gray-400 mb-2">
-                <Phone className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Phone Numbers Found</h3>
-              <p className="text-gray-600 text-center max-w-md">Try adjusting your search criteria or selecting a different country.</p>
-            </div>
-          ) : (
-            /* Results Table */
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -1064,17 +607,24 @@ const PhoneNumberPurchasePage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button 
-                        onClick={() => handlePurchaseClick(number)}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        onClick={() => purchaseNumber(number.number, `${number.type} ${number.location}`)}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <CreditCard className="h-4 w-4 mr-1 inline" />
-                        Buy
+                        {isLoading ? 'Processing...' : 'Buy'}
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+          
+          {paginatedNumbers.length === 0 && (
+            <div className="text-center py-12">
+              <Phone className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No numbers found</h3>
+              <p className="text-gray-500">Try adjusting your search criteria or filters</p>
             </div>
           )}
         </div>
@@ -1089,24 +639,21 @@ const PhoneNumberPurchasePage = () => {
                   <span className="font-medium">{Math.min(endIndex, filteredNumbers.length)}</span> of{' '}
                   <span className="font-medium">{filteredNumbers.length}</span> results
                 </p>
-                <div className="ml-4 flex items-center gap-3">
-                  <label className="text-sm font-semibold text-gray-800">Show:</label>
-                  <div className="relative">
-                    <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="px-3 py-2 pr-8 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                    >
-                      <option value={10} className="text-gray-700 font-medium">10</option>
-                      <option value={20} className="text-gray-700 font-medium">20</option>
-                      <option value={50} className="text-gray-700 font-medium">50</option>
-                    </select>
-                    <ChevronDown className="absolute right-2 top-2.5 h-3 w-3 text-gray-500 pointer-events-none" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">per page</span>
+                <div className="ml-4 flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Show:</label>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  >
+                    <option value={10} className="text-gray-900 bg-white">10</option>
+                    <option value={20} className="text-gray-900 bg-white">20</option>
+                    <option value={50} className="text-gray-900 bg-white">50</option>
+                  </select>
+                  <span className="text-sm text-gray-700">per page</span>
                 </div>
               </div>
               
@@ -1168,86 +715,6 @@ const PhoneNumberPurchasePage = () => {
           </div>
         )}
           </>
-        )}
-
-        {/* Purchase Confirmation Modal */}
-        {showPurchaseModal && selectedNumber && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              {!paymentSuccess ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Purchase Phone Number</h3>
-                    <button
-                      onClick={handlePurchaseCancel}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Phone className="h-5 w-5 text-blue-600" />
-                      <span className="text-lg font-semibold text-gray-900">{selectedNumber.number}</span>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      <span className="font-medium">Type:</span> {selectedNumber.type}
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      <span className="font-medium">Location:</span> {selectedNumber.location}
-                    </div>
-                    <div className="text-lg font-semibold text-gray-900">
-                      Monthly rate: $1.15/month
-                    </div>
-                  </div>
-
-                  {paymentError && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
-                      {paymentError}
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handlePurchaseCancel}
-                      className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handlePurchaseConfirm}
-                      disabled={isProcessingPayment}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
-                    >
-                      {isProcessingPayment ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-4 w-4" />
-                          Purchase Now
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center">
-                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Purchase Successful!</h4>
-                  <p className="text-gray-600 mb-4">
-                    Phone number <strong>{selectedNumber.number}</strong> has been purchased successfully.
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    This modal will close automatically in a few seconds.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
         )}
       </div>
     </div>

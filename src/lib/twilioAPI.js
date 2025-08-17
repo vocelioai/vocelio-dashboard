@@ -2,8 +2,8 @@
 class TwilioAPI {
   constructor() {
     this.accountSid = process.env.REACT_APP_TWILIO_ACCOUNT_SID;
-    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN; // Available for direct API calls
-    this.railwayBaseURL = process.env.REACT_APP_API_URL; // Use main API URL
+    this.authToken = process.env.REACT_APP_TWILIO_AUTH_TOKEN;
+    this.railwayBaseURL = process.env.REACT_APP_API_URL;
     
     // Debug environment variable loading
     console.log('🔍 TwilioAPI Constructor - Environment Variables:', {
@@ -13,81 +13,47 @@ class TwilioAPI {
       allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_TWILIO'))
     });
     
-    // Primary: Route through secure backend, Fallback: Direct API for development
+    // API configuration
     this.backendEndpoint = `${this.railwayBaseURL}/api/v1/twilio`;
     this.directTwilioBase = 'https://api.twilio.com/2010-04-01';
     this.lookupBase = 'https://lookups.twilio.com/v1';
     
-    // Enhanced configuration validation
+    // Configuration validation
     this.isFullyConfigured = !!(this.accountSid && this.authToken);
     this.hasBackendAccess = !!(this.railwayBaseURL);
   }
 
-  // Generic API request method through Railway backend with direct Twilio fallback
+  // Main API request method - Direct Twilio API only
   async request(endpoint, options = {}) {
     console.log('🔍 TwilioAPI Request:', {
       endpoint,
-      hasBackendAccess: this.hasBackendAccess,
-      isFullyConfigured: this.isFullyConfigured,
+      hasCredentials: this.isFullyConfigured,
       accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing',
-      authToken: this.authToken ? 'present' : 'missing',
-      railwayURL: this.railwayBaseURL
+      authToken: this.authToken ? 'present' : 'missing'
     });
     
-    // If we have Twilio credentials, prioritize direct API calls
+    // Primary: Direct Twilio API calls
     if (this.isFullyConfigured) {
       try {
-        console.log('� Using direct Twilio API (primary method)...');
+        console.log('🚀 Using direct Twilio API...');
         const result = await this.requestDirectTwilio(endpoint, options);
+        
+        // Mark real API responses as non-mock
+        if (result && typeof result === 'object') {
+          result.mock = false;
+        }
+        
         console.log('✅ Direct Twilio API success:', result);
         return result;
       } catch (error) {
-        console.error('❌ Direct Twilio API failed:', error);
-        // Continue to try backend as fallback
+        console.error('❌ Direct Twilio API failed:', error.message);
+        // Don't expose technical details to user, throw the cleaned error message
+        throw error;
       }
     }
     
-    // Try backend as secondary option
-    if (this.hasBackendAccess && process.env.REACT_APP_AUTH_TOKEN) {
-      try {
-        console.log('� Trying backend as fallback...');
-        return await this.requestViaBackend(endpoint, options);
-      } catch (error) {
-        console.warn('⚠️ Backend also unavailable:', error.message);
-      }
-    }
-    
-    // Final fallback to mock data only if both methods fail
-    console.warn('🧪 Both Twilio API and backend failed, using mock data');
-    return this.getMockData(endpoint, options);
-  }
-  
-  // Backend request method (original secure approach)
-  async requestViaBackend(endpoint, options = {}) {
-    const url = `${this.backendEndpoint}${endpoint}`;
-    
-    const config = {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_AUTH_TOKEN}`,
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    if (options.body) {
-      config.body = JSON.stringify(options.body);
-    }
-
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Backend API Error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    return await response.json();
+    // No credentials available
+    throw new Error('Twilio credentials not configured. Please set REACT_APP_TWILIO_ACCOUNT_SID and REACT_APP_TWILIO_AUTH_TOKEN');
   }
   
   // Direct Twilio API request method  
@@ -99,6 +65,8 @@ class TwilioAPI {
     // Convert our generic endpoint to actual Twilio API endpoint
     const twilioEndpoint = this.convertToTwilioEndpoint(endpoint, options);
     const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
+    
+    console.log('🔗 Direct Twilio API URL:', url);
     
     // Create basic auth header
     const credentials = btoa(`${this.accountSid}:${this.authToken}`);
@@ -123,25 +91,86 @@ class TwilioAPI {
       config.body = formData.toString();
     }
 
+    console.log('🚀 Making Twilio API request:', { url, method: config.method });
+
     const response = await fetch(url, config);
     
+    console.log('📥 Twilio API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      ok: response.ok
+    });
+    
+    // Get response text first to handle both JSON and XML
+    const responseText = await response.text();
+    console.log('📄 Response text preview:', responseText.substring(0, 200) + '...');
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Twilio API Error: ${response.status} - ${errorData.message || response.statusText}`);
+      // Try to parse as JSON first, fallback to XML error message
+      let errorMessage = response.statusText;
+      let userFriendlyMessage = 'Unable to load phone numbers. Please try again.';
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+      } catch (jsonError) {
+        // If it's XML, extract error message
+        if (responseText.includes('<?xml')) {
+          const errorMatch = responseText.match(/<Message>(.*?)<\/Message>/);
+          if (errorMatch) {
+            errorMessage = errorMatch[1];
+          }
+        }
+      }
+      
+      // Create user-friendly error messages based on status codes
+      if (response.status === 404) {
+        userFriendlyMessage = 'The requested phone numbers are not available. Please try a different search.';
+      } else if (response.status === 401 || response.status === 403) {
+        userFriendlyMessage = 'Authentication error. Please check your Twilio configuration.';
+      } else if (response.status === 400) {
+        userFriendlyMessage = 'Invalid search parameters. Please modify your search and try again.';
+      } else if (response.status >= 500) {
+        userFriendlyMessage = 'Twilio service is currently unavailable. Please try again later.';
+      }
+      
+      // Log the detailed error for debugging, but throw user-friendly message
+      console.error('🚨 Twilio API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        message: errorMessage,
+        url: response.url
+      });
+      
+      throw new Error(userFriendlyMessage);
     }
     
-    return await response.json();
+    // Parse JSON response
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Failed to parse Twilio response as JSON:', parseError);
+      console.error('📄 Response text:', responseText.substring(0, 500));
+      throw new Error('Unable to process phone number data. Please try again.');
+    }
   }
   
   // Convert our generic endpoints to actual Twilio API paths
   convertToTwilioEndpoint(endpoint, options = {}) {
+    console.log('🔄 Converting endpoint:', endpoint);
+    
     // Handle available numbers search
     if (endpoint.includes('/available-phone-numbers')) {
       const parts = endpoint.split('/available-phone-numbers/');
       if (parts.length > 1) {
-        const [country, type] = parts[1].split('/');
-        const queryString = endpoint.includes('?') ? endpoint.split('?')[1] : '';
-        return `/AvailablePhoneNumbers/${country}/${type}.json?${queryString}`;
+        const [country, typeAndQuery] = parts[1].split('/', 2);
+        const typeQueryParts = typeAndQuery.split('?');
+        const type = typeQueryParts[0];
+        const queryString = typeQueryParts.length > 1 ? typeQueryParts[1] : '';
+        const finalEndpoint = `/AvailablePhoneNumbers/${country}/${type}.json${queryString ? '?' + queryString : ''}`;
+        console.log('🔄 Converted available numbers endpoint:', finalEndpoint);
+        return finalEndpoint;
       }
     }
     
@@ -149,354 +178,145 @@ class TwilioAPI {
     if (endpoint.includes('/incoming-phone-numbers')) {
       const parts = endpoint.split('/incoming-phone-numbers');
       if (parts.length > 1 && parts[1].startsWith('/')) {
-        // Specific number operations
-        const numberSid = parts[1].substring(1).split('?')[0];
-        return `/IncomingPhoneNumbers/${numberSid}.json`;
-      } else {
-        // List all numbers
-        const queryString = endpoint.includes('?') ? endpoint.split('?')[1] : '';
-        return `/IncomingPhoneNumbers.json?${queryString}`;
+        // Specific number by SID
+        const finalEndpoint = `/IncomingPhoneNumbers${parts[1]}.json`;
+        console.log('🔄 Converted specific number endpoint:', finalEndpoint);
+        return finalEndpoint;
       }
+      const finalEndpoint = '/IncomingPhoneNumbers.json';
+      console.log('🔄 Converted incoming numbers endpoint:', finalEndpoint);
+      return finalEndpoint;
     }
     
-    // Handle usage records
-    if (endpoint.includes('/usage/records')) {
-      const queryString = endpoint.includes('?') ? endpoint.split('?')[1] : '';
-      return `/Usage/Records/Daily.json?${queryString}`;
-    }
-    
-    // Default passthrough
-    return endpoint;
-  }
-
-  // Enhanced mock data fallback for development with more realistic data
-  getMockData(endpoint, options) {
-    console.info('🧪 Using Twilio Mock Data - Configure real credentials for live data');
-    
-    if (endpoint.includes('/available-phone-numbers')) {
-      // Extract search parameters from endpoint and options
-      const urlParams = new URLSearchParams(endpoint.split('?')[1] || '');
-      const country = endpoint.split('/available-phone-numbers/')[1]?.split('/')[0] || 'US';
-      const numberType = endpoint.split('/').pop()?.split('?')[0] || 'Local';
-      const searchedAreaCode = urlParams.get('AreaCode') || options.areaCode;
-      const containsPattern = urlParams.get('Contains') || options.contains;
-      
-      const generateMockNumbers = (count = 20) => {
-        const numbers = [];
-        
-        // Country-specific data
-        const countryData = {
-          'US': {
-            areaCodes: ['415', '212', '310', '713', '404', '206', '617', '303', '512', '214', '408', '646', '323', '281', '678', '307'],
-            localities: ['San Francisco', 'New York', 'Los Angeles', 'Houston', 'Atlanta', 'Seattle', 'Boston', 'Denver', 'Austin', 'Dallas', 'San Jose', 'Phoenix', 'Chicago', 'Miami', 'Portland', 'Cheyenne'],
-            regions: ['CA', 'NY', 'CA', 'TX', 'GA', 'WA', 'MA', 'CO', 'TX', 'TX', 'CA', 'AZ', 'IL', 'FL', 'OR', 'WY'],
-            countryCode: '+1'
-          },
-          'CA': {
-            areaCodes: ['416', '604', '514', '403', '778', '647', '905', '613', '519', '902', '250', '306', '204', '709', '867'],
-            localities: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Surrey', 'Mississauga', 'Ottawa', 'London', 'Halifax', 'Victoria', 'Saskatoon', 'Winnipeg', 'St. Johns', 'Yellowknife'],
-            regions: ['ON', 'BC', 'QC', 'AB', 'BC', 'ON', 'ON', 'ON', 'NS', 'BC', 'SK', 'MB', 'NL', 'NT'],
-            countryCode: '+1'
-          },
-          'GB': {
-            areaCodes: ['20', '121', '161', '113', '114', '115', '116', '117', '118', '131', '141', '151', '181', '191', '1534'],
-            localities: ['London', 'Birmingham', 'Manchester', 'Leeds', 'Sheffield', 'Nottingham', 'Liverpool', 'Bristol', 'Reading', 'Edinburgh', 'Glasgow', 'Leicester', 'Romford', 'Newcastle', 'Jersey'],
-            regions: ['London', 'Birmingham', 'Manchester', 'Leeds', 'Sheffield', 'Nottingham', 'Liverpool', 'Bristol', 'Reading', 'Edinburgh', 'Glasgow', 'Leicester', 'Romford', 'Newcastle', 'Jersey'],
-            countryCode: '+44'
-          }
-        };
-        
-        const data = countryData[country] || countryData['US'];
-        let areaCodesToUse = data.areaCodes;
-        
-        // Filter by searched area code if specified
-        if (searchedAreaCode) {
-          areaCodesToUse = [searchedAreaCode];
-          // If area code doesn't exist in our data, still generate numbers for it
-          if (!data.areaCodes.includes(searchedAreaCode)) {
-            console.log(`🔍 Generating mock numbers for area code: ${searchedAreaCode}`);
-          }
-        }
-        
-        for (let i = 0; i < count; i++) {
-          const areaCode = areaCodesToUse[i % areaCodesToUse.length];
-          let phoneNumber;
-          
-          if (numberType === 'TollFree') {
-            const tollFreePrefixes = ['800', '888', '877', '866', '855', '844', '833'];
-            const prefix = tollFreePrefixes[i % tollFreePrefixes.length];
-            phoneNumber = `${data.countryCode}${prefix}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-          } else {
-            // Generate phone number with correct country code
-            let number = Math.floor(Math.random() * 1000).toString().padStart(3, '0') + 
-                        Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            
-            // Apply contains filter if specified
-            if (containsPattern) {
-              number = containsPattern + number.substring(containsPattern.length);
-            }
-            
-            phoneNumber = `${data.countryCode}${areaCode}${number}`;
-          }
-          
-          // Use appropriate locality/region for the area code if we have specific data
-          let locality = data.localities[i % data.localities.length];
-          let region = data.regions[i % data.regions.length];
-          
-          // Special handling for searched area codes
-          if (searchedAreaCode === '307') {
-            locality = ['Cheyenne', 'Casper', 'Laramie', 'Gillette', 'Rock Springs'][i % 5];
-            region = 'WY';
-          } else if (searchedAreaCode && data.areaCodes.includes(searchedAreaCode)) {
-            const areaIndex = data.areaCodes.indexOf(searchedAreaCode);
-            locality = data.localities[areaIndex] || locality;
-            region = data.regions[areaIndex] || region;
-          }
-          
-          numbers.push({
-            phone_number: phoneNumber,
-            friendly_name: this.formatPhoneNumber(phoneNumber),
-            locality: locality,
-            region: region,
-            postal_code: country === 'US' ? `${Math.floor(Math.random() * 90000) + 10000}` : 
-                        country === 'CA' ? `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 10)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))} ${Math.floor(Math.random() * 10)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 10)}` :
-                        `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 10)} ${Math.floor(Math.random() * 10)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`,
-            iso_country: country,
-            capabilities: {
-              voice: true,
-              sms: numberType !== 'TollFree',
-              mms: numberType === 'Mobile'
-            },
-            price: this.getPricing(country, numberType.toLowerCase()).toString(),
-            price_unit: 'USD',
-            beta: false,
-            lata: Math.floor(Math.random() * 999) + 1,
-            rate_center: locality.toUpperCase().replace(' ', '')
-          });
-        }
-        
-        return numbers;
-      };
-
-      return {
-        available_phone_numbers: generateMockNumbers(15),
-        uri: `/2010-04-01/Accounts/${this.accountSid}/AvailablePhoneNumbers/${country}/${numberType}.json`,
-        mock: true // Mark as mock data for UI detection
-      };
-    }
-    
-    if (endpoint.includes('/incoming-phone-numbers')) {
-      if (options.method === 'GET') {
-        return {
-          incoming_phone_numbers: [
-            {
-              sid: 'PN1234567890abcdef1234567890abcdef',
-              phone_number: '+15551234567',
-              friendly_name: 'Main Sales Line',
-              capabilities: {
-                voice: true,
-                sms: true,
-                mms: false
-              },
-              status: 'in-use',
-              date_created: '2024-01-15T10:30:00Z',
-              date_updated: '2024-01-15T10:30:00Z',
-              voice_url: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || '',
-              sms_url: process.env.REACT_APP_TWILIO_SMS_WEBHOOK || ''
-            },
-            {
-              sid: 'PN1234567890abcdef1234567890abcde2',
-              phone_number: '+18005551234',
-              friendly_name: 'Toll-Free Support',
-              capabilities: {
-                voice: true,
-                sms: false,
-                mms: false
-              },
-              status: 'in-use',
-              date_created: '2024-02-01T14:20:00Z',
-              date_updated: '2024-02-01T14:20:00Z',
-              voice_url: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || '',
-              sms_url: ''
-            }
-          ],
-          uri: `/2010-04-01/Accounts/${this.accountSid}/IncomingPhoneNumbers.json`
-        };
-      }
-      
-      if (options.method === 'POST') {
-        return {
-          sid: 'PN' + Math.random().toString(36).substr(2, 32),
-          phone_number: options.body.PhoneNumber,
-          friendly_name: options.body.FriendlyName || 'New Number',
-          capabilities: {
-            voice: true,
-            sms: true,
-            mms: false
-          },
-          status: 'in-use',
-          date_created: new Date().toISOString(),
-          date_updated: new Date().toISOString(),
-          voice_url: options.body.VoiceUrl || '',
-          sms_url: options.body.SmsUrl || ''
-        };
-      }
-    }
-    
-    return { success: true, data: {}, mock: true };
+    // Default: return as-is with .json extension if not present
+    const finalEndpoint = endpoint.endsWith('.json') ? endpoint : `${endpoint}.json`;
+    console.log('🔄 Default conversion:', finalEndpoint);
+    return finalEndpoint;
   }
 
   // Search for available phone numbers
   async searchAvailableNumbers(country = 'US', options = {}) {
-    const params = new URLSearchParams({
-      ...options,
-      Country: country,
-      Limit: options.limit || 10
+    console.log('🔍 searchAvailableNumbers called with:', { country, options });
+    
+    // Extract type from options to avoid passing it as a query parameter
+    const { type, limit, ...searchOptions } = options;
+    const numberType = type || 'Local';
+    
+    console.log('🔍 Processing search:', { country, numberType, limit, searchOptions });
+    
+    // Build query parameters for Twilio API
+    const params = new URLSearchParams();
+    params.append('Country', country);
+    params.append('Limit', limit || 20);
+    
+    // Add search parameters with proper Twilio API names
+    Object.entries(searchOptions).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value);
+        console.log(`🔍 Added search param: ${key} = ${value}`);
+      }
     });
-
-    if (options.areaCode) {
-      params.append('AreaCode', options.areaCode);
-    }
     
-    if (options.contains) {
-      params.append('Contains', options.contains);
-    }
-
-    const numberType = options.type || 'Local';
-    const endpoint = `/available-phone-numbers/${country}/${numberType}?${params}`;
+    const queryString = params.toString();
+    const endpoint = `/available-phone-numbers/${country}/${numberType}?${queryString}`;
+    console.log('🔍 Built endpoint:', endpoint);
+    console.log('🔍 Query parameters:', queryString);
     
-    return this.request(endpoint);
+    return await this.request(endpoint);
   }
 
   // Get owned phone numbers
   async getOwnedNumbers() {
-    return this.request('/incoming-phone-numbers');
+    return await this.request('/incoming-phone-numbers');
   }
 
   // Purchase a phone number
   async purchaseNumber(phoneNumber, options = {}) {
-    return this.request('/incoming-phone-numbers', {
+    const body = {
+      PhoneNumber: phoneNumber,
+      FriendlyName: options.friendlyName || phoneNumber,
+      VoiceUrl: options.voiceUrl || process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || '',
+      SmsUrl: options.smsUrl || process.env.REACT_APP_TWILIO_SMS_WEBHOOK || '',
+      ...options
+    };
+    
+    return await this.request('/incoming-phone-numbers', {
       method: 'POST',
-      body: {
-        PhoneNumber: phoneNumber,
-        FriendlyName: options.friendlyName || 'New Number',
-        VoiceUrl: options.voiceUrl || '',
-        SmsUrl: options.smsUrl || '',
-        ...options
-      }
+      body
     });
   }
 
-  // Update phone number configuration
+  // Update a phone number
   async updateNumber(numberSid, options = {}) {
-    return this.request(`/incoming-phone-numbers/${numberSid}`, {
+    return await this.request(`/incoming-phone-numbers/${numberSid}`, {
       method: 'POST',
       body: options
     });
   }
 
-  // Delete phone number
+  // Delete/release a phone number
   async deleteNumber(numberSid) {
-    return this.request(`/incoming-phone-numbers/${numberSid}`, {
+    return await this.request(`/incoming-phone-numbers/${numberSid}`, {
       method: 'DELETE'
     });
   }
 
-  // Get number usage statistics (through Railway backend)
-  async getNumberUsage(numberSid, options = {}) {
-    const params = new URLSearchParams({
-      StartDate: options.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      EndDate: options.endDate || new Date().toISOString().split('T')[0],
-      ...options
-    });
-
-    return this.request(`/usage/records/daily?${params}`);
-  }
-
-  // Format phone number for display
+  // Utility methods
   formatPhoneNumber(phoneNumber) {
     if (!phoneNumber) return '';
     
-    // Handle US numbers
-    if (phoneNumber.startsWith('+1')) {
-      const digits = phoneNumber.replace(/\D/g, '').substring(1);
-      if (digits.length === 10) {
-        return `+1 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-      }
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      const number = cleaned.substring(1);
+      return `(${number.substring(0, 3)}) ${number.substring(3, 6)}-${number.substring(6)}`;
+    }
+    
+    if (cleaned.length === 10) {
+      return `(${cleaned.substring(0, 3)}) ${cleaned.substring(3, 6)}-${cleaned.substring(6)}`;
     }
     
     return phoneNumber;
   }
 
-  // Get pricing for country and number type
-  getPricing(country = 'US', type = 'local') {
-    const pricingMap = {
-      'US': { local: 1.15, tollFree: 2.00, mobile: 1.50 },
-      'CA': { local: 1.00, tollFree: 2.00, mobile: 1.25 },
-      'GB': { local: 1.30, tollFree: 2.50, mobile: 1.80 },
-      'AU': { local: 2.00, tollFree: 3.00, mobile: 2.50 },
-      'DE': { local: 1.50, tollFree: 2.80, mobile: 2.00 },
-      'FR': { local: 1.40, tollFree: 2.60, mobile: 1.90 },
-      'ES': { local: 1.20, tollFree: 2.40, mobile: 1.70 },
-      'IT': { local: 1.35, tollFree: 2.55, mobile: 1.85 }
+  getPricing(country = 'US', numberType = 'local') {
+    const pricing = {
+      'US': { local: 1.15, mobile: 1.15, tollFree: 2.00 },
+      'CA': { local: 1.25, mobile: 1.25, tollFree: 2.00 },
+      'GB': { local: 1.50, mobile: 1.50, tollFree: 2.50 }
     };
-
-    return pricingMap[country]?.[type.toLowerCase()] || 1.15;
+    
+    return pricing[country]?.[numberType] || 1.15;
   }
 
-  // Enhanced Twilio configuration validation
-  isConfigured() {
-    return this.isFullyConfigured;
-  }
-  
-  // Get configuration status with details
+  // Configuration status
   getConfigurationStatus() {
     return {
-      isConfigured: this.isFullyConfigured,
-      hasCredentials: !!(this.accountSid && this.authToken),
-      hasBackend: this.hasBackendAccess,
-      mode: this.isFullyConfigured ? 'direct' : this.hasBackendAccess ? 'backend' : 'mock',
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 8)}...` : 'missing'
+      mode: this.isFullyConfigured ? 'direct' : 'unconfigured',
+      hasCredentials: this.isFullyConfigured,
+      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : null,
+      isConfigured: this.isFullyConfigured
     };
   }
 
-  // Enhanced connection testing with fallback detection
+  // Test connection to Twilio API
   async testConnection() {
-    const status = this.getConfigurationStatus();
-    
     try {
-      console.log('🔍 Testing connection...');
-      const result = await this.request('/incoming-phone-numbers?PageSize=1');
+      // Simple API call to test connectivity
+      await this.request('/incoming-phone-numbers?PageSize=1');
       
-      // Determine if we're using real Twilio API or mock data
-      const isUsingRealAPI = !result.mock && this.isFullyConfigured;
-      const connectionMode = isUsingRealAPI ? 'direct-twilio' : 
-                           result.mock ? 'mock' : 'backend';
-      
-      console.log('📊 Connection test result:', {
+      return {
         success: true,
-        isReal: isUsingRealAPI,
-        mode: connectionMode,
-        hasData: !!(result.incoming_phone_numbers || result.data)
-      });
-      
-      return { 
-        success: true, 
-        data: result,
-        mode: connectionMode,
-        isReal: isUsingRealAPI,
-        message: isUsingRealAPI ? 'Connected to Live Twilio API' : 
-                result.mock ? 'Using mock data - Twilio API unavailable' : 
-                'Connected via backend API'
+        mode: 'direct-twilio',
+        isReal: true,
+        message: 'Connected to Live Twilio API'
       };
     } catch (error) {
-      console.error('❌ Connection test failed:', error);
-      return { 
-        success: false, 
-        error: error.message,
+      return {
+        success: false,
         mode: 'failed',
         isReal: false,
-        message: 'Connection failed - using mock data'
+        message: `Connection failed: ${error.message}`
       };
     }
   }
@@ -513,9 +333,7 @@ export const {
   purchaseNumber,
   updateNumber,
   deleteNumber,
-  getNumberUsage,
   formatPhoneNumber,
   getPricing,
-  isConfigured,
   testConnection
 } = twilioAPI;
