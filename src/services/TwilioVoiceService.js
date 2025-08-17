@@ -14,7 +14,7 @@ class TwilioVoiceService {
       accountSid: process.env.REACT_APP_TWILIO_ACCOUNT_SID,
       authToken: process.env.REACT_APP_TWILIO_AUTH_TOKEN,
       phoneNumber: process.env.REACT_APP_TWILIO_PHONE_NUMBER,
-      apiUrl: process.env.REACT_APP_API_URL || 'https://api.vocelio.ai',
+      apiUrl: process.env.REACT_APP_CALL_CENTER_API || 'https://call.vocelio.ai',
       voiceWebhook: process.env.REACT_APP_TWILIO_VOICE_WEBHOOK || 'https://api.vocelio.ai/api/v1/twilio/voice'
     };
     
