@@ -1,2515 +1,1818 @@
-import React, { useState } from 'react';
-import {
-  Phone, Users, TrendingUp, Clock, Play, Pause, Square, SkipForward,
-  Settings, MessageSquare, Brain, User, Star, PhoneCall, Headphones,
-  Volume2, VolumeX, Mic, MicOff, Video, VideoOff, MoreVertical,
-  Download, Upload, Filter, Search, Calendar, Target, BarChart3,
-  PieChart, Activity, Zap, Shield, Globe, MapPin, Mail, FileText,
-  CheckCircle, XCircle, AlertCircle, AlertTriangle, RefreshCw, ArrowUp, ArrowDown,
-  Plus, Minus, Edit, Trash2, Copy, X, ChevronDown, ChevronUp,
-  ThumbsUp, ThumbsDown, Flag, Tag, Bookmark, Share2, Eye, EyeOff,
-  Lock, Unlock, Save, RotateCcw, FastForward, Rewind, Home, Building2,
-  CreditCard, DollarSign, Percent, Timer, Signal, Wifi, WifiOff, Battery,
-  BellRing, Bell, Smartphone, Tablet, Monitor, Printer, HardDrive,
-  Database, Server, Cloud, CloudOff, Link, Unlink, QrCode, Scan,
-  Navigation, Compass, Map, Route, Car, Truck, Plane, Ship, Train,
-  Bus, Bike, Walk, Coffee, Utensils, ShoppingCart, Package, Box,
-  Gift, Heart, Star as StarIcon, Award, Trophy, Medal, Crown, Diamond,
-  Gem, Sparkles, Sun, Moon, CloudRain, Snowflake, Wind, Thermometer,
-  Umbrella, Rainbow, Flower, Tree, Leaf, Sprout, Mountain, Waves,
-  Fingerprint
-} from 'lucide-react';
-import VoiceCallingWidget from '../components/VoiceCallingWidget';
+import React, { useState, useEffect } from 'react';
+import { Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneOff, Settings, Users, BarChart3, Clock, Mic, MicOff, Volume2, VolumeX, User, MessageSquare, Calendar, FileText, Zap, Activity, TrendingUp, AlertCircle, CheckCircle, Play, Pause, Square, RotateCcw, Save, Upload, Download, Search, Filter, Bell, Shield, Headphones, Globe, UserCheck, Shuffle, ArrowRight, ArrowDown, Map, Flag, ChevronDown, PhoneForwarded, UserPlus, Briefcase, HeartHandshake, Clock3, Route, Target, Command, Keyboard, FastForward, Rewind, SkipBack, SkipForward, Volume1, Repeat, X, SlidersHorizontal, Radio } from 'lucide-react';
+import twilioVoiceService from '../services/TwilioVoiceService';
 
-const LiveCallCenter = () => {
-  const [activeTab, setActiveTab] = useState('live-monitoring');
-  const [selectedCall, setSelectedCall] = useState(null);
-  const [showVoiceWidget, setShowVoiceWidget] = useState(false);
-  const [voiceWidgetMinimized, setVoiceWidgetMinimized] = useState(false);
-  const [currentCallStatus, setCurrentCallStatus] = useState(null);
+const CallCenterDashboard = () => {
+  const [activeCall, setActiveCall] = useState(false);
+  const [callType, setCallType] = useState('outbound');
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(true);
+  const [callTimer, setCallTimer] = useState(0);
+  const [selectedVoice, setSelectedVoice] = useState('June');
+  const [phoneNumber, setPhoneNumber] = useState('(307) 301-7993');
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState('');
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [firstSentence, setFirstSentence] = useState('');
+  const [activeTab, setActiveTab] = useState('basic');
+  const [callStatus, setCallStatus] = useState('idle');
+  const [transferRequested, setTransferRequested] = useState(false);
+  const [inboundQueue, setInboundQueue] = useState([]);
+  const [routingRules, setRoutingRules] = useState('intelligent');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isPlayingBack, setIsPlayingBack] = useState(false);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showRecordingControls, setShowRecordingControls] = useState(false);
+  const [contacts, setContacts] = useState([
+    { id: 1, name: 'John Smith', number: '+1 (555) 123-4567', type: 'lead', priority: 'high', lastCalled: '2024-08-17', status: 'new' },
+    { id: 2, name: 'Sarah Johnson', number: '+1 (555) 234-5678', type: 'customer', priority: 'medium', lastCalled: '2024-08-16', status: 'contacted' },
+    { id: 3, name: 'Mike Davis', number: '+44 20 7123 4567', type: 'prospect', priority: 'low', lastCalled: '2024-08-15', status: 'callback' },
+    { id: 4, name: 'Emma Wilson', number: '+1 (555) 345-6789', type: 'customer', priority: 'high', lastCalled: '2024-08-17', status: 'completed' },
+    { id: 5, name: 'David Brown', number: '+61 2 1234 5678', type: 'lead', priority: 'medium', lastCalled: '2024-08-14', status: 'new' }
+  ]);
+  const [liveMetrics, setLiveMetrics] = useState({
+    activeCalls: 12,
+    queuedCalls: 8,
+    avgWaitTime: '2:34',
+    successRate: 94.2,
+    totalCallsToday: 247,
+    inboundCalls: 156,
+    outboundCalls: 91,
+    transferRate: 15.3
+  });
 
-  // Debug logging
-  console.log('CallCenter render - showVoiceWidget:', showVoiceWidget, 'voiceWidgetMinimized:', voiceWidgetMinimized);
+  // Real Twilio Voice Service States
+  const [twilioInitialized, setTwilioInitialized] = useState(false);
+  const [twilioStatus, setTwilioStatus] = useState('Initializing...');
+  const [realCallActive, setRealCallActive] = useState(false);
+  const [realCallStatus, setRealCallStatus] = useState('idle');
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callError, setCallError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Enhanced modern color scheme
-  const colorScheme = {
-    primary: 'from-indigo-600 via-purple-600 to-blue-700',
-    secondary: 'from-emerald-500 via-teal-500 to-cyan-600', 
-    accent: 'from-rose-500 via-pink-500 to-purple-600',
-    warning: 'from-amber-500 via-orange-500 to-red-500',
-    success: 'from-green-500 via-emerald-500 to-teal-600',
-    dark: 'from-slate-800 via-gray-800 to-zinc-900',
-    light: 'from-white via-gray-50 to-slate-100'
-  };
-
-  // Mock data for demonstration
-  const mockData = {
-    activeCalls: [
-      {
-        id: 1,
-        customerInfo: {
-          name: 'John Smith',
-          location: 'New York, NY',
-          previousCalls: 2,
-          leadSource: 'Website',
-          interestLevel: 85
-        },
-        customerPhone: '+1 (555) 123-4567',
-        agentName: 'Sarah Johnson',
-        status: 'converting',
-        duration: '05:23',
-        startTime: '10:15 AM',
-        transcript: [
-          { speaker: 'agent', text: 'Hi John, thanks for your interest in our services. How can I help you today?', timestamp: '10:15 AM' },
-          { speaker: 'customer', text: 'I\'m looking for a solution to help with my business communications.', timestamp: '10:16 AM' },
-          { speaker: 'agent', text: 'That\'s great! Can you tell me more about your current setup?', timestamp: '10:17 AM' }
-        ],
-        aiInsights: {
-          conversionProbability: 78,
-          sentiment: 4.2,
-          nextBestAction: 'Present pricing options and emphasize ROI benefits',
-          objections: ['price_concern', 'timing']
-        },
-        isAgentTyping: false
-      },
-      {
-        id: 2,
-        customerInfo: {
-          name: 'Maria Garcia',
-          location: 'Los Angeles, CA',
-          previousCalls: 0,
-          leadSource: 'Google Ads',
-          interestLevel: 65
-        },
-        customerPhone: '+1 (555) 987-6543',
-        agentName: 'Mike Chen',
-        status: 'qualifying',
-        duration: '02:45',
-        startTime: '10:35 AM',
-        transcript: [
-          { speaker: 'agent', text: 'Hello Maria, thank you for calling. What brings you to us today?', timestamp: '10:35 AM' },
-          { speaker: 'customer', text: 'I saw your ad and wanted to learn more about your call center software.', timestamp: '10:36 AM' }
-        ],
-        aiInsights: {
-          conversionProbability: 45,
-          sentiment: 3.8,
-          nextBestAction: 'Ask discovery questions about current pain points',
-          objections: []
-        },
-        isAgentTyping: true
-      }
-    ],
-    agents: [
-      { id: 1, name: 'Sarah Johnson', status: 'on_call', callsToday: 12, conversions: 4 },
-      { id: 2, name: 'Mike Chen', status: 'on_call', callsToday: 8, conversions: 2 },
-      { id: 3, name: 'Lisa Rodriguez', status: 'available', callsToday: 15, conversions: 6 },
-      { id: 4, name: 'David Kim', status: 'break', callsToday: 10, conversions: 3 }
-    ]
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      'converting': 'Converting',
-      'qualifying': 'Qualifying',
-      'objection_handling': 'Handling Objections',
-      'closing': 'Closing',
-      'completed': 'Completed'
-    };
-    return labels[status] || status;
-  };
-
-  // Tab Navigation Component with Enhanced Styling
-  const TabNavigation = () => (
-    <div className="bg-slate-800/20 backdrop-blur-sm border-b border-white/10 rounded-t-xl shadow-lg">
-      <nav className="flex space-x-1 p-2 overflow-x-auto">
-        {[
-          { id: 'live-monitoring', name: 'Live Monitoring', icon: Activity, color: 'from-blue-500 to-cyan-500' },
-          { id: 'auto-dialer', name: 'Auto Dialer', icon: Phone, color: 'from-green-500 to-emerald-500' },
-          { id: 'inbound-center', name: 'Inbound Center', icon: PhoneCall, color: 'from-purple-500 to-violet-500' },
-          { id: 'phone-system', name: 'Phone System', icon: Headphones, color: 'from-indigo-500 to-blue-500' },
-          { id: 'lead-management', name: 'Lead Management', icon: Users, color: 'from-orange-500 to-red-500' },
-          { id: 'ivr-builder', name: 'IVR Builder', icon: Settings, color: 'from-teal-500 to-cyan-500' },
-          { id: 'analytics-hub', name: 'Analytics Hub', icon: BarChart3, color: 'from-pink-500 to-rose-500' },
-          { id: 'ai-coach', name: 'AI Coach', icon: Brain, color: 'from-violet-500 to-purple-500' },
-          { id: 'global-presence', name: 'Global Presence', icon: Globe, color: 'from-emerald-500 to-teal-500' },
-          { id: 'sentiment-analysis', name: 'Sentiment AI', icon: Heart, color: 'from-rose-500 to-pink-500' },
-          { id: 'voice-biometrics', name: 'Voice ID', icon: Fingerprint, color: 'from-amber-500 to-orange-500' },
-          { id: 'predictive-intelligence', name: 'Predictive AI', icon: Zap, color: 'from-yellow-500 to-amber-500' },
-          { id: 'quantum-analytics', name: 'Quantum Analytics', icon: Star, color: 'from-purple-500 to-indigo-500' },
-          { id: 'neural-coaching', name: 'Neural Coach', icon: Brain, color: 'from-cyan-500 to-blue-500' }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`group relative inline-flex items-center px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                isActive
-                  ? `bg-gradient-to-r ${tab.color} text-white shadow-lg shadow-black/25 border border-white/20`
-                  : 'text-gray-300 hover:text-white hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <Icon className={`mr-2 h-5 w-5 transition-all duration-300 ${
-                isActive ? 'text-white drop-shadow-sm' : 'text-gray-400 group-hover:text-white'
-              }`} />
-              <span className="whitespace-nowrap font-bold tracking-wide">{tab.name}</span>
-              {isActive && (
-                <div className="absolute inset-0 bg-white/10 rounded-lg animate-pulse"></div>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
-
-  // Auto Dialer Component
-  const AutoDialerComponent = () => {
-    const [dialerMode, setDialerMode] = useState('predictive');
-    const [isDialing, setIsDialing] = useState(false);
+  const countries = [
+    // Popular countries (shown at top)
+    { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸', popular: true },
+    { code: 'CA', name: 'Canada', dialCode: '+1', flag: '🇨🇦', popular: true },
+    { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧', popular: true },
+    { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺', popular: true },
+    { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪', popular: true },
+    { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷', popular: true },
+    { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳', popular: true },
+    { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷', popular: true },
     
-    return (
-      <div className="space-y-6">
-        {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white backdrop-blur-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Auto Dialer Control</h2>
-              <p className="text-blue-100">Manage automated calling campaigns and dialing operations</p>
-            </div>
-            <Activity className="h-12 w-12 text-white opacity-80" />
-          </div>
-        </div>
+    // All countries (alphabetical)
+    { code: 'AF', name: 'Afghanistan', dialCode: '+93', flag: '🇦🇫' },
+    { code: 'AL', name: 'Albania', dialCode: '+355', flag: '🇦🇱' },
+    { code: 'DZ', name: 'Algeria', dialCode: '+213', flag: '🇩🇿' },
+    { code: 'AS', name: 'American Samoa', dialCode: '+1', flag: '🇦🇸' },
+    { code: 'AD', name: 'Andorra', dialCode: '+376', flag: '🇦🇩' },
+    { code: 'AO', name: 'Angola', dialCode: '+244', flag: '🇦🇴' },
+    { code: 'AI', name: 'Anguilla', dialCode: '+1', flag: '🇦🇮' },
+    { code: 'AQ', name: 'Antarctica', dialCode: '+672', flag: '🇦🇶' },
+    { code: 'AG', name: 'Antigua and Barbuda', dialCode: '+1', flag: '🇦🇬' },
+    { code: 'AR', name: 'Argentina', dialCode: '+54', flag: '🇦🇷' },
+    { code: 'AM', name: 'Armenia', dialCode: '+374', flag: '🇦🇲' },
+    { code: 'AW', name: 'Aruba', dialCode: '+297', flag: '🇦🇼' },
+    { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
+    { code: 'AT', name: 'Austria', dialCode: '+43', flag: '🇦🇹' },
+    { code: 'AZ', name: 'Azerbaijan', dialCode: '+994', flag: '🇦🇿' },
+    { code: 'BS', name: 'Bahamas', dialCode: '+1', flag: '🇧🇸' },
+    { code: 'BH', name: 'Bahrain', dialCode: '+973', flag: '🇧🇭' },
+    { code: 'BD', name: 'Bangladesh', dialCode: '+880', flag: '🇧🇩' },
+    { code: 'BB', name: 'Barbados', dialCode: '+1', flag: '🇧🇧' },
+    { code: 'BY', name: 'Belarus', dialCode: '+375', flag: '🇧🇾' },
+    { code: 'BE', name: 'Belgium', dialCode: '+32', flag: '🇧🇪' },
+    { code: 'BZ', name: 'Belize', dialCode: '+501', flag: '🇧🇿' },
+    { code: 'BJ', name: 'Benin', dialCode: '+229', flag: '🇧🇯' },
+    { code: 'BM', name: 'Bermuda', dialCode: '+1', flag: '🇧🇲' },
+    { code: 'BT', name: 'Bhutan', dialCode: '+975', flag: '🇧🇹' },
+    { code: 'BO', name: 'Bolivia', dialCode: '+591', flag: '🇧🇴' },
+    { code: 'BA', name: 'Bosnia and Herzegovina', dialCode: '+387', flag: '🇧🇦' },
+    { code: 'BW', name: 'Botswana', dialCode: '+267', flag: '🇧🇼' },
+    { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
+    { code: 'IO', name: 'British Indian Ocean Territory', dialCode: '+246', flag: '🇮🇴' },
+    { code: 'BN', name: 'Brunei', dialCode: '+673', flag: '🇧🇳' },
+    { code: 'BG', name: 'Bulgaria', dialCode: '+359', flag: '🇧🇬' },
+    { code: 'BF', name: 'Burkina Faso', dialCode: '+226', flag: '🇧🇫' },
+    { code: 'BI', name: 'Burundi', dialCode: '+257', flag: '🇧🇮' },
+    { code: 'KH', name: 'Cambodia', dialCode: '+855', flag: '🇰🇭' },
+    { code: 'CM', name: 'Cameroon', dialCode: '+237', flag: '🇨🇲' },
+    { code: 'CA', name: 'Canada', dialCode: '+1', flag: '🇨🇦' },
+    { code: 'CV', name: 'Cape Verde', dialCode: '+238', flag: '🇨🇻' },
+    { code: 'KY', name: 'Cayman Islands', dialCode: '+1', flag: '🇰🇾' },
+    { code: 'CF', name: 'Central African Republic', dialCode: '+236', flag: '🇨🇫' },
+    { code: 'TD', name: 'Chad', dialCode: '+235', flag: '🇹🇩' },
+    { code: 'CL', name: 'Chile', dialCode: '+56', flag: '🇨🇱' },
+    { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
+    { code: 'CX', name: 'Christmas Island', dialCode: '+61', flag: '🇨🇽' },
+    { code: 'CC', name: 'Cocos Islands', dialCode: '+61', flag: '🇨🇨' },
+    { code: 'CO', name: 'Colombia', dialCode: '+57', flag: '🇨🇴' },
+    { code: 'KM', name: 'Comoros', dialCode: '+269', flag: '🇰🇲' },
+    { code: 'CG', name: 'Congo', dialCode: '+242', flag: '🇨🇬' },
+    { code: 'CD', name: 'Congo (DRC)', dialCode: '+243', flag: '🇨🇩' },
+    { code: 'CK', name: 'Cook Islands', dialCode: '+682', flag: '🇨🇰' },
+    { code: 'CR', name: 'Costa Rica', dialCode: '+506', flag: '🇨🇷' },
+    { code: 'CI', name: 'Côte d\'Ivoire', dialCode: '+225', flag: '🇨🇮' },
+    { code: 'HR', name: 'Croatia', dialCode: '+385', flag: '🇭🇷' },
+    { code: 'CU', name: 'Cuba', dialCode: '+53', flag: '🇨🇺' },
+    { code: 'CW', name: 'Curaçao', dialCode: '+599', flag: '🇨🇼' },
+    { code: 'CY', name: 'Cyprus', dialCode: '+357', flag: '🇨🇾' },
+    { code: 'CZ', name: 'Czech Republic', dialCode: '+420', flag: '🇨🇿' },
+    { code: 'DK', name: 'Denmark', dialCode: '+45', flag: '🇩🇰' },
+    { code: 'DJ', name: 'Djibouti', dialCode: '+253', flag: '🇩🇯' },
+    { code: 'DM', name: 'Dominica', dialCode: '+1', flag: '🇩🇲' },
+    { code: 'DO', name: 'Dominican Republic', dialCode: '+1', flag: '🇩🇴' },
+    { code: 'EC', name: 'Ecuador', dialCode: '+593', flag: '🇪🇨' },
+    { code: 'EG', name: 'Egypt', dialCode: '+20', flag: '🇪🇬' },
+    { code: 'SV', name: 'El Salvador', dialCode: '+503', flag: '🇸🇻' },
+    { code: 'GQ', name: 'Equatorial Guinea', dialCode: '+240', flag: '🇬🇶' },
+    { code: 'ER', name: 'Eritrea', dialCode: '+291', flag: '🇪🇷' },
+    { code: 'EE', name: 'Estonia', dialCode: '+372', flag: '🇪🇪' },
+    { code: 'ET', name: 'Ethiopia', dialCode: '+251', flag: '🇪🇹' },
+    { code: 'FK', name: 'Falkland Islands', dialCode: '+500', flag: '🇫🇰' },
+    { code: 'FO', name: 'Faroe Islands', dialCode: '+298', flag: '🇫🇴' },
+    { code: 'FJ', name: 'Fiji', dialCode: '+679', flag: '🇫🇯' },
+    { code: 'FI', name: 'Finland', dialCode: '+358', flag: '🇫🇮' },
+    { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
+    { code: 'GF', name: 'French Guiana', dialCode: '+594', flag: '🇬🇫' },
+    { code: 'PF', name: 'French Polynesia', dialCode: '+689', flag: '🇵🇫' },
+    { code: 'TF', name: 'French Southern Territories', dialCode: '+262', flag: '🇹🇫' },
+    { code: 'GA', name: 'Gabon', dialCode: '+241', flag: '🇬🇦' },
+    { code: 'GM', name: 'Gambia', dialCode: '+220', flag: '🇬🇲' },
+    { code: 'GE', name: 'Georgia', dialCode: '+995', flag: '🇬🇪' },
+    { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
+    { code: 'GH', name: 'Ghana', dialCode: '+233', flag: '🇬🇭' },
+    { code: 'GI', name: 'Gibraltar', dialCode: '+350', flag: '🇬🇮' },
+    { code: 'GR', name: 'Greece', dialCode: '+30', flag: '🇬🇷' },
+    { code: 'GL', name: 'Greenland', dialCode: '+299', flag: '🇬🇱' },
+    { code: 'GD', name: 'Grenada', dialCode: '+1', flag: '🇬🇩' },
+    { code: 'GP', name: 'Guadeloupe', dialCode: '+590', flag: '🇬🇵' },
+    { code: 'GU', name: 'Guam', dialCode: '+1', flag: '🇬🇺' },
+    { code: 'GT', name: 'Guatemala', dialCode: '+502', flag: '🇬🇹' },
+    { code: 'GG', name: 'Guernsey', dialCode: '+44', flag: '🇬🇬' },
+    { code: 'GN', name: 'Guinea', dialCode: '+224', flag: '🇬🇳' },
+    { code: 'GW', name: 'Guinea-Bissau', dialCode: '+245', flag: '🇬🇼' },
+    { code: 'GY', name: 'Guyana', dialCode: '+592', flag: '🇬🇾' },
+    { code: 'HT', name: 'Haiti', dialCode: '+509', flag: '🇭🇹' },
+    { code: 'HM', name: 'Heard Island and McDonald Islands', dialCode: '+672', flag: '🇭🇲' },
+    { code: 'VA', name: 'Holy See (Vatican City)', dialCode: '+379', flag: '🇻🇦' },
+    { code: 'HN', name: 'Honduras', dialCode: '+504', flag: '🇭🇳' },
+    { code: 'HK', name: 'Hong Kong', dialCode: '+852', flag: '🇭🇰' },
+    { code: 'HU', name: 'Hungary', dialCode: '+36', flag: '🇭🇺' },
+    { code: 'IS', name: 'Iceland', dialCode: '+354', flag: '🇮🇸' },
+    { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
+    { code: 'ID', name: 'Indonesia', dialCode: '+62', flag: '🇮🇩' },
+    { code: 'IR', name: 'Iran', dialCode: '+98', flag: '🇮🇷' },
+    { code: 'IQ', name: 'Iraq', dialCode: '+964', flag: '🇮🇶' },
+    { code: 'IE', name: 'Ireland', dialCode: '+353', flag: '🇮🇪' },
+    { code: 'IM', name: 'Isle of Man', dialCode: '+44', flag: '🇮🇲' },
+    { code: 'IL', name: 'Israel', dialCode: '+972', flag: '🇮🇱' },
+    { code: 'IT', name: 'Italy', dialCode: '+39', flag: '🇮🇹' },
+    { code: 'JM', name: 'Jamaica', dialCode: '+1', flag: '🇯🇲' },
+    { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
+    { code: 'JE', name: 'Jersey', dialCode: '+44', flag: '🇯🇪' },
+    { code: 'JO', name: 'Jordan', dialCode: '+962', flag: '🇯🇴' },
+    { code: 'KZ', name: 'Kazakhstan', dialCode: '+7', flag: '🇰🇿' },
+    { code: 'KE', name: 'Kenya', dialCode: '+254', flag: '🇰🇪' },
+    { code: 'KI', name: 'Kiribati', dialCode: '+686', flag: '🇰🇮' },
+    { code: 'KP', name: 'Korea, North', dialCode: '+850', flag: '🇰🇵' },
+    { code: 'KR', name: 'Korea, South', dialCode: '+82', flag: '🇰🇷' },
+    { code: 'KW', name: 'Kuwait', dialCode: '+965', flag: '🇰🇼' },
+    { code: 'KG', name: 'Kyrgyzstan', dialCode: '+996', flag: '🇰🇬' },
+    { code: 'LA', name: 'Laos', dialCode: '+856', flag: '🇱🇦' },
+    { code: 'LV', name: 'Latvia', dialCode: '+371', flag: '🇱🇻' },
+    { code: 'LB', name: 'Lebanon', dialCode: '+961', flag: '🇱🇧' },
+    { code: 'LS', name: 'Lesotho', dialCode: '+266', flag: '🇱🇸' },
+    { code: 'LR', name: 'Liberia', dialCode: '+231', flag: '🇱🇷' },
+    { code: 'LY', name: 'Libya', dialCode: '+218', flag: '🇱🇾' },
+    { code: 'LI', name: 'Liechtenstein', dialCode: '+423', flag: '🇱🇮' },
+    { code: 'LT', name: 'Lithuania', dialCode: '+370', flag: '🇱🇹' },
+    { code: 'LU', name: 'Luxembourg', dialCode: '+352', flag: '🇱🇺' },
+    { code: 'MO', name: 'Macao', dialCode: '+853', flag: '🇲🇴' },
+    { code: 'MK', name: 'Macedonia', dialCode: '+389', flag: '🇲🇰' },
+    { code: 'MG', name: 'Madagascar', dialCode: '+261', flag: '🇲🇬' },
+    { code: 'MW', name: 'Malawi', dialCode: '+265', flag: '🇲🇼' },
+    { code: 'MY', name: 'Malaysia', dialCode: '+60', flag: '🇲🇾' },
+    { code: 'MV', name: 'Maldives', dialCode: '+960', flag: '🇲🇻' },
+    { code: 'ML', name: 'Mali', dialCode: '+223', flag: '🇲🇱' },
+    { code: 'MT', name: 'Malta', dialCode: '+356', flag: '🇲🇹' },
+    { code: 'MH', name: 'Marshall Islands', dialCode: '+692', flag: '🇲🇭' },
+    { code: 'MQ', name: 'Martinique', dialCode: '+596', flag: '🇲🇶' },
+    { code: 'MR', name: 'Mauritania', dialCode: '+222', flag: '🇲🇷' },
+    { code: 'MU', name: 'Mauritius', dialCode: '+230', flag: '🇲🇺' },
+    { code: 'YT', name: 'Mayotte', dialCode: '+262', flag: '🇾🇹' },
+    { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '🇲🇽' },
+    { code: 'FM', name: 'Micronesia', dialCode: '+691', flag: '🇫🇲' },
+    { code: 'MD', name: 'Moldova', dialCode: '+373', flag: '🇲🇩' },
+    { code: 'MC', name: 'Monaco', dialCode: '+377', flag: '🇲🇨' },
+    { code: 'MN', name: 'Mongolia', dialCode: '+976', flag: '🇲🇳' },
+    { code: 'ME', name: 'Montenegro', dialCode: '+382', flag: '🇲🇪' },
+    { code: 'MS', name: 'Montserrat', dialCode: '+1', flag: '🇲🇸' },
+    { code: 'MA', name: 'Morocco', dialCode: '+212', flag: '🇲🇦' },
+    { code: 'MZ', name: 'Mozambique', dialCode: '+258', flag: '🇲🇿' },
+    { code: 'MM', name: 'Myanmar', dialCode: '+95', flag: '🇲🇲' },
+    { code: 'NA', name: 'Namibia', dialCode: '+264', flag: '🇳🇦' },
+    { code: 'NR', name: 'Nauru', dialCode: '+674', flag: '🇳🇷' },
+    { code: 'NP', name: 'Nepal', dialCode: '+977', flag: '🇳🇵' },
+    { code: 'NL', name: 'Netherlands', dialCode: '+31', flag: '🇳🇱' },
+    { code: 'NC', name: 'New Caledonia', dialCode: '+687', flag: '🇳🇨' },
+    { code: 'NZ', name: 'New Zealand', dialCode: '+64', flag: '🇳🇿' },
+    { code: 'NI', name: 'Nicaragua', dialCode: '+505', flag: '🇳🇮' },
+    { code: 'NE', name: 'Niger', dialCode: '+227', flag: '🇳🇪' },
+    { code: 'NG', name: 'Nigeria', dialCode: '+234', flag: '🇳🇬' },
+    { code: 'NU', name: 'Niue', dialCode: '+683', flag: '🇳🇺' },
+    { code: 'NF', name: 'Norfolk Island', dialCode: '+672', flag: '🇳🇫' },
+    { code: 'MP', name: 'Northern Mariana Islands', dialCode: '+1', flag: '🇲🇵' },
+    { code: 'NO', name: 'Norway', dialCode: '+47', flag: '🇳🇴' },
+    { code: 'OM', name: 'Oman', dialCode: '+968', flag: '🇴🇲' },
+    { code: 'PK', name: 'Pakistan', dialCode: '+92', flag: '🇵🇰' },
+    { code: 'PW', name: 'Palau', dialCode: '+680', flag: '🇵🇼' },
+    { code: 'PS', name: 'Palestine', dialCode: '+970', flag: '🇵🇸' },
+    { code: 'PA', name: 'Panama', dialCode: '+507', flag: '🇵🇦' },
+    { code: 'PG', name: 'Papua New Guinea', dialCode: '+675', flag: '🇵🇬' },
+    { code: 'PY', name: 'Paraguay', dialCode: '+595', flag: '🇵🇾' },
+    { code: 'PE', name: 'Peru', dialCode: '+51', flag: '🇵🇪' },
+    { code: 'PH', name: 'Philippines', dialCode: '+63', flag: '🇵🇭' },
+    { code: 'PN', name: 'Pitcairn', dialCode: '+64', flag: '🇵🇳' },
+    { code: 'PL', name: 'Poland', dialCode: '+48', flag: '🇵🇱' },
+    { code: 'PT', name: 'Portugal', dialCode: '+351', flag: '🇵🇹' },
+    { code: 'PR', name: 'Puerto Rico', dialCode: '+1', flag: '🇵🇷' },
+    { code: 'QA', name: 'Qatar', dialCode: '+974', flag: '🇶🇦' },
+    { code: 'RE', name: 'Réunion', dialCode: '+262', flag: '🇷🇪' },
+    { code: 'RO', name: 'Romania', dialCode: '+40', flag: '🇷🇴' },
+    { code: 'RU', name: 'Russia', dialCode: '+7', flag: '🇷🇺' },
+    { code: 'RW', name: 'Rwanda', dialCode: '+250', flag: '🇷🇼' },
+    { code: 'BL', name: 'Saint Barthélemy', dialCode: '+590', flag: '🇧🇱' },
+    { code: 'SH', name: 'Saint Helena', dialCode: '+290', flag: '🇸🇭' },
+    { code: 'KN', name: 'Saint Kitts and Nevis', dialCode: '+1', flag: '🇰🇳' },
+    { code: 'LC', name: 'Saint Lucia', dialCode: '+1', flag: '🇱🇨' },
+    { code: 'MF', name: 'Saint Martin', dialCode: '+590', flag: '🇲🇫' },
+    { code: 'PM', name: 'Saint Pierre and Miquelon', dialCode: '+508', flag: '🇵🇲' },
+    { code: 'VC', name: 'Saint Vincent and the Grenadines', dialCode: '+1', flag: '🇻🇨' },
+    { code: 'WS', name: 'Samoa', dialCode: '+685', flag: '🇼🇸' },
+    { code: 'SM', name: 'San Marino', dialCode: '+378', flag: '🇸🇲' },
+    { code: 'ST', name: 'São Tomé and Príncipe', dialCode: '+239', flag: '🇸🇹' },
+    { code: 'SA', name: 'Saudi Arabia', dialCode: '+966', flag: '🇸🇦' },
+    { code: 'SN', name: 'Senegal', dialCode: '+221', flag: '🇸🇳' },
+    { code: 'RS', name: 'Serbia', dialCode: '+381', flag: '🇷🇸' },
+    { code: 'SC', name: 'Seychelles', dialCode: '+248', flag: '🇸🇨' },
+    { code: 'SL', name: 'Sierra Leone', dialCode: '+232', flag: '🇸🇱' },
+    { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
+    { code: 'SX', name: 'Sint Maarten', dialCode: '+1', flag: '🇸🇽' },
+    { code: 'SK', name: 'Slovakia', dialCode: '+421', flag: '🇸🇰' },
+    { code: 'SI', name: 'Slovenia', dialCode: '+386', flag: '🇸🇮' },
+    { code: 'SB', name: 'Solomon Islands', dialCode: '+677', flag: '🇸🇧' },
+    { code: 'SO', name: 'Somalia', dialCode: '+252', flag: '🇸🇴' },
+    { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
+    { code: 'GS', name: 'South Georgia and the South Sandwich Islands', dialCode: '+500', flag: '🇬🇸' },
+    { code: 'SS', name: 'South Sudan', dialCode: '+211', flag: '🇸🇸' },
+    { code: 'ES', name: 'Spain', dialCode: '+34', flag: '🇪🇸' },
+    { code: 'LK', name: 'Sri Lanka', dialCode: '+94', flag: '🇱🇰' },
+    { code: 'SD', name: 'Sudan', dialCode: '+249', flag: '🇸🇩' },
+    { code: 'SR', name: 'Suriname', dialCode: '+597', flag: '🇸🇷' },
+    { code: 'SJ', name: 'Svalbard and Jan Mayen', dialCode: '+47', flag: '🇸🇯' },
+    { code: 'SZ', name: 'Swaziland', dialCode: '+268', flag: '🇸🇿' },
+    { code: 'SE', name: 'Sweden', dialCode: '+46', flag: '🇸🇪' },
+    { code: 'CH', name: 'Switzerland', dialCode: '+41', flag: '🇨🇭' },
+    { code: 'SY', name: 'Syria', dialCode: '+963', flag: '🇸🇾' },
+    { code: 'TW', name: 'Taiwan', dialCode: '+886', flag: '🇹🇼' },
+    { code: 'TJ', name: 'Tajikistan', dialCode: '+992', flag: '🇹🇯' },
+    { code: 'TZ', name: 'Tanzania', dialCode: '+255', flag: '🇹🇿' },
+    { code: 'TH', name: 'Thailand', dialCode: '+66', flag: '🇹🇭' },
+    { code: 'TL', name: 'Timor-Leste', dialCode: '+670', flag: '🇹🇱' },
+    { code: 'TG', name: 'Togo', dialCode: '+228', flag: '🇹🇬' },
+    { code: 'TK', name: 'Tokelau', dialCode: '+690', flag: '🇹🇰' },
+    { code: 'TO', name: 'Tonga', dialCode: '+676', flag: '🇹🇴' },
+    { code: 'TT', name: 'Trinidad and Tobago', dialCode: '+1', flag: '🇹🇹' },
+    { code: 'TN', name: 'Tunisia', dialCode: '+216', flag: '🇹🇳' },
+    { code: 'TR', name: 'Turkey', dialCode: '+90', flag: '🇹🇷' },
+    { code: 'TM', name: 'Turkmenistan', dialCode: '+993', flag: '🇹🇲' },
+    { code: 'TC', name: 'Turks and Caicos Islands', dialCode: '+1', flag: '🇹🇨' },
+    { code: 'TV', name: 'Tuvalu', dialCode: '+688', flag: '🇹🇻' },
+    { code: 'UG', name: 'Uganda', dialCode: '+256', flag: '🇺🇬' },
+    { code: 'UA', name: 'Ukraine', dialCode: '+380', flag: '🇺🇦' },
+    { code: 'AE', name: 'United Arab Emirates', dialCode: '+971', flag: '🇦🇪' },
+    { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
+    { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
+    { code: 'UM', name: 'United States Minor Outlying Islands', dialCode: '+1', flag: '🇺🇲' },
+    { code: 'UY', name: 'Uruguay', dialCode: '+598', flag: '🇺🇾' },
+    { code: 'UZ', name: 'Uzbekistan', dialCode: '+998', flag: '🇺🇿' },
+    { code: 'VU', name: 'Vanuatu', dialCode: '+678', flag: '🇻🇺' },
+    { code: 'VE', name: 'Venezuela', dialCode: '+58', flag: '🇻🇪' },
+    { code: 'VN', name: 'Vietnam', dialCode: '+84', flag: '🇻🇳' },
+    { code: 'VG', name: 'Virgin Islands (British)', dialCode: '+1', flag: '🇻🇬' },
+    { code: 'VI', name: 'Virgin Islands (US)', dialCode: '+1', flag: '🇻🇮' },
+    { code: 'WF', name: 'Wallis and Futuna', dialCode: '+681', flag: '🇼🇫' },
+    { code: 'EH', name: 'Western Sahara', dialCode: '+212', flag: '🇪🇭' },
+    { code: 'YE', name: 'Yemen', dialCode: '+967', flag: '🇾🇪' },
+    { code: 'ZM', name: 'Zambia', dialCode: '+260', flag: '🇿🇲' },
+    { code: 'ZW', name: 'Zimbabwe', dialCode: '+263', flag: '🇿🇼' }
+  ];
 
-        {/* Dialer Control Panel */}
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
-          <h3 className="text-lg font-semibold mb-4 text-white">Dialer Settings</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Mode Selection */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Dialing Mode
-              </label>
-              <select 
-                value={dialerMode} 
-                onChange={(e) => setDialerMode(e.target.value)}
-                className="w-full border border-slate-600 rounded-md px-3 py-2 bg-slate-700/50 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="predictive">Predictive Dialing</option>
-                <option value="progressive">Progressive Dialing</option>
-                <option value="preview">Preview Dialing</option>
-                <option value="manual">Manual Dialing</option>
-              </select>
-            </div>
+  const selectedCountryData = countries.find(c => c.code === selectedCountry);
 
-            {/* Campaign Selection */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Active Campaign
-              </label>
-              <select className="w-full border border-slate-600 rounded-md px-3 py-2 bg-slate-700/50 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Summer Sales Blitz</option>
-                <option>Q4 Lead Follow-up</option>
-                <option>Cold Outreach - Tech</option>
-                <option>Warm Leads - Healthcare</option>
-              </select>
-            </div>
+  // Filter countries based on search query
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+    country.dialCode.includes(countrySearchQuery) ||
+    country.code.toLowerCase().includes(countrySearchQuery.toLowerCase())
+  );
 
-            {/* Control Buttons */}
-            <div className="flex items-end space-x-2">
-              <button 
-                onClick={() => setIsDialing(!isDialing)}
-                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
-                  isDialing 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-              >
-                {isDialing ? (
-                  <>
-                    <Square className="w-4 h-4 inline mr-2" />
-                    Stop
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 inline mr-2" />
-                    Start
-                  </>
-                )}
-              </button>
-              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+  // Separate popular and other countries
+  const popularCountries = filteredCountries.filter(c => c.popular);
+  const otherCountries = filteredCountries.filter(c => !c.popular);
 
-        {/* Real-time Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-400">Calls/Hour</p>
-                <p className="text-2xl font-bold text-blue-400">127</p>
-              </div>
-              <Phone className="w-8 h-8 text-blue-400" />
-            </div>
-          </div>
-          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-400">Connect Rate</p>
-                <p className="text-2xl font-bold text-green-400">34.8%</p>
-              </div>
-              <Target className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-400">Drop Rate</p>
-                <p className="text-2xl font-bold text-red-400">2.1%</p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-400" />
-            </div>
-          </div>
-          <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-400">Conversions</p>
-                <p className="text-2xl font-bold text-purple-400">18</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-purple-400" />
-            </div>
-          </div>
-        </div>
+  // Handle click outside to close dropdown
+  const countryDropdownRef = React.useRef(null);
+  
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+        setShowCountryDropdown(false);
+        setCountrySearchQuery('');
+      }
+    };
+    
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCountryDropdown]);
 
-        {/* DNC and Compliance */}
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
-            <Shield className="w-5 h-5 mr-2 text-green-400" />
-            Compliance & DNC Management
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">99.7%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">DNC Compliance</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">847,392</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">DNC Records</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">Last Updated</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">2 hours ago</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Handle keyboard navigation for country dropdown
+  const handleCountryKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      setShowCountryDropdown(false);
+      setCountrySearchQuery('');
+    }
   };
 
-  // Inbound Center Component
-  const InboundCenterComponent = () => (
-    <div className="space-y-8">
-      {/* Enhanced Inbound Center Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-6 text-white backdrop-blur-lg shadow-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30">
-              <Phone className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Inbound Call Center</h2>
-              <p className="text-purple-100">Manage incoming calls and queue operations with real-time insights</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
-              <div className="text-2xl font-bold text-white">12</div>
-              <div className="text-xs text-purple-100">Queue</div>
-            </div>
-            <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
-              <div className="text-2xl font-bold text-white">94.2%</div>
-              <div className="text-xs text-purple-100">SLA</div>
-            </div>
-          </div>
-        </div>
-      </div>
+  const keyboardShortcuts = [
+    { key: 'Space', action: 'Start/End Call', description: 'Toggle call state' },
+    { key: 'M', action: 'Mute/Unmute', description: 'Toggle microphone' },
+    { key: 'T', action: 'Transfer Call', description: 'Transfer to human agent' },
+    { key: 'R', action: 'Start/Stop Recording', description: 'Toggle call recording' },
+    { key: 'P', action: 'Play/Pause Playback', description: 'Control recording playback' },
+    { key: 'Ctrl + /', action: 'Show Shortcuts', description: 'Display this help' },
+    { key: 'Ctrl + F', action: 'Search Contacts', description: 'Focus contact search' },
+    { key: '1-5', action: 'Switch Tabs', description: 'Navigate configuration tabs' },
+    { key: 'Escape', action: 'Close Modals', description: 'Close any open modal' },
+    { key: 'Enter', action: 'Answer Call', description: 'Answer first queued call' }
+  ];
 
-      {/* Queue Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-orange-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-400">Calls in Queue</p>
-              <p className="text-3xl font-bold text-orange-400 mt-2">12</p>
-              <p className="text-xs text-slate-500 mt-1">+2 from last hour</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6 text-orange-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-blue-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-400">Avg Wait Time</p>
-              <p className="text-3xl font-bold text-blue-400 mt-2">1:43</p>
-              <p className="text-xs text-slate-500 mt-1">-15s improvement</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-              <Timer className="w-6 h-6 text-blue-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-green-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-400">Available Agents</p>
-              <p className="text-3xl font-bold text-green-400 mt-2">8</p>
-              <p className="text-xs text-slate-500 mt-1">of 12 total agents</p>
-            </div>
-            <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-green-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg p-6 border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-400">Service Level</p>
-              <p className="text-3xl font-bold text-purple-400 mt-2">94.2%</p>
-              <p className="text-xs text-slate-500 mt-1">Target: 95%</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-purple-400" />
-            </div>
-          </div>
-        </div>
-      </div>
+  useEffect(() => {
+    let interval;
+    if (activeCall) {
+      interval = setInterval(() => {
+        setCallTimer(prev => prev + 1);
+        if (isRecording) {
+          setRecordingTime(prev => prev + 1);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [activeCall, isRecording]);
 
-      {/* Department Routing */}
-      <div className="bg-slate-800/40 backdrop-blur-lg rounded-lg border border-slate-700/50 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-white flex items-center">
-            <Activity className="w-6 h-6 mr-3 text-purple-400" />
-            Department Call Distribution
-          </h3>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-slate-400">Live Updates</span>
-          </div>
-        </div>
+  useEffect(() => {
+    let interval;
+    if (isPlayingBack) {
+      interval = setInterval(() => {
+        setPlaybackTime(prev => {
+          const newTime = prev + playbackSpeed;
+          if (newTime >= playbackDuration) {
+            setIsPlayingBack(false);
+            return playbackDuration;
+          }
+          return newTime;
+        });
+      }, 1000 / playbackSpeed);
+    }
+    return () => clearInterval(interval);
+  }, [isPlayingBack, playbackSpeed, playbackDuration]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() < 0.3) {
+        const newCall = {
+          id: Date.now(),
+          number: `+${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+          country: countries[Math.floor(Math.random() * countries.length)],
+          type: ['sales_inquiry', 'support', 'complaint', 'general'][Math.floor(Math.random() * 4)],
+          priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
+          waitTime: 0,
+          sentiment: 'neutral'
+        };
+        setInboundQueue(prev => [...prev, newCall].slice(-5));
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Keyboard shortcuts handler
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      switch (e.key.toLowerCase()) {
+        case ' ':
+          e.preventDefault();
+          handleCall();
+          break;
+        case 'm':
+          if (activeCall) setMuted(!muted);
+          break;
+        case 't':
+          if (activeCall && callType === 'outbound' && callTimer > 30) {
+            handleTransferToHuman();
+          }
+          break;
+        case 'r':
+          if (activeCall) toggleRecording();
+          break;
+        case 'p':
+          if (showRecordingControls) togglePlayback();
+          break;
+        case 'enter':
+          if (inboundQueue.length > 0) {
+            handleInboundCall(inboundQueue[0]);
+          }
+          break;
+        case 'escape':
+          setShowKeyboardShortcuts(false);
+          setShowCountryDropdown(false);
+          setCountrySearchQuery('');
+          break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+          const tabs = ['basic', 'prompts', 'routing', 'transfers', 'analytics'];
+          setActiveTab(tabs[parseInt(e.key) - 1]);
+          break;
+      }
+
+      if (e.ctrlKey) {
+        switch (e.key.toLowerCase()) {
+          case '/':
+            e.preventDefault();
+            setShowKeyboardShortcuts(!showKeyboardShortcuts);
+            break;
+          case 'f':
+            e.preventDefault();
+            document.getElementById('contact-search')?.focus();
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [activeCall, muted, callType, callTimer, transferRequested, inboundQueue, showKeyboardShortcuts, isPlayingBack, showRecordingControls]);
+
+  // Initialize Twilio Voice Service
+  useEffect(() => {
+    const initializeTwilio = async () => {
+      try {
+        console.log('🚀 Initializing Twilio Voice Service...');
+        setTwilioStatus('Connecting to Twilio...');
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Queue Distribution */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium text-slate-300 mb-4">Active Queues</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-blue-500/50 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                  <span className="font-medium text-slate-200">Sales</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-blue-400">5 calls</div>
-                  <div className="text-xs text-slate-500">Avg: 2:15</div>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-green-500/50 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="font-medium text-slate-200">Support</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-green-400">4 calls</div>
-                  <div className="text-xs text-slate-500">Avg: 3:42</div>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:border-orange-500/50 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-                  <span className="font-medium text-slate-200">Billing</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-orange-400">3 calls</div>
-                  <div className="text-xs text-slate-500">Avg: 1:58</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        // Set up event handlers
+        twilioVoiceService.setEventHandlers({
+          onCallStatusChange: (status, call) => {
+            console.log('📞 Call status changed:', status);
+            setRealCallStatus(status);
+            
+            // Update UI based on call status
+            if (status === 'connecting') {
+              setActiveCall(true);
+              setCallStatus('connecting');
+            } else if (status === 'connected') {
+              setActiveCall(true);
+              setCallStatus('active');
+              setRealCallActive(true);
+            } else if (status === 'disconnected') {
+              setActiveCall(false);
+              setCallStatus('idle');
+              setRealCallActive(false);
+              setCallTimer(0);
+            }
+          },
           
-          {/* Performance Metrics */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium text-slate-300 mb-4">Performance Metrics</h4>
-            <div className="space-y-3">
-              <div className="p-4 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg border border-green-500/30">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-200">Average Handle Time</span>
-                  <span className="text-lg font-bold text-green-400">4:32</span>
-                </div>
-                <div className="text-xs text-green-300 mt-1">-12% from yesterday</div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg border border-blue-500/30">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-200">First Call Resolution</span>
-                  <span className="text-lg font-bold text-blue-400">87%</span>
-                </div>
-                <div className="text-xs text-blue-300 mt-1">+3% improvement</div>
-              </div>
-              
-              <div className="p-4 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg border border-purple-500/30">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-200">Customer Satisfaction</span>
-                  <span className="text-lg font-bold text-purple-400">4.6★</span>
-                </div>
-                <div className="text-xs text-purple-300 mt-1">+0.2 this week</div>
-              </div>
-            </div>
-          </div>
+          onCallConnected: (call) => {
+            console.log('✅ Call connected:', call);
+            setTwilioStatus('Call Active');
+            setCallError(null);
+          },
           
-          {/* Queue Actions */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium text-slate-300 mb-4">Queue Management</h4>
-            <div className="space-y-3">
-              <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
-                <Zap className="w-4 h-4" />
-                <span>Force Next Call</span>
-              </button>
-              
-              <button className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
-                <Mic className="w-4 h-4" />
-                <span>Broadcast Message</span>
-              </button>
-              
-              <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Emergency Override</span>
-              </button>
-              
-              <button className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
-                <Settings className="w-4 h-4" />
-                <span>Queue Settings</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+          onCallDisconnected: (call) => {
+            console.log('📱 Call disconnected:', call);
+            setTwilioStatus('Ready for calls');
+            setRealCallActive(false);
+          },
+          
+          onIncomingCall: (call) => {
+            console.log('📞 Incoming call received:', call);
+            setIncomingCall(call);
+            setCallType('inbound');
+            setTwilioStatus('Incoming call...');
+          },
+          
+          onError: (error) => {
+            console.error('❌ Twilio error:', error);
+            setCallError(error);
+            setTwilioStatus('Error: ' + error);
+          }
+        });
 
-  // Phone System Component
-  const PhoneSystemComponent = () => (
-    <div className="space-y-8">
-      {/* Enhanced Phone System Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-8 shadow-2xl border border-blue-500/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
-              <Headphones className="w-8 h-8 text-white drop-shadow-lg" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold text-white">
-                Phone System Management
-              </h2>
-              <p className="text-blue-100 text-lg font-medium">Advanced telephony and communication control</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-6">
-            <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-              <div className="text-3xl font-bold text-white">47</div>
-              <div className="text-blue-100 font-medium">Active Lines</div>
-            </div>
-            <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-              <div className="text-3xl font-bold text-white">99.9%</div>
-              <div className="text-blue-100 font-medium">Uptime</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Phone Numbers & Extensions */}
-      <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl border border-white/10 shadow-xl p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">Phone Numbers & Extensions</h3>
-          <button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl">
-            <Plus className="w-4 h-4 inline mr-2" />
-            Add Number
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="text-left py-3 text-gray-200 font-semibold">Number</th>
-                <th className="text-left py-3 text-gray-200 font-semibold">Type</th>
-                <th className="text-left py-3 text-gray-200 font-semibold">Assigned To</th>
-                <th className="text-left py-3 text-gray-200 font-semibold">Status</th>
-                <th className="text-left py-3 text-gray-200 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                <td className="py-4 text-white font-medium">+1 (555) 123-4567</td>
-                <td className="py-4 text-gray-300">Main Line</td>
-                <td className="py-4 text-gray-300">Reception</td>
-                <td className="py-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                    Active
-                  </span>
-                </td>
-                <td className="py-4">
-                  <button className="text-blue-400 hover:text-blue-300 mr-3 font-medium">Edit</button>
-                  <button className="text-red-400 hover:text-red-300 font-medium">Delete</button>
-                </td>
-              </tr>
-              <tr className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                <td className="py-4 text-white font-medium">+1 (555) 123-4568</td>
-                <td className="py-4 text-gray-300">Sales</td>
-                <td className="py-4 text-gray-300">Sales Team</td>
-                <td className="py-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                    Active
-                  </span>
-                </td>
-                <td className="py-4">
-                  <button className="text-blue-400 hover:text-blue-300 mr-3 font-medium">Edit</button>
-                  <button className="text-red-400 hover:text-red-300 font-medium">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Real-time System Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-300">System Status</p>
-              <p className="text-lg font-bold text-green-400">All Systems Operational</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-300">Active Lines</p>
-              <p className="text-2xl font-bold text-blue-400">24/30</p>
-            </div>
-            <Signal className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-        <div className="bg-slate-800/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-300">Call Quality</p>
-              <p className="text-2xl font-bold text-purple-400">98.7%</p>
-            </div>
-            <Activity className="w-8 h-8 text-purple-400" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Lead Management Component
-  const LeadManagementComponent = () => (
-    <div className="space-y-6">
-      {/* Enhanced Lead Database Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Advanced Lead Database Management</h3>
-          <div className="space-x-2">
-            <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              <Upload className="w-4 h-4 inline mr-1" />
-              Import Leads
-            </button>
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              <Download className="w-4 h-4 inline mr-1" />
-              Export Data
-            </button>
-            <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              <Brain className="w-4 h-4 inline mr-1" />
-              AI Scoring
-            </button>
-          </div>
-        </div>
+        // Initialize the service
+        const result = await twilioVoiceService.initialize();
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">36,525</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total Leads</div>
-          </div>
-          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">8,492</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Qualified Leads</div>
-          </div>
-          <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">4,847</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">In Progress</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">2,892</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Converted</div>
-          </div>
-        </div>
-      </div>
+        if (result.success) {
+          setTwilioInitialized(true);
+          setTwilioStatus('Ready for calls');
+          console.log('✅ Twilio Voice Service initialized successfully');
+        } else {
+          setTwilioStatus('Failed to initialize: ' + result.error);
+          setCallError(result.error);
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize Twilio:', error);
+        setTwilioStatus('Initialization failed');
+        setCallError(error.message);
+      }
+    };
 
-      {/* Lead Lists Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">Active Lead Lists</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div>
-              <h4 className="font-medium">Enterprise Tech Prospects</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">12,847 contacts • Uploaded Aug 12, 2025 • Status: Active</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-green-600">23.4%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div>
-              <h4 className="font-medium">Healthcare Decision Makers</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">8,392 contacts • Uploaded Aug 10, 2025 • Status: Active</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-green-600">31.7%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div>
-              <h4 className="font-medium">Financial Services Leads</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">15,286 contacts • Uploaded Aug 8, 2025 • Status: Paused</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-orange-600">18.9%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    initializeTwilio();
 
-      {/* Enhanced Campaign Performance */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">Campaign Performance Analytics</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-700">
-            <div>
-              <h4 className="font-medium">Summer Sales Blitz 2025</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">4,847 leads • 28.4% conversion rate • ROI: 340%</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-green-600">+$247K</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue Generated</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-            <div>
-              <h4 className="font-medium">Q4 Enterprise Outreach</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">2,492 leads • 35.7% conversion rate • ROI: 420%</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-blue-600">+$189K</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue Generated</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-            <div>
-              <h4 className="font-medium">Healthcare Vertical Push</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">1,847 leads • 42.1% conversion rate • ROI: 510%</p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-purple-600">+$156K</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue Generated</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    // Cleanup on unmount
+    return () => {
+      twilioVoiceService.destroy();
+    };
+  }, []);
 
-      {/* AI Lead Scoring */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Brain className="w-5 h-5 mr-2 text-purple-500" />
-          AI-Powered Lead Scoring
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">A+ (90-100)</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Hot Leads</div>
-            <div className="text-lg font-bold mt-2">1,247</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">B+ (70-89)</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Warm Leads</div>
-            <div className="text-lg font-bold mt-2">3,892</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">C+ (50-69)</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Cold Leads</div>
-            <div className="text-lg font-bold mt-2">7,386</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-  // IVR Builder Component
-  const IVRBuilderComponent = () => (
-    <div className="space-y-6">
-      {/* IVR Flow Builder */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">IVR Flow Builder</h3>
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-            <Plus className="w-4 h-4 inline mr-1" />
-            New Flow
-          </button>
-        </div>
+  const handleCall = async () => {
+    if (!twilioInitialized) {
+      setCallError('Twilio service not initialized');
+      return;
+    }
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium mb-3">Active IVR Flows</h4>
-            <div className="space-y-3">
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-medium">Main Reception</h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">English/Spanish • 5 options</p>
-                  </div>
-                  <div className="space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800">Edit</button>
-                    <button className="text-green-600 hover:text-green-800">Test</button>
-                  </div>
-                </div>
-              </div>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-medium">Sales Department</h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">English only • 3 options</p>
-                  </div>
-                  <div className="space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800">Edit</button>
-                    <button className="text-green-600 hover:text-green-800">Test</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    try {
+      if (!activeCall && !realCallActive) {
+        console.log('📞 Starting real call to:', phoneNumber);
+        
+        // Make outbound call using Twilio
+        const result = await twilioVoiceService.makeCall(phoneNumber, {
+          record: isRecording
+        });
+        
+        if (result.success) {
+          console.log('✅ Call initiated successfully');
+          setCallError(null);
+          // UI updates will be handled by event listeners
+        } else {
+          console.error('❌ Failed to start call:', result.error);
+          setCallError(result.error);
+        }
+        
+      } else if (realCallActive) {
+        console.log('📞 Ending real call');
+        
+        // End current call
+        const result = await twilioVoiceService.endCall();
+        
+        if (result.success) {
+          console.log('✅ Call ended successfully');
+        } else {
+          console.error('❌ Failed to end call:', result.error);
+          setCallError(result.error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Call operation failed:', error);
+      setCallError(error.message);
+    }
+  };
 
-          <div>
-            <h4 className="font-medium mb-3">IVR Analytics</h4>
-            <div className="space-y-3">
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Option 1 (Sales)</span>
-                  <span className="text-sm font-bold">42%</span>
-                </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Option 2 (Support)</span>
-                  <span className="text-sm font-bold">31%</span>
-                </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Option 0 (Operator)</span>
-                  <span className="text-sm font-bold">18%</span>
-                </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Hang-ups</span>
-                  <span className="text-sm font-bold text-red-600">9%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  const handleMuteToggle = async () => {
+    if (!realCallActive) {
+      setMuted(!muted);
+      return;
+    }
 
-      {/* Multi-language Support */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">Multi-language Support</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <Globe className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-lg font-bold text-blue-600">English</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Primary Language</div>
-          </div>
-          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <Globe className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <div className="text-lg font-bold text-green-600">Spanish</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Secondary Language</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <Plus className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-lg font-bold text-purple-600">Add Language</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Configure New</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    try {
+      const result = await twilioVoiceService.toggleMute();
+      
+      if (result.success) {
+        setMuted(result.muted);
+        console.log(`📞 Call ${result.muted ? 'muted' : 'unmuted'}`);
+      } else {
+        console.error('❌ Failed to toggle mute:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Mute toggle failed:', error);
+    }
+  };
 
-  // Analytics Hub Component
-  const AnalyticsHubComponent = () => (
-    <div className="space-y-6">
-      {/* Real-time Global Statistics */}
-      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold flex items-center text-white">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3 backdrop-blur-sm">
-              <Globe className="w-6 h-6 text-white" />
-            </div>
-            Global Call Center Statistics - Live
-          </h3>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-green-200">LIVE</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
-            <div className="text-4xl font-bold text-white mb-2">47,283</div>
-            <div className="text-sm font-medium text-blue-100">Active Calls Worldwide</div>
-          </div>
-          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
-            <div className="text-4xl font-bold text-white mb-2">47</div>
-            <div className="text-sm font-medium text-purple-100">Countries Covered</div>
-          </div>
-          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
-            <div className="text-4xl font-bold text-white mb-2">23</div>
-            <div className="text-sm font-medium text-pink-100">Time Zones</div>
-          </div>
-          <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
-            <div className="text-4xl font-bold text-white mb-2">99.97%</div>
-            <div className="text-sm font-medium text-green-100">Uptime SLA</div>
-          </div>
-        </div>
-      </div>
+  // Handle incoming call accept
+  const handleIncomingCall = async (call) => {
+    try {
+      setLoading(true);
+      await twilioVoiceService.acceptCall(call);
+      setIncomingCall(null);
+      setRealCallActive(true);
+      setActiveCall({
+        id: Date.now(),
+        contact: call.parameters?.From || 'Unknown Number',
+        startTime: new Date(),
+        type: 'incoming',
+        status: 'connected'
+      });
+    } catch (error) {
+      console.error('Failed to accept call:', error);
+      setCallError(`Failed to accept call: ${error.message}`);
+      setIncomingCall(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      {/* Advanced Call Volume Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
-            Call Volume Breakdown
-          </h4>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <span className="font-medium">Outbound Calls</span>
-              <span className="text-lg font-bold text-blue-600">43,862</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <span className="font-medium">Inbound Calls</span>
-              <span className="text-lg font-bold text-green-600">3,421</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <span className="font-medium">Recorded Calls</span>
-              <span className="text-lg font-bold text-purple-600">15,483</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <span className="font-medium">Active Extensions</span>
-              <span className="text-lg font-bold text-orange-600">89</span>
-            </div>
-          </div>
-        </div>
+  // Handle incoming call reject
+  const handleRejectCall = () => {
+    if (incomingCall) {
+      incomingCall.reject();
+      setIncomingCall(null);
+    }
+  };
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <Phone className="w-5 h-5 mr-2 text-green-500" />
-            Phone System Capacity
-          </h4>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Total Phone Numbers</span>
-              <span className="text-lg font-bold">45</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Available for Assignment</span>
-              <span className="text-lg font-bold text-green-600">12</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">DNC Compliance Rate</span>
-              <span className="text-lg font-bold text-green-600">99.7%</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium">Multi-channel Support</span>
-              <span className="text-sm font-bold text-blue-600">Voice, SMS, Email</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  const handleTransferToHuman = () => {
+    setTransferRequested(true);
+    setTimeout(() => {
+      alert('Call transferred to human agent successfully!');
+      setTransferRequested(false);
+    }, 2000);
+  };
 
-      {/* Performance Metrics Dashboard */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h4 className="font-semibold mb-4 flex items-center">
-          <Activity className="w-5 h-5 mr-2 text-purple-500" />
-          Live Performance Metrics
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">24.7%</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">1.3 min</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Avg Wait Time</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">234</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Voicemails</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">1,876</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Transfers</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">2.3%</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Drop Rate</div>
-          </div>
-          <div className="text-center p-4 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 rounded-lg">
-            <div className="text-2xl font-bold text-teal-600">4.8★</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">CSAT Score</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const handleInboundCall = (call) => {
+    setCallType('inbound');
+    setActiveCall(true);
+    setCallStatus('active');
+    setPhoneNumber(call.number);
+    setCallTimer(0);
+    setInboundQueue(prev => prev.filter(c => c.id !== call.id));
+  };
 
-  // AI Coach Component
-  const AICoachComponent = () => (
-    <div className="space-y-6">
-      {/* AI Coaching Dashboard */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Brain className="w-5 h-5 mr-2" />
-          AI-Powered Real-time Coaching
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold">89%</div>
-            <div className="text-sm text-purple-100">Agent Performance Boost</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">1,247</div>
-            <div className="text-sm text-purple-100">Real-time Suggestions Today</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">34%</div>
-            <div className="text-sm text-purple-100">Conversion Improvement</div>
-          </div>
-        </div>
-      </div>
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      setRecordingTime(0);
+      setShowRecordingControls(true);
+    }
+  };
 
-      {/* Live AI Coaching Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <Sparkles className="w-5 h-5 mr-2 text-yellow-500" />
-            Live AI Suggestions
-          </h4>
-          <div className="space-y-4">
-            <div className="border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 rounded-r-lg">
-              <div className="font-medium text-green-800 dark:text-green-200">Agent: Sarah Johnson</div>
-              <div className="text-sm text-green-700 dark:text-green-300">"Try asking about their current pain points to build rapport"</div>
-              <div className="text-xs text-green-600 dark:text-green-400 mt-1">Confidence: 94%</div>
-            </div>
-            <div className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r-lg">
-              <div className="font-medium text-blue-800 dark:text-blue-200">Agent: Mike Chen</div>
-              <div className="text-sm text-blue-700 dark:text-blue-300">"Customer showing price sensitivity - emphasize ROI benefits"</div>
-              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Confidence: 87%</div>
-            </div>
-            <div className="border-l-4 border-purple-500 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-r-lg">
-              <div className="font-medium text-purple-800 dark:text-purple-200">Agent: Lisa Rodriguez</div>
-              <div className="text-sm text-purple-700 dark:text-purple-300">"Perfect time to present premium package - customer highly engaged"</div>
-              <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">Confidence: 92%</div>
-            </div>
-          </div>
-        </div>
+  const togglePlayback = () => {
+    setIsPlayingBack(!isPlayingBack);
+    if (!isPlayingBack && playbackTime >= playbackDuration) {
+      setPlaybackTime(0);
+    }
+    if (!playbackDuration) {
+      setPlaybackDuration(recordingTime || 180); // Default 3 minutes if no recording
+    }
+  };
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-gold-500" />
-            Agent Performance Leaderboard
-          </h4>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
-              <div className="flex items-center space-x-3">
-                <Crown className="w-5 h-5 text-yellow-500" />
-                <span className="font-medium">Sarah Johnson</span>
-              </div>
-              <span className="font-bold text-yellow-600">97.8%</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Medal className="w-5 h-5 text-gray-500" />
-                <span className="font-medium">Lisa Rodriguez</span>
-              </div>
-              <span className="font-bold text-gray-600">94.2%</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Trophy className="w-5 h-5 text-orange-500" />
-                <span className="font-medium">Mike Chen</span>
-              </div>
-              <span className="font-bold text-orange-600">91.5%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  const skipPlayback = (seconds) => {
+    setPlaybackTime(prev => Math.max(0, Math.min(playbackDuration, prev + seconds)));
+  };
 
-      {/* AI Training Modules */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h4 className="font-semibold mb-4 flex items-center">
-          <Brain className="w-5 h-5 mr-2 text-indigo-500" />
-          Personalized Training Recommendations
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border border-indigo-200 dark:border-indigo-700 rounded-lg p-4 bg-indigo-50 dark:bg-indigo-900/20">
-            <h5 className="font-medium text-indigo-800 dark:text-indigo-200">Objection Handling</h5>
-            <p className="text-sm text-indigo-600 dark:text-indigo-300 mt-1">Advanced techniques for price objections</p>
-            <button className="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              Start Training
-            </button>
-          </div>
-          <div className="border border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
-            <h5 className="font-medium text-green-800 dark:text-green-200">Closing Techniques</h5>
-            <p className="text-sm text-green-600 dark:text-green-300 mt-1">Psychological closing strategies</p>
-            <button className="mt-3 w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              Start Training
-            </button>
-          </div>
-          <div className="border border-purple-200 dark:border-purple-700 rounded-lg p-4 bg-purple-50 dark:bg-purple-900/20">
-            <h5 className="font-medium text-purple-800 dark:text-purple-200">Rapport Building</h5>
-            <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">Building instant connection with prospects</p>
-            <button className="mt-3 w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-              Start Training
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const setPlaybackPosition = (position) => {
+    setPlaybackTime(position);
+  };
 
-  // Global Presence Component
-  const GlobalPresenceComponent = () => (
-    <div className="space-y-6">
-      {/* Global Operations Overview */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Globe className="w-5 h-5 mr-2" />
-          Global Call Center Operations
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold">24/7</div>
-            <div className="text-sm text-teal-100">Global Coverage</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">156</div>
-            <div className="text-sm text-teal-100">Local Numbers</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">47</div>
-            <div className="text-sm text-teal-100">Countries</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">15</div>
-            <div className="text-sm text-teal-100">Languages</div>
-          </div>
-        </div>
-      </div>
+  const filteredContacts = contacts.filter(contact => {
+    const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         contact.number.includes(searchQuery);
+    const matchesFilter = filterType === 'all' || contact.type === filterType || contact.status === filterType;
+    return matchesSearch && matchesFilter;
+  });
 
-      {/* Regional Performance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <MapPin className="w-5 h-5 mr-2 text-blue-500" />
-            North America
-          </h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Active Calls</span>
-              <span className="font-medium">18,394</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</span>
-              <span className="font-medium text-green-600">28.3%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Avg Handle Time</span>
-              <span className="font-medium">6:47</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Customer Satisfaction</span>
-              <span className="font-medium text-purple-600">4.9★</span>
-            </div>
-          </div>
-        </div>
+  const voices = [
+    { name: 'June', accent: 'American', gender: 'Female', premium: true, specialty: 'Sales & Support' },
+    { name: 'Alex', accent: 'British', gender: 'Male', premium: false, specialty: 'Professional Calls' },
+    { name: 'Sofia', accent: 'Spanish', gender: 'Female', premium: true, specialty: 'Multilingual Support' },
+    { name: 'Marcus', accent: 'Australian', gender: 'Male', premium: false, specialty: 'Casual Conversations' },
+    { name: 'Yuki', accent: 'Japanese', gender: 'Female', premium: true, specialty: 'Technical Support' },
+    { name: 'Emma', accent: 'Canadian', gender: 'Female', premium: true, specialty: 'Healthcare & Empathy' }
+  ];
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <MapPin className="w-5 h-5 mr-2 text-green-500" />
-            Europe
-          </h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Active Calls</span>
-              <span className="font-medium">15,627</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</span>
-              <span className="font-medium text-green-600">31.7%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Avg Handle Time</span>
-              <span className="font-medium">7:23</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Customer Satisfaction</span>
-              <span className="font-medium text-purple-600">4.7★</span>
-            </div>
-          </div>
-        </div>
+  const presetPrompts = [
+    { name: 'Sales Call', icon: TrendingUp, description: 'Professional sales outreach with lead qualification', transferTriggers: ['pricing_question', 'technical_detail', 'decision_maker'] },
+    { name: 'Customer Support', icon: Headphones, description: 'Technical support with escalation options', transferTriggers: ['complex_issue', 'billing_dispute', 'angry_customer'] },
+    { name: 'Appointment Booking', icon: Calendar, description: 'Schedule appointments with availability check', transferTriggers: ['special_request', 'bulk_booking'] },
+    { name: 'Lead Qualification', icon: Users, description: 'Qualify potential leads and gather information', transferTriggers: ['enterprise_inquiry', 'custom_solution'] },
+    { name: 'Receptionist', icon: PhoneIncoming, description: 'Professional call answering and routing', transferTriggers: ['urgent_matter', 'executive_request', 'emergency'] },
+    { name: 'Cold Outreach', icon: Target, description: 'Initial contact and interest generation', transferTriggers: ['interested_prospect', 'objection_handling'] }
+  ];
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h4 className="font-semibold mb-4 flex items-center">
-            <MapPin className="w-5 h-5 mr-2 text-purple-500" />
-            Asia Pacific
-          </h4>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Active Calls</span>
-              <span className="font-medium">13,262</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</span>
-              <span className="font-medium text-green-600">19.8%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Avg Handle Time</span>
-              <span className="font-medium">8:12</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Customer Satisfaction</span>
-              <span className="font-medium text-purple-600">4.6★</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  const routingDepartments = [
+    { id: 'sales', name: 'Sales Team', agents: 8, available: 6, avgResponse: '45s', expertise: ['Product Demo', 'Pricing', 'Contracts'] },
+    { id: 'support', name: 'Technical Support', agents: 12, available: 9, avgResponse: '1m 20s', expertise: ['Technical Issues', 'Troubleshooting', 'Setup'] },
+    { id: 'billing', name: 'Billing & Finance', agents: 4, available: 3, avgResponse: '2m 10s', expertise: ['Billing Questions', 'Refunds', 'Payment Issues'] },
+    { id: 'management', name: 'Management', agents: 3, available: 1, avgResponse: '5m 30s', expertise: ['Escalations', 'Complaints', 'Executive Requests'] },
+    { id: 'hr', name: 'Human Resources', agents: 2, available: 2, avgResponse: '1m 45s', expertise: ['Employment', 'Benefits', 'Policies'] }
+  ];
 
-      {/* Multilingual Support */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h4 className="font-semibold mb-4 flex items-center">
-          <Globe className="w-5 h-5 mr-2 text-indigo-500" />
-          Real-time Language Support
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="font-bold text-blue-600">🇺🇸 English</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">24,894 calls</div>
-          </div>
-          <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="font-bold text-green-600">🇪🇸 Spanish</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">8,392 calls</div>
-          </div>
-          <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="font-bold text-purple-600">🇫🇷 French</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">5,847 calls</div>
-          </div>
-          <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-            <div className="font-bold text-orange-600">🇩🇪 German</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">4,239 calls</div>
-          </div>
-          <div className="text-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
-            <div className="font-bold text-teal-600">🇯🇵 Japanese</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">3,911 calls</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Advanced Sentiment Analysis Component
-  const SentimentAnalysisComponent = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-              <Heart className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">AI Sentiment Analysis</h2>
-              <p className="text-pink-100">Real-time emotion detection and customer insights</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">94.7%</div>
-            <div className="text-pink-100">Accuracy Rate</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Sentiment Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Real-time Sentiment Monitoring */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Heart className="w-5 h-5 mr-2 text-pink-500" />
-            Live Sentiment Tracking
-          </h3>
-          <div className="space-y-4">
-            {[
-              { customer: 'John Williams', sentiment: 'positive', score: 8.7, emotion: '😊', trend: 'improving', agent: 'Sarah Johnson' },
-              { customer: 'Maria Garcia', sentiment: 'neutral', score: 5.4, emotion: '😐', trend: 'stable', agent: 'Mike Chen' },
-              { customer: 'David Brown', sentiment: 'frustrated', score: 2.8, emotion: '😤', trend: 'declining', agent: 'Lisa Rodriguez' },
-              { customer: 'Anna Lee', sentiment: 'excited', score: 9.2, emotion: '🤩', trend: 'improving', agent: 'Tom Wilson' }
-            ].map((call, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="text-2xl">{call.emotion}</div>
-                  <div>
-                    <div className="font-semibold">{call.customer}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Agent: {call.agent}</div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-bold ${
-                    call.sentiment === 'positive' ? 'text-green-500' :
-                    call.sentiment === 'excited' ? 'text-blue-500' :
-                    call.sentiment === 'neutral' ? 'text-yellow-500' :
-                    'text-red-500'
-                  }`}>
-                    {call.score}/10
-                  </div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${
-                    call.trend === 'improving' ? 'bg-green-100 text-green-700' :
-                    call.trend === 'stable' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {call.trend}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sentiment Analytics */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Sentiment Distribution</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-green-600">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  Positive
-                </span>
-                <span className="font-bold">67%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-yellow-600">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                  Neutral
-                </span>
-                <span className="font-bold">23%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-red-600">
-                  <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                  Negative
-                </span>
-                <span className="font-bold">10%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Emotion Insights</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="text-xl">😊</div>
-                <div className="font-bold text-blue-600">Happy</div>
-                <div className="text-sm text-gray-600">45%</div>
-              </div>
-              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="text-xl">🤩</div>
-                <div className="font-bold text-green-600">Excited</div>
-                <div className="text-sm text-gray-600">22%</div>
-              </div>
-              <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <div className="text-xl">😐</div>
-                <div className="font-bold text-yellow-600">Neutral</div>
-                <div className="text-sm text-gray-600">23%</div>
-              </div>
-              <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <div className="text-xl">😤</div>
-                <div className="font-bold text-red-600">Frustrated</div>
-                <div className="text-sm text-gray-600">10%</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Recommendations */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Brain className="w-5 h-5 mr-2 text-purple-500" />
-          AI-Powered Sentiment Recommendations
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-center mb-2">
-              <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
-              <span className="font-semibold text-red-700 dark:text-red-400">High Priority</span>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Customer David Brown showing frustration. Recommend supervisor intervention.</p>
-          </div>
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Clock className="w-4 h-4 text-yellow-500 mr-2" />
-              <span className="font-semibold text-yellow-700 dark:text-yellow-400">Monitor</span>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Maria Garcia sentiment is neutral. Agent could use engagement techniques.</p>
-          </div>
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center mb-2">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-              <span className="font-semibold text-green-700 dark:text-green-400">Excellent</span>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Anna Lee is highly satisfied. Perfect time to introduce upsell opportunities.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Voice Biometrics Component
-  const VoiceBiometricsComponent = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-              <Fingerprint className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Voice Biometrics & Identity</h2>
-              <p className="text-indigo-100">Advanced voice authentication and caller verification</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">99.8%</div>
-            <div className="text-indigo-100">Accuracy Rate</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Voice ID Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Real-time Voice Analysis */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Mic className="w-5 h-5 mr-2 text-indigo-500" />
-            Live Voice Analysis
-          </h3>
-          <div className="space-y-4">
-            {[
-              { caller: 'John Williams', status: 'verified', confidence: 98.7, riskLevel: 'low', voiceprint: 'JW-2024-001', agent: 'Sarah Johnson' },
-              { caller: 'Maria Garcia', status: 'verifying', confidence: 85.3, riskLevel: 'medium', voiceprint: 'MG-2024-047', agent: 'Mike Chen' },
-              { caller: 'Unknown Caller', status: 'unverified', confidence: 23.1, riskLevel: 'high', voiceprint: 'UNKNOWN', agent: 'Lisa Rodriguez' },
-              { caller: 'David Brown', status: 'verified', confidence: 96.4, riskLevel: 'low', voiceprint: 'DB-2024-023', agent: 'Tom Wilson' }
-            ].map((call, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    call.status === 'verified' ? 'bg-green-100 text-green-600' :
-                    call.status === 'verifying' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
-                    {call.status === 'verified' ? <CheckCircle className="w-5 h-5" /> :
-                     call.status === 'verifying' ? <Clock className="w-5 h-5" /> :
-                     <XCircle className="w-5 h-5" />}
-                  </div>
-                  <div>
-                    <div className="font-semibold">{call.caller}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Agent: {call.agent} • ID: {call.voiceprint}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-bold ${
-                    call.confidence > 90 ? 'text-green-500' :
-                    call.confidence > 70 ? 'text-yellow-500' :
-                    'text-red-500'
-                  }`}>
-                    {call.confidence}%
-                  </div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${
-                    call.riskLevel === 'low' ? 'bg-green-100 text-green-700' :
-                    call.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {call.riskLevel} risk
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Security Stats */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Security Overview</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-green-600">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Verified Callers
-                </span>
-                <span className="font-bold">87%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-yellow-600">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Pending Verification
-                </span>
-                <span className="font-bold">8%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-red-600">
-                  <AlertCircle className="w-4 h-4 mr-2" />
-                  Fraud Detected
-                </span>
-                <span className="font-bold">5%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Threat Detection</h3>
-            <div className="space-y-3">
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <div className="font-semibold text-red-700 dark:text-red-400">High Risk Alert</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Suspicious voice pattern detected</div>
-              </div>
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <div className="font-semibold text-yellow-700 dark:text-yellow-400">Voice Spoofing</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Potential synthetic voice detected</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Voice Analytics */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <BarChart3 className="w-5 h-5 mr-2 text-purple-500" />
-          Voice Pattern Analytics
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-indigo-600">47,283</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total Voiceprints</div>
-          </div>
-          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">99.8%</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Verification Accuracy</div>
-          </div>
-          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">0.3s</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Average Verification Time</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">247</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Fraud Attempts Blocked</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Predictive Intelligence Component
-  const PredictiveIntelligenceComponent = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Predictive Intelligence Engine</h2>
-              <p className="text-emerald-100">AI-powered predictions and business intelligence</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">96.4%</div>
-            <div className="text-emerald-100">Prediction Accuracy</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Predictive Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Real-time Predictions */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Target className="w-5 h-5 mr-2 text-emerald-500" />
-            Live Conversion Predictions
-          </h3>
-          <div className="space-y-4">
-            {[
-              { customer: 'John Williams', probability: 87, outcome: 'high_conversion', value: '$12,500', confidence: 'high', timeToClose: '2 days' },
-              { customer: 'Maria Garcia', probability: 64, outcome: 'medium_conversion', value: '$8,200', confidence: 'medium', timeToClose: '5 days' },
-              { customer: 'David Brown', probability: 23, outcome: 'low_conversion', value: '$3,100', confidence: 'low', timeToClose: '14 days' },
-              { customer: 'Anna Lee', probability: 92, outcome: 'high_conversion', value: '$18,700', confidence: 'high', timeToClose: '1 day' }
-            ].map((prediction, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    prediction.probability > 80 ? 'bg-green-100 text-green-600' :
-                    prediction.probability > 50 ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">{prediction.customer}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Expected: {prediction.value} • {prediction.timeToClose}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-lg font-bold ${
-                    prediction.probability > 80 ? 'text-green-500' :
-                    prediction.probability > 50 ? 'text-yellow-500' :
-                    'text-red-500'
-                  }`}>
-                    {prediction.probability}%
-                  </div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${
-                    prediction.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                    prediction.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {prediction.confidence}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Prediction Analytics */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Revenue Forecast</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Today</span>
-                <span className="font-bold text-green-600">$47,800</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">This Week</span>
-                <span className="font-bold text-blue-600">$284,500</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">This Month</span>
-                <span className="font-bold text-purple-600">$1.2M</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Market Trends</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-green-600">
-                  <ArrowUp className="w-4 h-4 mr-1" />
-                  SaaS Demand
-                </span>
-                <span className="font-bold">+24%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-blue-600">
-                  <ArrowUp className="w-4 h-4 mr-1" />
-                  Enterprise
-                </span>
-                <span className="font-bold">+18%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-red-600">
-                  <ArrowDown className="w-4 h-4 mr-1" />
-                  SMB Market
-                </span>
-                <span className="font-bold">-8%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-purple-500" />
-            Strategic AI Recommendations
-          </h3>
-          <div className="space-y-3">
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="font-semibold text-green-700 dark:text-green-400">High Priority Lead</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Anna Lee shows 92% conversion probability. Assign top agent immediately.</div>
-            </div>
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="font-semibold text-blue-700 dark:text-blue-400">Market Opportunity</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">SaaS segment showing 24% growth. Increase outbound efforts by 30%.</div>
-            </div>
-            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-              <div className="font-semibold text-purple-700 dark:text-purple-400">Optimization</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Peak call hours: 2-4 PM EST. Schedule 40% more agents during this window.</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-emerald-500" />
-            Performance Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-emerald-600">96.4%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Prediction Accuracy</div>
-            </div>
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">847ms</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Response Time</div>
-            </div>
-            <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">2.4M</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Data Points</div>
-            </div>
-            <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">34%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Revenue Boost</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Quantum Analytics Component
-  const QuantumAnalyticsComponent = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-              <Star className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Quantum Analytics Engine</h2>
-              <p className="text-violet-100">Next-generation quantum computing for call center optimization</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">∞</div>
-            <div className="text-violet-100">Quantum Speed</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quantum Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quantum Processing */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Star className="w-5 h-5 mr-2 text-violet-500" />
-            Real-time Quantum Calculations
-          </h3>
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-violet-700 dark:text-violet-400">Quantum Optimization</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-xl font-bold text-violet-600">47,283</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Variables Analyzed</div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-purple-600">0.001ms</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Processing Time</div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-blue-600">∞</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Parallel Calculations</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="font-semibold text-green-700 dark:text-green-400 mb-2">Optimal Call Routing</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Quantum algorithm found 47 billion optimal routing combinations in 0.001ms</div>
-                <div className="mt-2 text-2xl font-bold text-green-600">+34% Efficiency</div>
-              </div>
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Revenue Optimization</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Quantum prediction model analyzing market quantum states</div>
-                <div className="mt-2 text-2xl font-bold text-blue-600">+89% ROI</div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-              <div className="font-semibold text-purple-700 dark:text-purple-400 mb-2">Quantum Entanglement Network</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">All call center operations quantum-entangled for instantaneous global synchronization</div>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                  <div className="font-bold text-purple-600">NYC</div>
-                  <div className="text-xs text-gray-600">⟨ψ₁⟩</div>
-                </div>
-                <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                  <div className="font-bold text-purple-600">LON</div>
-                  <div className="text-xs text-gray-600">⟨ψ₂⟩</div>
-                </div>
-                <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                  <div className="font-bold text-purple-600">TOK</div>
-                  <div className="text-xs text-gray-600">⟨ψ₃⟩</div>
-                </div>
-                <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                  <div className="font-bold text-purple-600">SYD</div>
-                  <div className="text-xs text-gray-600">⟨ψ₄⟩</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quantum Metrics */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Quantum States</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-violet-600">Superposition Active</span>
-                <span className="text-sm bg-violet-100 text-violet-700 px-2 py-1 rounded">|0⟩ + |1⟩</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-600">Coherence Time</span>
-                <span className="font-bold">∞ μs</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-purple-600">Entangled Pairs</span>
-                <span className="font-bold">47,283</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Quantum Advantages</h3>
-            <div className="space-y-2">
-              <div className="text-sm text-gray-600 dark:text-gray-400">• Parallel universe optimization</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">• Instantaneous global sync</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">• Infinite scalability</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">• Zero-latency processing</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quantum Research */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Brain className="w-5 h-5 mr-2 text-purple-500" />
-          Quantum Research Lab
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-            <div className="font-semibold text-violet-700 dark:text-violet-400 mb-2">Quantum ML Model</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Training on all possible customer interaction outcomes simultaneously</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-violet-600">∞</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Training Scenarios</div>
-            </div>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Quantum Encryption</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Unbreakable quantum key distribution for secure communications</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-blue-600">100%</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Security Level</div>
-            </div>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="font-semibold text-purple-700 dark:text-purple-400 mb-2">Quantum Teleportation</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Instantaneous data transfer between quantum call centers</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-purple-600">0ms</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Transfer Time</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Neural Coaching Component
-  const NeuralCoachingComponent = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-              <Brain className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Neural Coaching Network</h2>
-              <p className="text-cyan-100">Advanced neural networks for real-time agent enhancement</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">97.8%</div>
-            <div className="text-cyan-100">Neural Accuracy</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Neural Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Neural Analysis */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-cyan-500" />
-            Real-time Neural Processing
-          </h3>
-          <div className="space-y-4">
-            {[
-              { agent: 'Sarah Johnson', neuralScore: 94.7, brainwave: 'optimal', focus: 97, stress: 12, enhancement: '+47% closing rate' },
-              { agent: 'Mike Chen', neuralScore: 87.3, brainwave: 'focused', focus: 89, stress: 25, enhancement: '+32% rapport building' },
-              { agent: 'Lisa Rodriguez', neuralScore: 91.8, brainwave: 'creative', focus: 93, stress: 18, enhancement: '+38% objection handling' },
-              { agent: 'Tom Wilson', neuralScore: 86.2, brainwave: 'calm', focus: 85, stress: 22, enhancement: '+29% conversion rate' }
-            ].map((neural, index) => (
-              <div key={index} className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/40 rounded-full flex items-center justify-center">
-                      <Brain className="w-5 h-5 text-cyan-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{neural.agent}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Neural State: {neural.brainwave}</div>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-cyan-600">{neural.neuralScore}%</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">Neural Score</div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                    <div className="text-sm font-bold text-green-600">{neural.focus}%</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">Focus Level</div>
-                  </div>
-                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                    <div className="text-sm font-bold text-yellow-600">{neural.stress}%</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">Stress Level</div>
-                  </div>
-                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
-                    <div className="text-xs font-bold text-purple-600">{neural.enhancement}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Neural Insights */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Neural Patterns</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-cyan-600">
-                  <div className="w-3 h-3 bg-cyan-500 rounded-full mr-2"></div>
-                  Optimal State
-                </span>
-                <span className="font-bold">43%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-green-600">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  Focused
-                </span>
-                <span className="font-bold">31%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-blue-600">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                  Creative
-                </span>
-                <span className="font-bold">18%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center text-purple-600">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                  Calm
-                </span>
-                <span className="font-bold">8%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-            <h3 className="text-lg font-semibold mb-4">Enhancement Protocols</h3>
-            <div className="space-y-2">
-              <div className="text-sm p-2 bg-green-50 dark:bg-green-900/20 rounded text-green-700 dark:text-green-400">
-                ✓ Binaural beats activated
-              </div>
-              <div className="text-sm p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-blue-700 dark:text-blue-400">
-                ✓ Neurofeedback training
-              </div>
-              <div className="text-sm p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-purple-700 dark:text-purple-400">
-                ✓ Cognitive enhancement
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Neural Technology */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Zap className="w-5 h-5 mr-2 text-yellow-500" />
-            Brain-Computer Interface
-          </h3>
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <div className="font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Neural Headset Status</div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>Connected: 47 agents</div>
-                <div>Signal Quality: 98.7%</div>
-                <div>Battery: 94% avg</div>
-                <div>Sync Rate: 1000Hz</div>
-              </div>
-            </div>
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Neural Network Training</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Live adaptation to each agent's unique neural patterns for optimal performance enhancement</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
-            Performance Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-cyan-600">97.8%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Neural Accuracy</div>
-            </div>
-            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">+67%</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Performance Boost</div>
-            </div>
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">0.1ms</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Response Time</div>
-            </div>
-            <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">24/7</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Monitoring</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Neural Research */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Star className="w-5 h-5 mr-2 text-purple-500" />
-          Advanced Neural Research
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-            <div className="font-semibold text-cyan-700 dark:text-cyan-400 mb-2">Neuroplasticity Training</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Real-time brain adaptation protocols to enhance learning and skill acquisition</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-cyan-600">+89%</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Learning Speed</div>
-            </div>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="font-semibold text-green-700 dark:text-green-400 mb-2">Stress Optimization</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">AI-powered stress detection and mitigation through neural feedback loops</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-green-600">-74%</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Stress Reduction</div>
-            </div>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="font-semibold text-purple-700 dark:text-purple-400 mb-2">Flow State Induction</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Precision brainwave entrainment for optimal cognitive performance states</div>
-            <div className="mt-3 text-center">
-              <div className="text-2xl font-bold text-purple-600">+127%</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Flow Efficiency</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  const TabButton = ({ id, label, icon: Icon, isActive, onClick }) => (
+    <button
+      onClick={() => onClick(id)}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+        isActive 
+          ? 'bg-blue-600 text-white shadow-lg' 
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      }`}
+    >
+      <Icon size={16} />
+      {label}
+    </button>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-white">
-      <div className="space-y-6 p-6">
-        {/* Enhanced Tab Navigation */}
-        <TabNavigation />
-
-        {/* Main Content Area with Modern Styling */}
-        <div className="bg-slate-800/30 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-          <div className="p-6">
-
-      {/* Render active tab content */}
-      {activeTab === 'live-monitoring' && (
-        <div className="space-y-8">
-          {/* Enhanced Live Command Center Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-8 shadow-2xl border border-blue-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
-                  <Phone className="w-8 h-8 text-white drop-shadow-lg" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                  <Phone className="text-white" size={20} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-white">
-                    Live Call Monitoring
-                  </h2>
-                  <p className="text-blue-100 text-lg font-medium">Real-time oversight and AI-powered assistance</p>
+                  <h1 className="text-xl font-bold text-gray-900">AI Call Center Pro</h1>
+                  <p className="text-sm text-gray-500">World-Class Communication Platform</p>
                 </div>
-              </div>
-              <div className="flex items-center space-x-6">
-                <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-                  <div className="text-3xl font-bold text-white">{mockData.activeCalls.length}</div>
-                  <div className="text-blue-100 font-medium">Active Calls</div>
-                </div>
-                <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-                  <div className="text-3xl font-bold text-white">{mockData.agents.filter(a => a.status === 'on_call').length}</div>
-                  <div className="text-blue-100 font-medium">Agents Online</div>
-                </div>
-                <div className="text-center p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-                  <div className="text-3xl font-bold text-green-300">98.7%</div>
-                  <div className="text-blue-100 font-medium">Call Quality</div>
-                </div>
-                <button
-                  onClick={(e) => {
-                    console.log('Make Call button clicked!', e);
-                    console.log('Button element:', e.target);
-                    console.log('Current showVoiceWidget state:', showVoiceWidget);
-                    setShowVoiceWidget(true);
-                    setVoiceWidgetMinimized(false);
-                  }}
-                  onMouseDown={() => console.log('Button mouse down')}
-                  onMouseUp={() => console.log('Button mouse up')}
-                  onMouseEnter={() => console.log('Button mouse enter')}
-                  style={{ pointerEvents: 'auto', zIndex: 1000 }}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <PhoneCall className="w-5 h-5" />
-                  <span>Make Call</span>
-                </button>
               </div>
             </div>
-          </div>
-
-          {/* Active Calls Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {mockData.activeCalls.map((call) => (
-              <div key={call.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        call.status === 'converting' ? 'bg-green-500' :
-                        call.status === 'qualifying' ? 'bg-blue-500' :
-                        call.status === 'objection_handling' ? 'bg-yellow-500' :
-                        call.status === 'closing' ? 'bg-purple-500' :
-                        'bg-gray-500'
-                      }`}></div>
-                      <span className="font-medium">{call.customerInfo.name}</span>
-                    </div>
-                    <span className="text-sm text-gray-500">{call.duration}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                    <span>{call.agentName}</span>
-                    <span className="capitalize">{call.status.replace('_', ' ')}</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Score:</span>
-                    <span className="font-medium">{Math.floor(Math.random() * 40) + 60}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Sentiment:</span>
-                    <span className={`font-medium ${
-                      Math.random() > 0.6 ? 'text-green-600' :
-                      Math.random() > 0.3 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {Math.random() > 0.6 ? 'Positive' : Math.random() > 0.3 ? 'Neutral' : 'Negative'}
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => setSelectedCall(call)}
-                        className="flex-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      >
-                        Listen In
-                      </button>
-                      <button className="flex-1 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                        Assist
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-center gap-4">
+              {/* Twilio Status Indicator */}
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border">
+                <div className={`w-2 h-2 rounded-full ${
+                  twilioInitialized ? 'bg-green-500' : callError ? 'bg-red-500' : 'bg-yellow-500'
+                } ${twilioInitialized ? 'animate-pulse' : ''}`}></div>
+                <span className="text-xs font-medium text-gray-700">
+                  {callError ? 'Twilio Error' : twilioStatus}
+                </span>
               </div>
-            ))}
-          </div>
-
-          {/* Performance Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</p>
-                  <p className="text-2xl font-bold text-green-600">24.3%</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Call Time</p>
-                  <p className="text-2xl font-bold text-blue-600">8:32</p>
-                </div>
-                <Clock className="w-8 h-8 text-blue-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Queue Wait</p>
-                  <p className="text-2xl font-bold text-orange-600">2:14</p>
-                </div>
-                <Users className="w-8 h-8 text-orange-500" />
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Satisfaction</p>
-                  <p className="text-2xl font-bold text-purple-600">4.7★</p>
-                </div>
-                <Star className="w-8 h-8 text-purple-500" />
-              </div>
+              
+              <button 
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Keyboard Shortcuts (Ctrl+/)"
+              >
+                <Keyboard size={20} className="text-gray-600" />
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </header>
 
-      {activeTab === 'auto-dialer' && <AutoDialerComponent />}
-      {activeTab === 'inbound-center' && <InboundCenterComponent />}
-      {activeTab === 'phone-system' && <PhoneSystemComponent />}
-      {activeTab === 'lead-management' && <LeadManagementComponent />}
-      {activeTab === 'ivr-builder' && <IVRBuilderComponent />}
-      {activeTab === 'analytics-hub' && <AnalyticsHubComponent />}
-      {activeTab === 'ai-coach' && <AICoachComponent />}
-      {activeTab === 'global-presence' && <GlobalPresenceComponent />}
-      {activeTab === 'sentiment-analysis' && <SentimentAnalysisComponent />}
-      {activeTab === 'voice-biometrics' && <VoiceBiometricsComponent />}
-      {activeTab === 'predictive-intelligence' && <PredictiveIntelligenceComponent />}
-      {activeTab === 'quantum-analytics' && <QuantumAnalyticsComponent />}
-      {activeTab === 'neural-coaching' && <NeuralCoachingComponent />}
-
-      {/* Call Detail Modal */}
-      {selectedCall && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-6 flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
-                  selectedCall.status === 'converting' ? 'from-green-500 to-emerald-500' :
-                  selectedCall.status === 'qualifying' ? 'from-blue-500 to-cyan-500' :
-                  selectedCall.status === 'objection_handling' ? 'from-yellow-500 to-orange-500' :
-                  selectedCall.status === 'closing' ? 'from-purple-500 to-pink-500' :
-                  'from-gray-500 to-slate-500'
-                } flex items-center justify-center`}>
-                  <Phone className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">{selectedCall.customerInfo.name}</h2>
-                  <p className="text-gray-600 dark:text-gray-400">{selectedCall.customerPhone} • {getStatusLabel(selectedCall.status)}</p>
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Call Interface */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Enhanced Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Total Calls</p>
+                    <p className="text-2xl font-bold text-gray-900">{liveMetrics.totalCallsToday}</p>
+                  </div>
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <PhoneCall className="text-blue-600" size={20} />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
-                  End Call
-                </button>
-                <button onClick={() => setSelectedCall(null)} className="text-gray-500 hover:text-gray-700">
-                  <X className="w-6 h-6" />
-                </button>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Inbound</p>
+                    <p className="text-2xl font-bold text-green-600">{liveMetrics.inboundCalls}</p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <PhoneIncoming className="text-green-600" size={20} />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Outbound</p>
+                    <p className="text-2xl font-bold text-purple-600">{liveMetrics.outboundCalls}</p>
+                  </div>
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <PhoneOutgoing className="text-purple-600" size={20} />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Success Rate</p>
+                    <p className="text-2xl font-bold text-green-600">{liveMetrics.successRate}%</p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <CheckCircle className="text-green-600" size={20} />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Transfer Rate</p>
+                    <p className="text-2xl font-bold text-orange-600">{liveMetrics.transferRate}%</p>
+                  </div>
+                  <div className="p-3 bg-orange-100 rounded-lg">
+                    <PhoneForwarded className="text-orange-600" size={20} />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Call Information */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Real-time Transcript */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
-                      Live Conversation
-                    </h3>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-64 overflow-y-auto p-4">
-                      {selectedCall.transcript.map((message, index) => (
-                        <div key={index} className={`mb-3 ${message.speaker === 'agent' ? 'text-right' : 'text-left'}`}>
-                          <div className={`inline-block max-w-xs p-3 rounded-lg ${
-                            message.speaker === 'agent' 
-                              ? 'bg-blue-500 text-white' 
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                          }`}>
-                            <div className="text-xs opacity-75 mb-1 font-medium">
-                              {message.speaker === 'agent' ? 'Agent' : 'Customer'}
-                            </div>
-                            <p className="text-sm">{message.text}</p>
-                            <div className="text-xs opacity-75 mt-1">{message.timestamp}</div>
+            {/* Enhanced Call Interface */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Smart Call Interface</h2>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCallType('outbound')}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          callType === 'outbound' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <PhoneOutgoing size={14} className="inline mr-1" />
+                        Outbound
+                      </button>
+                      <button
+                        onClick={() => setCallType('inbound')}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          callType === 'inbound' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <PhoneIncoming size={14} className="inline mr-1" />
+                        Inbound
+                      </button>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      callStatus === 'idle' ? 'bg-gray-100 text-gray-600' :
+                      callStatus === 'connecting' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-green-100 text-green-600'
+                    }`}>
+                      {callStatus === 'idle' ? 'Ready' : callStatus === 'connecting' ? 'Connecting...' : 'Live Call'}
+                    </div>
+                  </div>
+                  {activeCall && (
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-lg font-mono">
+                        <Clock size={16} className="text-gray-500" />
+                        {formatTime(callTimer)}
+                      </div>
+                      {isRecording && (
+                        <div className="flex items-center gap-2 text-red-600">
+                          <Radio size={16} className="animate-pulse" />
+                          <span className="text-sm font-medium">REC {formatTime(recordingTime)}</span>
+                        </div>
+                      )}
+                      {callType === 'outbound' && callTimer > 30 && (
+                        <button
+                          onClick={handleTransferToHuman}
+                          disabled={transferRequested}
+                          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                            transferRequested 
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                          }`}
+                          title="Transfer to Human (T)"
+                        >
+                          {transferRequested ? 'Transferring...' : 'Transfer to Human'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modern World-Class Country Dropdown */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <div className="flex">
+                    <div className="relative" ref={countryDropdownRef}>
+                      <button
+                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                        className="group relative flex items-center px-5 py-3.5 bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-l-xl hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 shadow-sm hover:shadow-md"
+                        aria-label="Select country"
+                        aria-expanded={showCountryDropdown}
+                        aria-haspopup="listbox"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl drop-shadow-sm transform group-hover:scale-110 transition-transform duration-200" role="img" aria-label={selectedCountryData.name}>
+                            {selectedCountryData.flag}
+                          </span>
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-bold text-gray-800 group-hover:text-blue-800 transition-colors">
+                              {selectedCountryData.dialCode}
+                            </span>
+                            <span className="text-xs text-gray-700 group-hover:text-blue-700 font-semibold transition-colors truncate max-w-16">
+                              {selectedCountryData.code}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                      {selectedCall.isAgentTyping && (
-                        <div className="text-left">
-                          <div className="inline-block bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-                            <div className="text-xs text-gray-500 mb-1">Agent is typing...</div>
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        <ChevronDown 
+                          size={18} 
+                          className={`text-gray-400 group-hover:text-blue-500 transition-all duration-300 ml-2 ${
+                            showCountryDropdown ? 'rotate-180 text-blue-500' : ''
+                          }`} 
+                        />
+                        
+                        {/* Subtle gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 rounded-l-xl transition-all duration-300"></div>
+                      </button>
+                      
+                      {showCountryDropdown && (
+                        <div 
+                          className="absolute top-full left-0 z-50 w-[420px] bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-2xl mt-3 overflow-hidden transform animate-in zoom-in-95 slide-in-from-top-3 duration-300"
+                          style={{
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.5)'
+                          }}
+                          role="listbox"
+                          aria-label="Country options"
+                        >
+                          {/* Modern Search Header */}
+                          <div className="relative p-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-b border-gray-200/30">
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Search size={18} className="text-blue-500/70" />
+                              </div>
+                              <input
+                                type="text"
+                                value={countrySearchQuery}
+                                onChange={(e) => setCountrySearchQuery(e.target.value)}
+                                onKeyDown={handleCountryKeyDown}
+                                className="w-full pl-12 pr-4 py-3.5 bg-white/80 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm placeholder-gray-500 transition-all duration-200 shadow-sm"
+                                placeholder="Search for a country or dial code..."
+                                autoFocus
+                              />
+                              {countrySearchQuery && (
+                                <button
+                                  onClick={() => setCountrySearchQuery('')}
+                                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                                >
+                                  <X size={16} className="text-gray-400 hover:text-gray-600 transition-colors" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Modern Countries List Container */}
+                          <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                            <style jsx>{`
+                              .custom-scrollbar::-webkit-scrollbar {
+                                width: 6px;
+                              }
+                              .custom-scrollbar::-webkit-scrollbar-track {
+                                background: #f1f5f9;
+                              }
+                              .custom-scrollbar::-webkit-scrollbar-thumb {
+                                background: #cbd5e1;
+                                border-radius: 3px;
+                              }
+                              .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                background: #94a3b8;
+                              }
+                            `}</style>
+                            
+                            {/* Popular Countries Section */}
+                            {!countrySearchQuery && popularCountries.length > 0 && (
+                              <>
+                                <div className="px-6 py-3 bg-gradient-to-r from-gray-50 to-blue-50/30 border-b border-gray-100/50">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                      Popular Countries
+                                    </h3>
+                                  </div>
+                                </div>
+                                {popularCountries.map((country, index) => (
+                                  <button
+                                    key={`popular-${country.code}`}
+                                    onClick={() => {
+                                      setSelectedCountry(country.code);
+                                      setShowCountryDropdown(false);
+                                      setCountrySearchQuery('');
+                                    }}
+                                    className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 text-left group relative overflow-hidden ${
+                                      selectedCountry === country.code ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-r-4 border-blue-500' : ''
+                                    }`}
+                                    style={{
+                                      animationDelay: `${index * 50}ms`
+                                    }}
+                                    role="option"
+                                    aria-selected={selectedCountry === country.code}
+                                  >
+                                    {selectedCountry === country.code && (
+                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5"></div>
+                                    )}
+                                    <div className="relative flex items-center gap-4 w-full">
+                                      <span className="text-2xl drop-shadow-sm" role="img" aria-label={country.name}>
+                                        {country.flag}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors text-base">
+                                          {country.name}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm text-gray-600 group-hover:text-blue-700 font-medium">
+                                            {country.dialCode}
+                                          </span>
+                                          <span className="text-xs font-bold text-gray-800 group-hover:text-blue-800 bg-gray-100 group-hover:bg-blue-100 px-1.5 py-0.5 rounded transition-all">
+                                            {country.code}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {selectedCountry === country.code ? (
+                                        <div className="flex items-center gap-2">
+                                          <CheckCircle size={18} className="text-blue-600 drop-shadow-sm" />
+                                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Selected</span>
+                                        </div>
+                                      ) : (
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                ))}
+                              </>
+                            )}
+
+                            {/* All Countries Section */}
+                            {(countrySearchQuery || !popularCountries.length) && (
+                              <>
+                                {!countrySearchQuery && (
+                                  <div className="px-6 py-3 bg-gradient-to-r from-gray-50 to-slate-50/30 border-b border-gray-100/50">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                      <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        All Countries
+                                      </h3>
+                                    </div>
+                                  </div>
+                                )}
+                                {(countrySearchQuery ? filteredCountries : otherCountries).map((country, index) => (
+                                  <button
+                                    key={country.code}
+                                    onClick={() => {
+                                      setSelectedCountry(country.code);
+                                      setShowCountryDropdown(false);
+                                      setCountrySearchQuery('');
+                                    }}
+                                    className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 text-left group relative overflow-hidden ${
+                                      selectedCountry === country.code ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-r-4 border-blue-500' : ''
+                                    }`}
+                                    style={{
+                                      animationDelay: `${index * 20}ms`
+                                    }}
+                                    role="option"
+                                    aria-selected={selectedCountry === country.code}
+                                  >
+                                    {selectedCountry === country.code && (
+                                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5"></div>
+                                    )}
+                                    <div className="relative flex items-center gap-4 w-full">
+                                      <span className="text-2xl drop-shadow-sm" role="img" aria-label={country.name}>
+                                        {country.flag}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">
+                                          {country.name}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm text-gray-600 group-hover:text-blue-700 font-medium">
+                                            {country.dialCode}
+                                          </span>
+                                          <span className="text-xs font-bold text-gray-800 group-hover:text-blue-800 bg-gray-100 group-hover:bg-blue-100 px-1.5 py-0.5 rounded transition-all">
+                                            {country.code}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {selectedCountry === country.code ? (
+                                        <div className="flex items-center gap-2">
+                                          <CheckCircle size={18} className="text-blue-600 drop-shadow-sm" />
+                                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Selected</span>
+                                        </div>
+                                      ) : (
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                ))}
+                              </>
+                            )}
+
+                            {/* Enhanced No Results Message */}
+                            {countrySearchQuery && filteredCountries.length === 0 && (
+                              <div className="px-6 py-12 text-center">
+                                <div className="relative">
+                                  <Globe size={48} className="mx-auto text-gray-300 mb-4 animate-pulse" />
+                                  <div className="absolute -top-2 -right-2">
+                                    <div className="w-4 h-4 bg-red-100 rounded-full flex items-center justify-center">
+                                      <X size={12} className="text-red-500" />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-base font-medium text-gray-700 mb-2">
+                                  No countries found
+                                </div>
+                                <div className="text-sm text-gray-500 mb-4">
+                                  Try searching for "{countrySearchQuery}" in a different way
+                                </div>
+                                <button
+                                  onClick={() => setCountrySearchQuery('')}
+                                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                  Clear search
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Modern Footer */}
+                          <div className="px-6 py-4 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border-t border-gray-200/30">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <Globe size={14} />
+                                <span>{filteredCountries.length} countries available</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <kbd className="px-2.5 py-1.5 text-xs font-mono font-semibold bg-gray-800 text-white border border-gray-700 rounded-lg shadow-sm">ESC</kbd>
+                                <span className="text-xs text-gray-600 font-medium">to close</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="flex-1 px-5 py-3.5 bg-gradient-to-r from-white to-gray-50 border border-gray-200 border-l-0 rounded-r-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:from-blue-50 focus:to-indigo-50 transition-all duration-300 shadow-sm hover:shadow-md text-gray-800 placeholder-gray-500"
+                      placeholder="Enter phone number..."
+                    />
                   </div>
+                </div>
 
-                  {/* AI Insights */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <Brain className="w-5 h-5 mr-2 text-purple-500" />
-                      AI Insights & Recommendations
-                    </h3>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                          <div className="text-2xl font-bold text-purple-500">{selectedCall.aiInsights.conversionProbability}%</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Conversion Probability</div>
-                        </div>
-                        <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                          <div className="text-2xl font-bold text-green-500">{selectedCall.aiInsights.sentiment.toFixed(1)}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Sentiment Score</div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Next Best Action:</span>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{selectedCall.aiInsights.nextBestAction}</p>
-                        </div>
-                        {selectedCall.aiInsights.objections.length > 0 && (
-                          <div>
-                            <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Detected Objections:</span>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {selectedCall.aiInsights.objections.map((objection, index) => (
-                                <span key={index} className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
-                                  {objection.replace('_', ' ')}
-                                </span>
-                              ))}
+                {/* Enhanced Voice Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">AI Agent Voice</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {voices.map((voice) => (
+                      <button
+                        key={voice.name}
+                        onClick={() => setSelectedVoice(voice.name)}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                          selectedVoice === voice.name
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <User size={16} className="text-gray-600" />
+                            <span className="font-medium text-gray-900">{voice.name}</span>
+                          </div>
+                          {voice.premium && (
+                            <div className="px-2 py-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-xs rounded-full">
+                              Pro
                             </div>
-                          </div>
-        )}
-          </div>
-        </div>
-      </div>
-    </div>                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Customer Info */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <User className="w-5 h-5 mr-2 text-gray-500" />
-                      Customer Information
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Name</label>
-                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.name}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</label>
-                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerPhone}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Location</label>
-                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.location}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Previous Calls</label>
-                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.previousCalls}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Lead Source</label>
-                        <p className="text-gray-900 dark:text-gray-100">{selectedCall.customerInfo.leadSource}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Interest Level</label>
-                        <div className="flex items-center space-x-2">
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-green-500 h-2 rounded-full" 
-                              style={{width: `${selectedCall.customerInfo.interestLevel}%`}}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{selectedCall.customerInfo.interestLevel}%</span>
+                          )}
                         </div>
-                      </div>
-                    </div>
+                        <div className="text-left">
+                          <p className="text-sm text-gray-600">{voice.accent} • {voice.gender}</p>
+                          <p className="text-xs text-gray-500 mt-1">{voice.specialty}</p>
+                        </div>
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Call Actions */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <Settings className="w-5 h-5 mr-2 text-gray-500" />
-                      Actions
-                    </h3>
-                    <div className="space-y-2">
-                      <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                        Join Call
-                      </button>
-                      <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                        Send Message
-                      </button>
-                      <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                        Transfer Call
-                      </button>
-                      <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                {/* Enhanced Call Controls with Recording */}
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={handleMuteToggle}
+                    className={`p-3 rounded-full transition-colors ${
+                      muted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    disabled={!activeCall}
+                    title="Mute/Unmute (M)"
+                  >
+                    {muted ? <MicOff size={20} /> : <Mic size={20} />}
+                  </button>
+
+                  <button
+                    onClick={toggleRecording}
+                    className={`p-3 rounded-full transition-colors ${
+                      isRecording ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    disabled={!activeCall}
+                    title="Start/Stop Recording (R)"
+                  >
+                    <Radio size={20} className={isRecording ? 'animate-pulse' : ''} />
+                  </button>
+                  
+                  <button
+                    onClick={handleCall}
+                    className={`px-8 py-4 rounded-full font-semibold transition-all duration-200 transform hover:scale-105 ${
+                      activeCall
+                        ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
+                        : callType === 'outbound'
+                        ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg'
+                        : 'bg-green-500 hover:bg-green-600 text-white shadow-lg'
+                    }`}
+                    title="Start/End Call (Space)"
+                  >
+                    {activeCall ? (
+                      <div className="flex items-center gap-2">
+                        <Square size={20} />
                         End Call
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {callType === 'outbound' ? <PhoneOutgoing size={20} /> : <PhoneIncoming size={20} />}
+                        {callType === 'outbound' ? 'Start Outbound Call' : 'Ready for Inbound'}
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setVolume(!volume)}
+                    className={`p-3 rounded-full transition-colors ${
+                      !volume ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    disabled={!activeCall}
+                    title="Volume On/Off"
+                  >
+                    {volume ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                  </button>
+                </div>
+
+                {/* Recording Playback Controls */}
+                {showRecordingControls && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-900">Call Recording Playback</h4>
+                      <button
+                        onClick={() => setShowRecordingControls(false)}
+                        className="p-1 hover:bg-gray-200 rounded"
+                      >
+                        <X size={16} className="text-gray-500" />
                       </button>
                     </div>
-                  </div>
-
-                  {/* Quick Stats */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Call Started:</span>
-                        <span className="font-medium">{selectedCall.startTime}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                        <span className="font-medium">{selectedCall.duration}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Status:</span>
-                        <span className="font-medium capitalize">{getStatusLabel(selectedCall.status)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600 dark:text-gray-400">Recording:</span>
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-red-500 font-medium text-xs">LIVE</span>
+                    
+                    <div className="space-y-3">
+                      {/* Progress Bar */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-500 w-12">{formatTime(playbackTime)}</span>
+                        <div className="flex-1 bg-gray-200 rounded-full h-2 cursor-pointer relative">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full"
+                            style={{ width: `${playbackDuration > 0 ? (playbackTime / playbackDuration) * 100 : 0}%` }}
+                          ></div>
+                          <input
+                            type="range"
+                            min="0"
+                            max={playbackDuration}
+                            value={playbackTime}
+                            onChange={(e) => setPlaybackPosition(parseInt(e.target.value))}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
                         </div>
+                        <span className="text-sm text-gray-500 w-12">{formatTime(playbackDuration)}</span>
+                      </div>
+
+                      {/* Playback Controls */}
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => skipPlayback(-10)}
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Skip backward 10s"
+                        >
+                          <Rewind size={16} className="text-gray-600" />
+                        </button>
+                        
+                        <button
+                          onClick={() => skipPlayback(-5)}
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Skip backward 5s"
+                        >
+                          <SkipBack size={16} className="text-gray-600" />
+                        </button>
+                        
+                        <button
+                          onClick={togglePlayback}
+                          className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
+                          title="Play/Pause (P)"
+                        >
+                          {isPlayingBack ? <Pause size={20} /> : <Play size={20} />}
+                        </button>
+                        
+                        <button
+                          onClick={() => skipPlayback(5)}
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Skip forward 5s"
+                        >
+                          <SkipForward size={16} className="text-gray-600" />
+                        </button>
+                        
+                        <button
+                          onClick={() => skipPlayback(10)}
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Skip forward 10s"
+                        >
+                          <FastForward size={16} className="text-gray-600" />
+                        </button>
+
+                        <div className="border-l border-gray-300 h-8 mx-2"></div>
+
+                        <select
+                          value={playbackSpeed}
+                          onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-900 font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          title="Playback Speed"
+                        >
+                          <option value={0.5} className="text-gray-900 font-medium">0.5x</option>
+                          <option value={0.75} className="text-gray-900 font-medium">0.75x</option>
+                          <option value={1} className="text-gray-900 font-medium">1x</option>
+                          <option value={1.25} className="text-gray-900 font-medium">1.25x</option>
+                          <option value={1.5} className="text-gray-900 font-medium">1.5x</option>
+                          <option value={2} className="text-gray-900 font-medium">2x</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
+                            setPlaybackTime(0);
+                            setIsPlayingBack(false);
+                          }}
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Reset to beginning"
+                        >
+                          <RotateCcw size={16} className="text-gray-600" />
+                        </button>
+
+                        <button
+                          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Download recording"
+                        >
+                          <Download size={16} className="text-gray-600" />
+                        </button>
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Advanced Configuration with keyboard shortcuts indicators */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <Settings size={20} className="text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Advanced Configuration</h3>
+                  <div className="text-xs text-gray-500 ml-auto">Press 1-5 to switch tabs</div>
+                </div>
+
+                {/* Enhanced Tab Navigation */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <TabButton id="basic" label="Basic Setup (1)" icon={Phone} isActive={activeTab === 'basic'} onClick={setActiveTab} />
+                  <TabButton id="prompts" label="AI Prompts (2)" icon={MessageSquare} isActive={activeTab === 'prompts'} onClick={setActiveTab} />
+                  <TabButton id="routing" label="Call Routing (3)" icon={Route} isActive={activeTab === 'routing'} onClick={setActiveTab} />
+                  <TabButton id="transfers" label="Transfer Rules (4)" icon={PhoneForwarded} isActive={activeTab === 'transfers'} onClick={setActiveTab} />
+                  <TabButton id="analytics" label="Analytics (5)" icon={BarChart3} isActive={activeTab === 'analytics'} onClick={setActiveTab} />
+                </div>
+
+                {/* Tab Content remains the same for brevity */}
+                {activeTab === 'basic' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Opening Greeting</label>
+                      <input
+                        type="text"
+                        value={firstSentence}
+                        onChange={(e) => setFirstSentence(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Thank you for calling [Company Name], how may I help you today?"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Call Objective</label>
+                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                          <option>Sales & Lead Generation</option>
+                          <option>Customer Support & Help</option>
+                          <option>Appointment Scheduling</option>
+                          <option>Survey & Feedback Collection</option>
+                          <option>General Reception & Routing</option>
+                          <option>Follow-up & Retention</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Language & Locale</label>
+                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                          <option>English (US)</option>
+                          <option>English (UK)</option>
+                          <option>Spanish (ES)</option>
+                          <option>French (FR)</option>
+                          <option>German (DE)</option>
+                          <option>Japanese (JP)</option>
+                          <option>Chinese (CN)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Other tab content abbreviated for space */}
+                {activeTab === 'prompts' && (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageSquare size={32} className="mx-auto mb-2" />
+                    <p>AI Prompts configuration panel</p>
+                  </div>
+                )}
+                {activeTab === 'routing' && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Route size={32} className="mx-auto mb-2" />
+                    <p>Call Routing settings panel</p>
+                  </div>
+                )}
+                {activeTab === 'transfers' && (
+                  <div className="text-center py-8 text-gray-500">
+                    <PhoneForwarded size={32} className="mx-auto mb-2" />
+                    <p>Transfer Rules configuration panel</p>
+                  </div>
+                )}
+                {activeTab === 'analytics' && (
+                  <div className="text-center py-8 text-gray-500">
+                    <BarChart3 size={32} className="mx-auto mb-2" />
+                    <p>Analytics dashboard panel</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Sidebar */}
+          <div className="space-y-6">
+            {/* Enhanced Contact Search and Filter */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Contact List</h3>
+                  <div className="text-xs text-gray-500">Ctrl+F to search</div>
+                </div>
+                
+                {/* Search and Filter */}
+                <div className="space-y-3 mb-4">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="contact-search"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search contacts..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white placeholder-gray-500"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="all" className="text-gray-900 font-medium">All Contacts</option>
+                      <option value="lead" className="text-purple-700 font-medium">Leads</option>
+                      <option value="customer" className="text-blue-700 font-medium">Customers</option>
+                      <option value="prospect" className="text-green-700 font-medium">Prospects</option>
+                      <option value="new" className="text-orange-700 font-medium">New</option>
+                      <option value="contacted" className="text-teal-700 font-medium">Contacted</option>
+                      <option value="callback" className="text-red-700 font-medium">Callback</option>
+                    </select>
+                    <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <SlidersHorizontal size={16} className="text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Contact List */}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {filteredContacts.map((contact) => (
+                    <div key={contact.id} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{contact.name}</span>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            contact.priority === 'high' ? 'bg-red-100 text-red-700' :
+                            contact.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {contact.priority}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setPhoneNumber(contact.number)}
+                          className="p-1 hover:bg-gray-200 rounded"
+                          title="Select number"
+                        >
+                          <Phone size={14} className="text-gray-500" />
+                        </button>
+                      </div>
+                      <div className="text-sm text-gray-600">{contact.number}</div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          contact.type === 'lead' ? 'bg-purple-100 text-purple-700' :
+                          contact.type === 'customer' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {contact.type}
+                        </span>
+                        <span className="text-xs text-gray-500">Last: {contact.lastCalled}</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {filteredContacts.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Search size={24} className="mx-auto mb-2" />
+                      <p>No contacts found</p>
+                      <p className="text-xs">Try adjusting your search or filter</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Inbound Call Queue */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Inbound Queue</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-500">Live</span>
+                    <div className="text-xs text-gray-500 ml-2">Enter to answer</div>
+                  </div>
+                </div>
+                
+                {inboundQueue.length === 0 ? (
+                  <div className="text-center py-8">
+                    <PhoneIncoming className="mx-auto text-gray-400 mb-2" size={32} />
+                    <p className="text-gray-500">No incoming calls</p>
+                    <p className="text-xs text-gray-400">Waiting for inbound calls...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {inboundQueue.map((call, index) => (
+                      <div key={call.id} className={`p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500 ${index === 0 ? 'ring-2 ring-blue-200' : ''}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{call.country.flag}</span>
+                            <span className="font-medium text-gray-900">{call.number}</span>
+                            {index === 0 && <span className="text-xs text-blue-600 font-medium">NEXT</span>}
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${
+                            call.priority === 'high' ? 'bg-red-400' :
+                            call.priority === 'medium' ? 'bg-yellow-400' :
+                            'bg-green-400'
+                          }`}></div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            call.type === 'sales_inquiry' ? 'bg-purple-100 text-purple-700' :
+                            call.type === 'support' ? 'bg-blue-100 text-blue-700' :
+                            call.type === 'complaint' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {call.type.replace('_', ' ')}
+                          </span>
+                          <span className="text-xs text-gray-500">Wait: {Math.floor(call.waitTime / 60)}:{(call.waitTime % 60).toString().padStart(2, '0')}</span>
+                        </div>
+                        <button
+                          onClick={() => handleInboundCall(call)}
+                          className={`w-full px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium ${
+                            index === 0 ? 'ring-2 ring-green-300' : ''
+                          }`}
+                        >
+                          Answer Call {index === 0 ? '(Enter)' : ''}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions with Shortcuts */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div className="space-y-3">
+                  <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+                    <Upload size={16} className="text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Import Contact List</span>
+                  </button>
+                  <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+                    <Calendar size={16} className="text-purple-600" />
+                    <span className="text-sm font-medium text-gray-700">Schedule Campaign</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowRecordingControls(true)}
+                    className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <Play size={16} className="text-green-600" />
+                    <span className="text-sm font-medium text-gray-700">View Recordings</span>
+                  </button>
+                  <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+                    <Download size={16} className="text-orange-600" />
+                    <span className="text-sm font-medium text-gray-700">Export Call Reports</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
-          </div>
-        </div>
       </div>
-      
-      {/* Voice Calling Widget Modal - ACTUAL COMPONENT */}
-      {showVoiceWidget && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => {
-            console.log('🎯 Modal overlay clicked - closing modal');
-            setShowVoiceWidget(false);
-          }}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full mx-4"
-            onClick={(e) => {
-              console.log('🎯 Modal content clicked - preventing close');
-              e.stopPropagation();
-            }}
-          >
-            <VoiceCallingWidget
-              onClose={() => {
-                console.log('🎯 VoiceCallingWidget onClose called');
-                setShowVoiceWidget(false);
-              }}
-              isMinimized={voiceWidgetMinimized}
-              onMinimize={() => setVoiceWidgetMinimized(!voiceWidgetMinimized)}
-              callStatus={currentCallStatus}
-              onCallStatusChange={setCurrentCallStatus}
-            />
+
+      {/* Keyboard Shortcuts Modal */}
+      {showKeyboardShortcuts && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowKeyboardShortcuts(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {keyboardShortcuts.map((shortcut, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">{shortcut.action}</div>
+                    <div className="text-sm text-gray-600">{shortcut.description}</div>
+                  </div>
+                  <div className="bg-white px-3 py-1 rounded border border-gray-300 text-sm font-mono">
+                    {shortcut.key}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-500">Press <kbd className="bg-gray-100 px-2 py-1 rounded">Escape</kbd> to close this dialog</p>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Enhanced Floating Indicators */}
+      {activeCall && (
+        <div className="fixed bottom-6 right-6 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+          <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+          <span className="font-medium">
+            {callType === 'inbound' ? 'Inbound' : 'Outbound'} Call Active - {formatTime(callTimer)}
+          </span>
+          {transferRequested && (
+            <div className="ml-2 px-2 py-1 bg-white bg-opacity-20 rounded-full text-xs">
+              Transferring...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <PhoneIncoming className="text-green-600" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Incoming Call</h3>
+              <p className="text-gray-600 mb-2">
+                {incomingCall.parameters?.From || 'Unknown Number'}
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Incoming voice call via Twilio
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleIncomingCall(incomingCall)}
+                  className="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Phone size={18} />
+                  Accept
+                </button>
+                <button
+                  onClick={handleRejectCall}
+                  className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <PhoneOff size={18} />
+                  Decline
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Call Error Modal */}
+      {callError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PhoneOff className="text-red-600" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Error</h3>
+              <p className="text-red-600 mb-4 text-sm">
+                {callError}
+              </p>
+              <button
+                onClick={() => setCallError(null)}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Notification Modal */}
+      {transferRequested && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PhoneForwarded className="text-orange-600" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Transferring Call</h3>
+              <p className="text-gray-600 mb-4">
+                AI agent is transferring the call to a human specialist based on the conversation context.
+              </p>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce delay-100"></div>
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce delay-200"></div>
+              </div>
+              <div className="text-sm text-gray-500">
+                Connecting to best available agent...
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Country Dropdown Overlay */}
+      {showCountryDropdown && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowCountryDropdown(false)}
+        ></div>
       )}
     </div>
   );
 };
 
-export default LiveCallCenter;
+export default CallCenterDashboard;

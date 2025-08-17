@@ -855,7 +855,7 @@ const VocelioUltimateDashboard = () => {
                     backendConnected && enhancedData.systemHealth ? 'bg-red-500/10 text-red-500' :
                     'bg-orange-500/10 text-orange-500'
                   }`}>
-                    {backendConnected && enhancedData.systemHealth ? 
+                    {backendConnected && enhancedData.systemHealth && enhancedData.systemHealth.overall_status ? 
                       enhancedData.systemHealth.overall_status.toUpperCase() : 
                       'BACKEND OFFLINE'
                     }
@@ -1129,7 +1129,7 @@ const VocelioUltimateDashboard = () => {
               </div>
             </div>
             <h3 className="text-3xl font-bold mb-4">
-              🚀 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('-', ' ')} Center
+              🚀 {activeTab ? (activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('-', ' ')) : 'Dashboard'} Center
             </h3>
             <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-8 max-w-2xl mx-auto text-lg`}>
               This advanced enterprise feature is being built with cutting-edge AI technology. 
@@ -1414,7 +1414,7 @@ const VocelioUltimateDashboard = () => {
               <div className="flex items-center space-x-4">
                 <h2 className="text-2xl lg:text-3xl font-bold capitalize flex items-center space-x-3">
                   <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                    {activeTab.replace('-', ' ').replace('_', ' ')}
+                    {activeTab ? activeTab.replace('-', ' ').replace('_', ' ') : 'Dashboard'}
                   </span>
                   {activeTab === 'overview' && <Flame className="w-8 h-8 text-orange-500 animate-pulse" />}
                   {activeTab === 'call-center' && <Radio className="w-8 h-8 text-red-500 animate-pulse" />}
