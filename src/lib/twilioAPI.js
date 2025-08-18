@@ -203,6 +203,18 @@ class TwilioAPI {
       throw new Error('Twilio credentials not configured for direct API access');
     }
     
+    // Debug credential loading in production
+    console.log('🔐 Twilio Credentials Debug:', {
+      accountSid: this.accountSid ? `${this.accountSid.substring(0, 6)}...${this.accountSid.slice(-4)}` : 'MISSING',
+      authToken: this.authToken ? `${this.authToken.substring(0, 6)}...${this.authToken.slice(-4)}` : 'MISSING',
+      hasAccountSid: !!this.accountSid,
+      hasAuthToken: !!this.authToken,
+      accountSidLength: this.accountSid ? this.accountSid.length : 0,
+      authTokenLength: this.authToken ? this.authToken.length : 0,
+      environment: process.env.NODE_ENV,
+      reactAppEnv: process.env.REACT_APP_ENVIRONMENT
+    });
+    
     // Convert our generic endpoint to actual Twilio API endpoint
     const twilioEndpoint = this.convertToTwilioEndpoint(endpoint, options);
     const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
@@ -211,6 +223,12 @@ class TwilioAPI {
     
     // Create basic auth header
     const credentials = btoa(`${this.accountSid}:${this.authToken}`);
+    
+    console.log('🔐 Basic Auth Debug:', {
+      rawAuthString: `${this.accountSid ? this.accountSid.substring(0, 6) + '...' : 'MISSING'}:${this.authToken ? this.authToken.substring(0, 6) + '...' : 'MISSING'}`,
+      encodedCredentials: credentials ? credentials.substring(0, 20) + '...' : 'MISSING',
+      encodedLength: credentials ? credentials.length : 0
+    });
     
     const config = {
       method: options.method || 'GET',
