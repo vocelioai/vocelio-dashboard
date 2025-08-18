@@ -21,8 +21,17 @@ class TwilioAPI {
     this.lookupBase = 'https://lookups.twilio.com/v1';
     
     // Configuration validation
-    this.isFullyConfigured = !!(this.phoneNumbersAPI);
+    this.isFullyConfigured = !!(this.phoneNumbersAPI || (this.accountSid && this.authToken));
     this.hasBackendAccess = !!(this.phoneNumbersAPI);
+    this.hasDirectTwilioAccess = !!(this.accountSid && this.authToken);
+    
+    console.log('📋 TwilioAPI Configuration:', {
+      hasBackendAccess: this.hasBackendAccess,
+      hasDirectTwilioAccess: this.hasDirectTwilioAccess,
+      isFullyConfigured: this.isFullyConfigured,
+      phoneNumbersAPI: this.phoneNumbersAPI ? 'configured' : 'missing',
+      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing'
+    });
   }
 
   // Main API request method - Use vocelio.ai backend services
@@ -50,13 +59,14 @@ class TwilioAPI {
       } catch (error) {
         console.error('❌ Vocelio backend API failed:', error.message);
         // Fall back to direct Twilio if backend fails and we have credentials
-        if (this.accountSid && this.authToken) {
+        if (this.hasDirectTwilioAccess) {
           console.log('🔄 Falling back to direct Twilio API...');
           try {
             const result = await this.requestDirectTwilio(endpoint, options);
             if (result && typeof result === 'object') {
               result.mock = false;
             }
+            console.log('✅ Direct Twilio API fallback success');
             return result;
           } catch (directError) {
             console.error('❌ Direct Twilio API also failed:', directError.message);
@@ -67,7 +77,7 @@ class TwilioAPI {
     }
     
     // Fallback: Direct Twilio API calls if we have credentials
-    if (this.accountSid && this.authToken) {
+    if (this.hasDirectTwilioAccess) {
       try {
         console.log('🚀 Using direct Twilio API as fallback...');
         const result = await this.requestDirectTwilio(endpoint, options);
@@ -95,6 +105,39 @@ class TwilioAPI {
       throw new Error('Phone numbers backend service not configured');
     }
     
+    // Map generic endpoints to vocelio backend API structure
+    let backendEndpoint = endpoint;
+    
+    // Map common Twilio endpoints to potential vocelio backend endpoints
+    if (endpoint === '/incoming-phone-numbers') {
+      // Try multiple potential endpoints for phone numbers
+      const potentialEndpoints = [
+        '/api/v1/phone-numbers',
+        '/api/v1/numbers',
+        '/phone-numbers', 
+        '/numbers',
+        '/api/v1/twilio/numbers',
+        '/api/v1/incoming-phone-numbers'
+      ];
+      
+      for (const testEndpoint of potentialEndpoints) {
+        try {
+          console.log(`🔍 Trying vocelio endpoint: ${testEndpoint}`);
+          return await this.makeVocelioRequest(testEndpoint, options);
+        } catch (error) {
+          console.log(`❌ Endpoint ${testEndpoint} failed: ${error.message}`);
+          continue;
+        }
+      }
+      
+      throw new Error('No working vocelio backend endpoint found for phone numbers');
+    }
+    
+    return await this.makeVocelioRequest(backendEndpoint, options);
+  }
+  
+  // Make the actual vocelio backend request
+  async makeVocelioRequest(endpoint, options = {}) {
     const url = `${this.phoneNumbersAPI}${endpoint}`;
     console.log('🔗 Vocelio Backend API URL:', url);
     
@@ -134,7 +177,7 @@ class TwilioAPI {
   
   // Direct Twilio API request method  
   async requestDirectTwilio(endpoint, options = {}) {
-    if (!this.isFullyConfigured) {
+    if (!this.hasDirectTwilioAccess) {
       throw new Error('Twilio credentials not configured for direct API access');
     }
     
