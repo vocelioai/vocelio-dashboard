@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneOff, Settings, Users, BarChart3, Clock, Mic, MicOff, Volume2, VolumeX, User, MessageSquare, Calendar, FileText, Zap, Activity, TrendingUp, AlertCircle, CheckCircle, Play, Pause, Square, RotateCcw, Save, Upload, Download, Search, Filter, Bell, Shield, Headphones, Globe, UserCheck, Shuffle, ArrowRight, ArrowDown, Map, Flag, ChevronDown, PhoneForwarded, UserPlus, Briefcase, HeartHandshake, Clock3, Route, Target, Command, Keyboard, FastForward, Rewind, SkipBack, SkipForward, Volume1, Repeat, X, SlidersHorizontal, Radio } from 'lucide-react';
+import { Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneOff, Settings, Users, BarChart3, Clock, Mic, MicOff, Volume2, VolumeX, User, MessageSquare, Calendar, FileText, Zap, Activity, TrendingUp, AlertCircle, CheckCircle, Play, Pause, Square, RotateCcw, Save, Upload, Download, Search, Filter, Bell, Shield, Headphones, Globe, UserCheck, Shuffle, ArrowRight, ArrowDown, Map, Flag, ChevronDown, PhoneForwarded, UserPlus, Briefcase, HeartHandshake, Clock3, Route, Target, Command, Keyboard, FastForward, Rewind, SkipBack, SkipForward, Volume1, Repeat, X, SlidersHorizontal, Radio, Edit3, Copy, Trash2, Plus, Minus, RotateCw, PieChart, LineChart, Calendar as CalendarIcon, Timer, Users2, Brain, Lightbulb, Gauge, Star, Award, TrendingDown, AlertTriangle, Share } from 'lucide-react';
 import twilioVoiceService from '../services/TwilioVoiceService';
+import callCenterApiService from '../services/CallCenterApiService';
+import { useRealTimeData, useContacts } from '../hooks/useRealTimeData';
 
 const CallCenterDashboard = () => {
+  // Real-time data hooks
+  const { data: realTimeData, isLoading: dataLoading, error: dataError, connectionStatus } = useRealTimeData();
+  const { contacts: liveContacts, loading: contactsLoading, error: contactsError, refetch: refetchContacts } = useContacts();
+
   const [activeCall, setActiveCall] = useState(false);
   const [callType, setCallType] = useState('outbound');
   const [muted, setMuted] = useState(false);
@@ -30,6 +36,20 @@ const CallCenterDashboard = () => {
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showRecordingControls, setShowRecordingControls] = useState(false);
+  
+  // Advanced tab states
+  const [selectedPromptTemplate, setSelectedPromptTemplate] = useState('sales_call');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [promptObjective, setPromptObjective] = useState('sales');
+  const [promptTone, setPromptTone] = useState('professional');
+  const [promptLanguage, setPromptLanguage] = useState('english');
+  const [transferTriggers, setTransferTriggers] = useState(['pricing_question', 'technical_detail']);
+  const [routingMode, setRoutingMode] = useState('intelligent');
+  const [selectedDepartments, setSelectedDepartments] = useState(['sales', 'support']);
+  const [businessHours, setBusinessHours] = useState({ start: '09:00', end: '17:00' });
+  const [maxWaitTime, setMaxWaitTime] = useState(300);
+  const [analyticsDateRange, setAnalyticsDateRange] = useState('7');
+  
   const [contacts, setContacts] = useState([
     { id: 1, name: 'John Smith', number: '+1 (555) 123-4567', type: 'lead', priority: 'high', lastCalled: '2024-08-17', status: 'new' },
     { id: 2, name: 'Sarah Johnson', number: '+1 (555) 234-5678', type: 'customer', priority: 'medium', lastCalled: '2024-08-16', status: 'contacted' },
@@ -478,6 +498,32 @@ const CallCenterDashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [activeCall, muted, callType, callTimer, transferRequested, inboundQueue, showKeyboardShortcuts, isPlayingBack, showRecordingControls]);
 
+  // API Testing Functions
+  const testApiConnection = async () => {
+    try {
+      console.log('Testing API connection...');
+      const analytics = await callCenterApiService.getAnalytics();
+      console.log('Analytics data:', analytics);
+      
+      const systemHealth = await callCenterApiService.getSystemHealth();
+      console.log('System health:', systemHealth);
+      
+      alert('API connection successful! Check console for data.');
+    } catch (error) {
+      console.error('API connection failed:', error);
+      alert(`API connection failed: ${error.message}`);
+    }
+  };
+
+  const refreshLiveData = async () => {
+    try {
+      await refetchContacts();
+      console.log('Live data refreshed');
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    }
+  };
+
   // Initialize Twilio Voice Service
   useEffect(() => {
     const initializeTwilio = async () => {
@@ -768,6 +814,18 @@ const CallCenterDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* API Connection Status */}
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border">
+                <div className={`w-2 h-2 rounded-full ${
+                  connectionStatus === 'connected' ? 'bg-green-500' : 
+                  connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                } ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`}></div>
+                <span className="text-xs font-medium text-gray-700">
+                  {connectionStatus === 'connected' ? 'Live Data' :
+                   connectionStatus === 'connecting' ? 'Connecting...' : 'API Offline'}
+                </span>
+              </div>
+
               {/* Twilio Status Indicator */}
               <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border">
                 <div className={`w-2 h-2 rounded-full ${
@@ -1426,61 +1484,906 @@ const CallCenterDashboard = () => {
                         type="text"
                         value={firstSentence}
                         onChange={(e) => setFirstSentence(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 bg-white"
                         placeholder="Thank you for calling [Company Name], how may I help you today?"
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Call Objective</label>
-                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                          <option>Sales & Lead Generation</option>
-                          <option>Customer Support & Help</option>
-                          <option>Appointment Scheduling</option>
-                          <option>Survey & Feedback Collection</option>
-                          <option>General Reception & Routing</option>
-                          <option>Follow-up & Retention</option>
+                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white">
+                          <option value="sales" className="text-gray-900">Sales & Lead Generation</option>
+                          <option value="support" className="text-gray-900">Customer Support & Help</option>
+                          <option value="booking" className="text-gray-900">Appointment Scheduling</option>
+                          <option value="survey" className="text-gray-900">Survey & Feedback Collection</option>
+                          <option value="reception" className="text-gray-900">General Reception & Routing</option>
+                          <option value="followup" className="text-gray-900">Follow-up & Retention</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Language & Locale</label>
-                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                          <option>English (US)</option>
-                          <option>English (UK)</option>
-                          <option>Spanish (ES)</option>
-                          <option>French (FR)</option>
-                          <option>German (DE)</option>
-                          <option>Japanese (JP)</option>
-                          <option>Chinese (CN)</option>
+                        <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white">
+                          <option value="en-us" className="text-gray-900">English (US)</option>
+                          <option value="en-uk" className="text-gray-900">English (UK)</option>
+                          <option value="es" className="text-gray-900">Spanish (ES)</option>
+                          <option value="fr" className="text-gray-900">French (FR)</option>
+                          <option value="de" className="text-gray-900">German (DE)</option>
+                          <option value="ja" className="text-gray-900">Japanese (JP)</option>
+                          <option value="zh" className="text-gray-900">Chinese (CN)</option>
                         </select>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Other tab content abbreviated for space */}
+                {/* AI Prompts Tab - Complete Implementation */}
                 {activeTab === 'prompts' && (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageSquare size={32} className="mx-auto mb-2" />
-                    <p>AI Prompts configuration panel</p>
+                  <div className="space-y-6">
+                    {/* Prompt Template Selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {presetPrompts.map((template) => (
+                        <button
+                          key={template.name}
+                          onClick={() => setSelectedPromptTemplate(template.name.toLowerCase().replace(/\s+/g, '_'))}
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                            selectedPromptTemplate === template.name.toLowerCase().replace(/\s+/g, '_')
+                              ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`p-2 rounded-lg ${
+                              selectedPromptTemplate === template.name.toLowerCase().replace(/\s+/g, '_')
+                                ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
+                              <template.icon size={20} className={
+                                selectedPromptTemplate === template.name.toLowerCase().replace(/\s+/g, '_')
+                                  ? 'text-blue-600' : 'text-gray-600'
+                              } />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">{template.name}</h4>
+                              <div className="flex gap-1 mt-1">
+                                {template.transferTriggers.slice(0, 2).map((trigger, i) => (
+                                  <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                    {trigger.replace('_', ' ')}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-relaxed">{template.description}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Advanced Prompt Configuration */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Brain size={20} className="text-blue-600" />
+                        Advanced AI Configuration
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Conversation Objective</label>
+                          <select 
+                            value={promptObjective}
+                            onChange={(e) => setPromptObjective(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
+                          >
+                            <option value="sales" className="text-gray-900">Sales & Conversion</option>
+                            <option value="support" className="text-gray-900">Support & Resolution</option>
+                            <option value="qualification" className="text-gray-900">Lead Qualification</option>
+                            <option value="booking" className="text-gray-900">Appointment Booking</option>
+                            <option value="survey" className="text-gray-900">Survey & Feedback</option>
+                            <option value="retention" className="text-gray-900">Customer Retention</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Communication Tone</label>
+                          <select 
+                            value={promptTone}
+                            onChange={(e) => setPromptTone(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
+                          >
+                            <option value="professional" className="text-gray-900">Professional</option>
+                            <option value="friendly" className="text-gray-900">Friendly & Casual</option>
+                            <option value="empathetic" className="text-gray-900">Empathetic & Caring</option>
+                            <option value="assertive" className="text-gray-900">Assertive & Direct</option>
+                            <option value="consultative" className="text-gray-900">Consultative</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Primary Language</label>
+                          <select 
+                            value={promptLanguage}
+                            onChange={(e) => setPromptLanguage(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
+                          >
+                            <option value="english" className="text-gray-900">English</option>
+                            <option value="spanish" className="text-gray-900">Español</option>
+                            <option value="french" className="text-gray-900">Français</option>
+                            <option value="german" className="text-gray-900">Deutsch</option>
+                            <option value="italian" className="text-gray-900">Italiano</option>
+                            <option value="portuguese" className="text-gray-900">Português</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Custom Prompt Input */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Custom Instructions</label>
+                        <textarea
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          placeholder="Add specific instructions for the AI agent. For example: 'Always ask about their current solution before presenting ours' or 'Focus on pain points related to efficiency and cost savings.'"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24 resize-none text-gray-900 placeholder-gray-500 bg-white"
+                        />
+                      </div>
+
+                      {/* Transfer Triggers */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Auto-Transfer Triggers</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            'pricing_question', 'technical_detail', 'decision_maker', 'complex_issue',
+                            'billing_dispute', 'angry_customer', 'special_request', 'enterprise_inquiry',
+                            'custom_solution', 'urgent_matter', 'executive_request', 'objection_handling'
+                          ].map((trigger) => (
+                            <label key={trigger} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={transferTriggers.includes(trigger)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setTransferTriggers([...transferTriggers, trigger]);
+                                  } else {
+                                    setTransferTriggers(transferTriggers.filter(t => t !== trigger));
+                                  }
+                                }}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {trigger.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 mt-6">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                          <Save size={16} />
+                          Save Prompt Configuration
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                          <Play size={16} />
+                          Test AI Response
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                          <Copy size={16} />
+                          Export Configuration
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
+                {/* Call Routing Tab - Complete Implementation */}
                 {activeTab === 'routing' && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Route size={32} className="mx-auto mb-2" />
-                    <p>Call Routing settings panel</p>
+                  <div className="space-y-6">
+                    {/* Routing Strategy Selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { 
+                          id: 'intelligent', 
+                          name: 'Intelligent Routing', 
+                          icon: Brain,
+                          description: 'AI-powered routing based on call context and agent expertise',
+                          features: ['Context analysis', 'Skill matching', 'Load balancing']
+                        },
+                        { 
+                          id: 'round_robin', 
+                          name: 'Round Robin', 
+                          icon: RotateCw,
+                          description: 'Distribute calls evenly across all available agents',
+                          features: ['Even distribution', 'Fair workload', 'Simple setup']
+                        },
+                        { 
+                          id: 'priority_based', 
+                          name: 'Priority Based', 
+                          icon: Star,
+                          description: 'Route calls based on customer priority and agent hierarchy',
+                          features: ['VIP handling', 'Agent tiers', 'Escalation paths']
+                        }
+                      ].map((strategy) => (
+                        <button
+                          key={strategy.id}
+                          onClick={() => setRoutingMode(strategy.id)}
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                            routingMode === strategy.id
+                              ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`p-2 rounded-lg ${
+                              routingMode === strategy.id ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
+                              <strategy.icon size={20} className={
+                                routingMode === strategy.id ? 'text-blue-600' : 'text-gray-600'
+                              } />
+                            </div>
+                            <h4 className="font-semibold text-gray-900">{strategy.name}</h4>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">{strategy.description}</p>
+                          <div className="space-y-1">
+                            {strategy.features.map((feature, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <CheckCircle size={12} className="text-green-500" />
+                                <span className="text-xs text-gray-600">{feature}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Department Management */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Users2 size={20} className="text-blue-600" />
+                        Department Configuration
+                      </h4>
+                      
+                      <div className="space-y-4">
+                        {routingDepartments.map((dept) => (
+                          <div key={dept.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDepartments.includes(dept.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedDepartments([...selectedDepartments, dept.id]);
+                                    } else {
+                                      setSelectedDepartments(selectedDepartments.filter(d => d !== dept.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <h5 className="font-medium text-gray-900">{dept.name}</h5>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-gray-500">
+                                <span>{dept.available}/{dept.agents} available</span>
+                                <span>Avg: {dept.avgResponse}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-sm text-gray-600">Expertise:</span>
+                              {dept.expertise.map((skill, i) => (
+                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            {/* Agent availability bar */}
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  (dept.available / dept.agents) > 0.7 ? 'bg-green-500' :
+                                  (dept.available / dept.agents) > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${(dept.available / dept.agents) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Advanced Routing Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white border border-gray-200 rounded-xl p-4">
+                        <h5 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <Clock size={16} className="text-blue-600" />
+                          Business Hours
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm text-gray-600 mb-1">Start Time</label>
+                            <input
+                              type="time"
+                              value={businessHours.start}
+                              onChange={(e) => setBusinessHours({...businessHours, start: e.target.value})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm text-gray-600 mb-1">End Time</label>
+                            <input
+                              type="time"
+                              value={businessHours.end}
+                              onChange={(e) => setBusinessHours({...businessHours, end: e.target.value})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white border border-gray-200 rounded-xl p-4">
+                        <h5 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <Timer size={16} className="text-blue-600" />
+                          Queue Settings
+                        </h5>
+                        <div>
+                          <label className="block text-sm text-gray-600 mb-1">Max Wait Time (seconds)</label>
+                          <input
+                            type="number"
+                            min="30"
+                            max="1800"
+                            value={maxWaitTime}
+                            onChange={(e) => setMaxWaitTime(parseInt(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Calls will be escalated or handled by AI after this time
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <Save size={16} />
+                        Save Routing Rules
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Play size={16} />
+                        Test Routing Logic
+                      </button>
+                    </div>
                   </div>
                 )}
+                {/* Transfer Rules Tab - Complete Implementation */}
                 {activeTab === 'transfers' && (
-                  <div className="text-center py-8 text-gray-500">
-                    <PhoneForwarded size={32} className="mx-auto mb-2" />
-                    <p>Transfer Rules configuration panel</p>
+                  <div className="space-y-6">
+                    {/* Transfer Strategy Overview */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-blue-100 rounded-lg">
+                          <PhoneForwarded size={24} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Smart Transfer Management</h4>
+                          <p className="text-gray-700 mb-3">
+                            Configure when and how the AI should transfer calls to human agents based on conversation context, customer emotions, and specific triggers.
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500" />
+                              <span className="text-gray-700">Context-aware transfers</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500" />
+                              <span className="text-gray-700">Sentiment analysis triggers</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500" />
+                              <span className="text-gray-700">Escalation pathways</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transfer Conditions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Keyword Triggers */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Lightbulb size={18} className="text-yellow-500" />
+                          Keyword Triggers
+                        </h5>
+                        <div className="space-y-3">
+                          {[
+                            { keyword: 'manager', priority: 'high', department: 'management' },
+                            { keyword: 'billing issue', priority: 'medium', department: 'billing' },
+                            { keyword: 'cancel subscription', priority: 'high', department: 'retention' },
+                            { keyword: 'technical problem', priority: 'medium', department: 'support' },
+                            { keyword: 'enterprise solution', priority: 'high', department: 'sales' },
+                            { keyword: 'complaint', priority: 'high', department: 'management' }
+                          ].map((trigger, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-gray-900">"{trigger.keyword}"</span>
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  trigger.priority === 'high' ? 'bg-red-100 text-red-700' : 
+                                  'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {trigger.priority}
+                                </span>
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                  {trigger.department}
+                                </span>
+                              </div>
+                              <button className="p-1 hover:bg-gray-200 rounded">
+                                <Trash2 size={14} className="text-gray-500" />
+                              </button>
+                            </div>
+                          ))}
+                          <button className="w-full flex items-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors">
+                            <Plus size={16} />
+                            Add Keyword Trigger
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sentiment Triggers */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <HeartHandshake size={18} className="text-green-500" />
+                          Sentiment Triggers
+                        </h5>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-red-800">Angry/Frustrated</span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" defaultChecked />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                              </label>
+                            </div>
+                            <p className="text-sm text-red-700">Transfer immediately to management when customer shows anger or extreme frustration</p>
+                            <div className="mt-2">
+                              <select className="w-full px-3 py-2 text-sm border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white">
+                                <option className="text-gray-900">Management Team</option>
+                                <option className="text-gray-900">Senior Support</option>
+                                <option className="text-gray-900">Customer Success</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-yellow-800">Confused/Uncertain</span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" defaultChecked />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                              </label>
+                            </div>
+                            <p className="text-sm text-yellow-700">Offer human assistance when customer seems confused or needs detailed explanation</p>
+                            <div className="mt-2">
+                              <select className="w-full px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-900 bg-white">
+                                <option className="text-gray-900">Technical Support</option>
+                                <option className="text-gray-900">Customer Success</option>
+                                <option className="text-gray-900">Sales Team</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-green-800">Highly Interested</span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                              </label>
+                            </div>
+                            <p className="text-sm text-green-700">Transfer to sales when customer shows high interest in purchasing</p>
+                            <div className="mt-2">
+                              <select className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white">
+                                <option className="text-gray-900">Sales Team</option>
+                                <option className="text-gray-900">Account Executive</option>
+                                <option className="text-gray-900">Business Development</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transfer Timing & Conditions */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Clock size={18} className="text-blue-600" />
+                        Transfer Timing & Conditions
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Call Duration</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white">
+                            <option value="0" className="text-gray-900">Immediate</option>
+                            <option value="30" className="text-gray-900" selected>30 seconds</option>
+                            <option value="60" className="text-gray-900">1 minute</option>
+                            <option value="120" className="text-gray-900">2 minutes</option>
+                            <option value="300" className="text-gray-900">5 minutes</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">Minimum time before transfer is allowed</p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Max AI Attempts</label>
+                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white">
+                            <option value="1" className="text-gray-900">1 attempt</option>
+                            <option value="2" className="text-gray-900">2 attempts</option>
+                            <option value="3" className="text-gray-900" selected>3 attempts</option>
+                            <option value="5" className="text-gray-900">5 attempts</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">How many times AI should try before transferring</p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Business Hours Only</label>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span className="ml-3 text-sm text-gray-700">Only transfer during business hours</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">Outside hours: take message or schedule callback</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transfer Success Metrics */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <BarChart3 size={18} className="text-green-600" />
+                        Transfer Performance (Last 7 Days)
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-white p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">Total Transfers</p>
+                              <p className="text-2xl font-bold text-gray-900">47</p>
+                            </div>
+                            <PhoneForwarded className="text-blue-500" size={24} />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">Success Rate</p>
+                              <p className="text-2xl font-bold text-green-600">94.3%</p>
+                            </div>
+                            <CheckCircle className="text-green-500" size={24} />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">Avg Wait Time</p>
+                              <p className="text-2xl font-bold text-orange-600">1:24</p>
+                            </div>
+                            <Timer className="text-orange-500" size={24} />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">Customer Satisfaction</p>
+                              <p className="text-2xl font-bold text-green-600">4.8/5</p>
+                            </div>
+                            <Star className="text-yellow-500" size={24} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <Save size={16} />
+                        Save Transfer Rules
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Play size={16} />
+                        Test Transfer Logic
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Download size={16} />
+                        Export Rules
+                      </button>
+                    </div>
                   </div>
                 )}
+                {/* Analytics Tab - Complete Implementation */}
                 {activeTab === 'analytics' && (
-                  <div className="text-center py-8 text-gray-500">
-                    <BarChart3 size={32} className="mx-auto mb-2" />
-                    <p>Analytics dashboard panel</p>
+                  <div className="space-y-6">
+                    {/* Date Range Selector */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <BarChart3 size={20} className="text-blue-600" />
+                        Performance Analytics
+                      </h4>
+                      <select 
+                        value={analyticsDateRange}
+                        onChange={(e) => setAnalyticsDateRange(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium bg-white"
+                      >
+                        <option value="1" className="text-gray-900">Last 24 Hours</option>
+                        <option value="7" className="text-gray-900">Last 7 Days</option>
+                        <option value="30" className="text-gray-900">Last 30 Days</option>
+                        <option value="90" className="text-gray-900">Last 90 Days</option>
+                      </select>
+                    </div>
+
+                    {/* Key Performance Indicators */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="p-3 bg-blue-500 rounded-lg">
+                            <PhoneCall className="text-white" size={24} />
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <TrendingUp size={14} />
+                              <span className="text-sm font-medium">
+                                {realTimeData?.analytics?.callGrowth > 0 ? '+' : ''}{realTimeData?.analytics?.callGrowth || 12}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dataLoading ? '...' : (realTimeData?.analytics?.totalCalls?.toLocaleString() || '2,847')}
+                          </p>
+                          <p className="text-sm text-gray-600">Total Calls</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="p-3 bg-green-500 rounded-lg">
+                            <CheckCircle className="text-white" size={24} />
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <TrendingUp size={14} />
+                              <span className="text-sm font-medium">
+                                {realTimeData?.analytics?.successRateChange > 0 ? '+' : ''}{realTimeData?.analytics?.successRateChange || 8}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dataLoading ? '...' : `${realTimeData?.analytics?.successRate || '96.2'}%`}
+                          </p>
+                          <p className="text-sm text-gray-600">Success Rate</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="p-3 bg-purple-500 rounded-lg">
+                            <Clock size={24} className="text-white" />
+                          </div>
+                          <div className="text-right">
+                            <div className={`flex items-center gap-1 ${
+                              (realTimeData?.analytics?.avgDurationChange || -3) >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {(realTimeData?.analytics?.avgDurationChange || -3) >= 0 ? 
+                                <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                              <span className="text-sm font-medium">
+                                {realTimeData?.analytics?.avgDurationChange > 0 ? '+' : ''}{realTimeData?.analytics?.avgDurationChange || -3}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dataLoading ? '...' : (realTimeData?.analytics?.avgDuration || '4:32')}
+                          </p>
+                          <p className="text-sm text-gray-600">Avg Duration</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="p-3 bg-orange-500 rounded-lg">
+                            <Star className="text-white" size={24} />
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <TrendingUp size={14} />
+                              <span className="text-sm font-medium">
+                                +{realTimeData?.analytics?.ratingChange || '0.2'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {dataLoading ? '...' : `${realTimeData?.analytics?.customerRating || '4.7'}/5`}
+                          </p>
+                          <p className="text-sm text-gray-600">Customer Rating</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Call Volume Chart */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h5 className="font-semibold text-gray-900">Call Volume Trends</h5>
+                        <div className="flex gap-2">
+                          <button className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full">Daily</button>
+                          <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-full">Weekly</button>
+                          <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-full">Monthly</button>
+                        </div>
+                      </div>
+                      
+                      {/* Mock Chart Area */}
+                      <div className="h-64 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg flex items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 flex items-end justify-around p-8">
+                          {[65, 80, 75, 90, 85, 95, 88, 92, 87, 94, 89, 96, 91, 98].map((height, index) => (
+                            <div
+                              key={index}
+                              className="bg-blue-500 rounded-t-lg transition-all duration-1000 ease-out opacity-80 hover:opacity-100"
+                              style={{ height: `${height}%`, width: '20px', animationDelay: `${index * 100}ms` }}
+                            />
+                          ))}
+                        </div>
+                        <div className="absolute bottom-4 left-4 text-xs text-gray-500">0</div>
+                        <div className="absolute top-4 left-4 text-xs text-gray-500">500</div>
+                        <div className="z-10 text-gray-500">
+                          <LineChart size={48} />
+                          <p className="text-sm mt-2">Interactive chart would appear here</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Performance Breakdown */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Call Types Distribution */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <PieChart size={18} className="text-blue-600" />
+                          Call Types Distribution
+                        </h5>
+                        
+                        <div className="space-y-4">
+                          {[
+                            { type: 'Sales Inquiries', count: 1247, percentage: 44, color: 'bg-blue-500' },
+                            { type: 'Support Requests', count: 856, percentage: 30, color: 'bg-green-500' },
+                            { type: 'Billing Questions', count: 428, percentage: 15, color: 'bg-yellow-500' },
+                            { type: 'General Info', count: 316, percentage: 11, color: 'bg-purple-500' }
+                          ].map((item, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                                <span className="text-sm text-gray-700">{item.type}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className={`h-2 rounded-full ${item.color}`}
+                                    style={{ width: `${item.percentage}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-medium text-gray-900 w-12 text-right">{item.count}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Agent Performance */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Users size={18} className="text-blue-600" />
+                          Top Performing Agents
+                        </h5>
+                        
+                        <div className="space-y-4">
+                          {[
+                            { name: 'Sarah Johnson', calls: 156, satisfaction: 4.9, efficiency: 96 },
+                            { name: 'Mike Chen', calls: 142, satisfaction: 4.8, efficiency: 94 },
+                            { name: 'Emily Davis', calls: 138, satisfaction: 4.7, efficiency: 91 },
+                            { name: 'James Wilson', calls: 124, satisfaction: 4.6, efficiency: 89 }
+                          ].map((agent, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                                  index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">{agent.name}</p>
+                                  <p className="text-xs text-gray-500">{agent.calls} calls handled</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Star size={12} className="text-yellow-500" />
+                                  <span className="text-sm font-medium text-gray-900">{agent.satisfaction}</span>
+                                </div>
+                                <div className="text-xs text-gray-500">{agent.efficiency}% efficiency</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Real-time Monitoring */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Activity size={18} className="text-green-600" />
+                        Real-time System Health
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center">
+                          <div className="relative w-16 h-16 mx-auto mb-3">
+                            <div className="w-16 h-16 rounded-full border-4 border-gray-200"></div>
+                            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-green-500 border-t-transparent animate-spin"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-sm font-bold text-green-600">98%</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">System Uptime</p>
+                        </div>
+                        
+                        <div className="text-center">
+                          <div className="relative w-16 h-16 mx-auto mb-3">
+                            <div className="w-16 h-16 rounded-full border-4 border-gray-200"></div>
+                            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-blue-500" style={{ 
+                              borderTopColor: 'transparent',
+                              transform: 'rotate(252deg)' // 70% of 360deg
+                            }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-sm font-bold text-blue-600">70%</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">AI Resolution Rate</p>
+                        </div>
+                        
+                        <div className="text-center">
+                          <div className="relative w-16 h-16 mx-auto mb-3">
+                            <div className="w-16 h-16 rounded-full border-4 border-gray-200"></div>
+                            <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-orange-500" style={{ 
+                              borderTopColor: 'transparent',
+                              transform: 'rotate(108deg)' // 30% of 360deg
+                            }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-sm font-bold text-orange-600">30%</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">Transfer Rate</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-3">
+                      <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <Download size={16} />
+                        Export Report
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <CalendarIcon size={16} />
+                        Schedule Report
+                      </button>
+                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Share size={16} />
+                        Share Dashboard
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1576,6 +2479,81 @@ const CallCenterDashboard = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Real-Time Data Debug Panel */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Activity size={20} className="text-green-600" />
+                    Live Data Monitor
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
+                      connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}></div>
+                    <span className="text-sm text-gray-500">
+                      {connectionStatus === 'connected' ? 'Connected' :
+                       connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+                    </span>
+                    <button 
+                      onClick={testApiConnection}
+                      className="ml-3 px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Test API
+                    </button>
+                    <button 
+                      onClick={refreshLiveData}
+                      className="ml-2 px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+                
+                {dataError ? (
+                  <div className="text-center py-4 text-red-600">
+                    <AlertTriangle className="mx-auto mb-2" size={24} />
+                    <p className="text-sm">Connection Error: {dataError}</p>
+                  </div>
+                ) : dataLoading ? (
+                  <div className="text-center py-4 text-gray-500">
+                    <div className="animate-spin mx-auto mb-2">
+                      <Activity size={24} />
+                    </div>
+                    <p className="text-sm">Loading live data...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {realTimeData?.callMetrics?.activeCalls || 0}
+                      </div>
+                      <div className="text-xs text-gray-600">Active Calls</div>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">
+                        {realTimeData?.callMetrics?.queueSize || 0}
+                      </div>
+                      <div className="text-xs text-gray-600">In Queue</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {realTimeData?.agentMetrics?.online || 0}
+                      </div>
+                      <div className="text-xs text-gray-600">Agents Online</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {realTimeData?.systemHealth?.uptime || '99.9%'}
+                      </div>
+                      <div className="text-xs text-gray-600">Uptime</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

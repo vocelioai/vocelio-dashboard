@@ -25,6 +25,7 @@ import {
 import SmartCampaignsDashboard from './pages/SmartCampaigns';
 import EnhancedSmartCampaignsDashboard from './pages/EnhancedSmartCampaigns';
 import LiveCallCenter from './pages/CallCenter-new';
+import RealTimeTestDashboard from './pages/RealTimeTestDashboard';
 import VoiceLabPage from './pages/VoiceLab';
 import FlowBuilderPage from './pages/FlowBuilder';
 import AnalyticsProPage from './pages/AnalyticsPro';
@@ -332,6 +333,7 @@ const VocelioUltimateDashboard = () => {
       badge: null,
       children: [
         { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: 'ATK' },
+        { id: 'realtime-test', label: 'Real-Time Test', icon: Activity, badge: 'LIVE' },
         { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
         { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
         { id: 'twilio-test', label: 'Twilio Test', icon: TestTube, badge: 'TEST' },
@@ -424,6 +426,7 @@ const VocelioUltimateDashboard = () => {
     { id: 'agents-enhanced', label: 'AI Agents Service', icon: Wand2, badge: 'NEW' },
     { id: 'enhanced-smart-campaigns', label: 'Smart Campaigns', icon: Target, badge: 'ENHANCED' },
     { id: 'call-center', label: 'Call Center', icon: PhoneCall, badge: 'ATK' },
+    { id: 'realtime-test', label: 'Real-Time Test', icon: Activity, badge: 'LIVE' },
     { id: 'phone-numbers', label: 'Phone Numbers', icon: Phone, badge: 'NEW' },
     { id: 'voice-marketplace', label: 'Voice Marketplace', icon: ShoppingCart, badge: 'HOT' },
     { id: 'voice-lab', label: 'Voice Lab', icon: Mic2, badge: 'AI' },
@@ -945,6 +948,9 @@ const VocelioUltimateDashboard = () => {
       case 'call-center':
         return <LiveCallCenter />;
       
+      case 'realtime-test':
+        return <RealTimeTestDashboard />;
+      
       case 'phone-numbers':
         return <TwilioNumberPurchase />;
       
@@ -1420,6 +1426,7 @@ const VocelioUltimateDashboard = () => {
                   </span>
                   {activeTab === 'overview' && <Flame className="w-8 h-8 text-orange-500 animate-pulse" />}
                   {activeTab === 'call-center' && <Radio className="w-8 h-8 text-red-500 animate-pulse" />}
+                  {activeTab === 'realtime-test' && <Activity className="w-8 h-8 text-blue-500 animate-pulse" />}
                 </h2>
                 
                 <div className="hidden md:flex items-center space-x-2 text-sm">

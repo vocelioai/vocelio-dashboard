@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocelio - Real-Time API Testing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">🚀 Real-Time API Testing</h1>
+                <p class="text-gray-600">Test the connection between Call Center Dashboard and Railway Backend</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <h3 class="font-semibold text-blue-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        Frontend Status
+                    </h3>
+                    <div class="text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Dashboard:</span>
+                            <span class="text-green-600 font-medium">✓ Active</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Port:</span>
+                            <span class="text-gray-900">3001</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">API Service:</span>
+                            <span class="text-green-600 font-medium">✓ Loaded</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                    <h3 class="font-semibold text-purple-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                        Backend Status
+                    </h3>
+                    <div class="text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Railway API:</span>
+                            <span class="text-yellow-600 font-medium" id="backend-status">⚡ Testing...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Endpoint:</span>
+                            <span class="text-gray-900 text-xs">call.vocelio.ai</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">SSL:</span>
+                            <span class="text-green-600 font-medium">✓ HTTPS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <button 
+                    onclick="testSingleEndpoint()" 
+                    class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>🔍</span>
+                    Test Single Endpoint (System Health)
+                </button>
+                
+                <button 
+                    onclick="testAllEndpoints()" 
+                    class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>🚀</span>
+                    Run Full API Test Suite
+                </button>
+
+                <button 
+                    onclick="clearResults()" 
+                    class="w-full bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>🧹</span>
+                    Clear Results
+                </button>
+            </div>
+
+            <div id="results" class="hidden">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Test Results</h3>
+                <div id="results-content" class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                    <pre id="results-text" class="text-sm"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        // Test single endpoint (System Health)
+        async function testSingleEndpoint() {
+            showResults();
+            logResult('🔍 Testing System Health Endpoint...\n');
+            
+            try {
+                const response = await fetch('https://call.vocelio.ai/api/system/health');
+                const data = await response.json();
+                
+                logResult(`✅ Success! Status: ${response.status}`);
+                logResult(`📊 Response: ${JSON.stringify(data, null, 2)}\n`);
+                
+                document.getElementById('backend-status').innerHTML = '✅ Connected';
+                document.getElementById('backend-status').className = 'text-green-600 font-medium';
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}\n`);
+                document.getElementById('backend-status').innerHTML = '❌ Offline';
+                document.getElementById('backend-status').className = 'text-red-600 font-medium';
+            }
+        }
+
+        // Test all endpoints
+        async function testAllEndpoints() {
+            showResults();
+            logResult('🚀 Starting Full API Test Suite...\n');
+            
+            const endpoints = [
+                { name: 'System Health', url: '/api/system/health' },
+                { name: 'Analytics', url: '/api/analytics' },
+                { name: 'Call Metrics', url: '/api/calls/metrics' },
+                { name: 'Agent Metrics', url: '/api/agents/metrics' },
+                { name: 'Contacts', url: '/api/contacts' },
+                { name: 'AI Configuration', url: '/api/ai/configuration' },
+                { name: 'Routing Rules', url: '/api/routing/rules' },
+                { name: 'Transfer Rules', url: '/api/transfers/rules' },
+                { name: 'Real-Time Updates', url: '/api/realtime/updates' }
+            ];
+
+            let passed = 0;
+            let failed = 0;
+
+            for (const endpoint of endpoints) {
+                try {
+                    logResult(`🔍 Testing ${endpoint.name}...`);
+                    
+                    const response = await fetch(`https://call.vocelio.ai${endpoint.url}`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        logResult(`✅ ${endpoint.name}: SUCCESS (${response.status})`);
+                        logResult(`   Data: ${JSON.stringify(data).substring(0, 100)}...\n`);
+                        passed++;
+                    } else {
+                        logResult(`❌ ${endpoint.name}: FAILED (${response.status})\n`);
+                        failed++;
+                    }
+                } catch (error) {
+                    logResult(`❌ ${endpoint.name}: ERROR - ${error.message}\n`);
+                    failed++;
+                }
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            logResult('========================');
+            logResult(`📋 TEST RESULTS SUMMARY`);
+            logResult('========================');
+            logResult(`✅ Passed: ${passed}`);
+            logResult(`❌ Failed: ${failed}`);
+            logResult(`📊 Total: ${endpoints.length}`);
+            logResult('\n🎉 API Integration Testing Complete!');
+
+            // Update backend status based on overall results
+            if (passed > failed) {
+                document.getElementById('backend-status').innerHTML = `✅ ${passed}/${endpoints.length} OK`;
+                document.getElementById('backend-status').className = 'text-green-600 font-medium';
+            } else {
+                document.getElementById('backend-status').innerHTML = `❌ ${failed}/${endpoints.length} Failed`;
+                document.getElementById('backend-status').className = 'text-red-600 font-medium';
+            }
+        }
+
+        function logResult(message) {
+            testResults.push(message);
+            document.getElementById('results-text').textContent = testResults.join('\n');
+            
+            // Auto-scroll to bottom
+            const resultsContent = document.getElementById('results-content');
+            resultsContent.scrollTop = resultsContent.scrollHeight;
+        }
+
+        function showResults() {
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        function clearResults() {
+            testResults = [];
+            document.getElementById('results-text').textContent = '';
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('backend-status').innerHTML = '⚡ Ready';
+            document.getElementById('backend-status').className = 'text-yellow-600 font-medium';
+        }
+
+        // Auto-test system health on page load
+        window.addEventListener('load', () => {
+            setTimeout(testSingleEndpoint, 1000);
+        });
+    </script>
+</body>
+</html>
