@@ -6,14 +6,9 @@ class TwilioAPI {
     this.phoneNumbersAPI = process.env.REACT_APP_PHONE_NUMBERS_API || 'https://numbers.vocelio.ai';
     this.railwayBaseURL = process.env.REACT_APP_API_GATEWAY || 'https://api.vocelio.ai';
     
-    // Debug environment variable loading
-    console.log('🔍 TwilioAPI Constructor - Environment Variables:', {
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'MISSING',
-      authToken: this.authToken ? 'PRESENT' : 'MISSING', 
-      phoneNumbersAPI: this.phoneNumbersAPI,
-      apiGateway: this.railwayBaseURL,
-      allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
-    });
+    // Debug environment variable loading - simplified
+    const hasCredentials = !!(this.accountSid && this.authToken);
+    const hasBackendAPI = !!this.phoneNumbersAPI;
     
     // API configuration - Use vocelio.ai backend services
     this.backendEndpoint = `${this.phoneNumbersAPI}/api/v1`;
@@ -203,32 +198,12 @@ class TwilioAPI {
       throw new Error('Twilio credentials not configured for direct API access');
     }
     
-    // Debug credential loading in production
-    console.log('🔐 Twilio Credentials Debug:', {
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 6)}...${this.accountSid.slice(-4)}` : 'MISSING',
-      authToken: this.authToken ? `${this.authToken.substring(0, 6)}...${this.authToken.slice(-4)}` : 'MISSING',
-      hasAccountSid: !!this.accountSid,
-      hasAuthToken: !!this.authToken,
-      accountSidLength: this.accountSid ? this.accountSid.length : 0,
-      authTokenLength: this.authToken ? this.authToken.length : 0,
-      environment: process.env.NODE_ENV,
-      reactAppEnv: process.env.REACT_APP_ENVIRONMENT
-    });
-    
     // Convert our generic endpoint to actual Twilio API endpoint
     const twilioEndpoint = this.convertToTwilioEndpoint(endpoint, options);
     const url = `${this.directTwilioBase}/Accounts/${this.accountSid}${twilioEndpoint}`;
     
-    console.log('🔗 Direct Twilio API URL:', url);
-    
     // Create basic auth header
     const credentials = btoa(`${this.accountSid}:${this.authToken}`);
-    
-    console.log('🔐 Basic Auth Debug:', {
-      rawAuthString: `${this.accountSid ? this.accountSid.substring(0, 6) + '...' : 'MISSING'}:${this.authToken ? this.authToken.substring(0, 6) + '...' : 'MISSING'}`,
-      encodedCredentials: credentials ? credentials.substring(0, 20) + '...' : 'MISSING',
-      encodedLength: credentials ? credentials.length : 0
-    });
     
     const config = {
       method: options.method || 'GET',
@@ -250,20 +225,10 @@ class TwilioAPI {
       config.body = formData.toString();
     }
 
-    console.log('🚀 Making Twilio API request:', { url, method: config.method });
-
     const response = await fetch(url, config);
-    
-    console.log('📥 Twilio API response:', {
-      status: response.status,
-      statusText: response.statusText,
-      contentType: response.headers.get('content-type'),
-      ok: response.ok
-    });
     
     // Get response text first to handle both JSON and XML
     const responseText = await response.text();
-    console.log('📄 Response text preview:', responseText.substring(0, 200) + '...');
     
     if (!response.ok) {
       // Try to parse as JSON first, fallback to XML error message
@@ -317,8 +282,6 @@ class TwilioAPI {
   
   // Convert our generic endpoints to actual Twilio API paths
   convertToTwilioEndpoint(endpoint, options = {}) {
-    console.log('🔄 Converting endpoint:', endpoint);
-    
     // Handle available numbers search
     if (endpoint.includes('/available-phone-numbers')) {
       const parts = endpoint.split('/available-phone-numbers/');
@@ -328,7 +291,6 @@ class TwilioAPI {
         const type = typeQueryParts[0];
         const queryString = typeQueryParts.length > 1 ? typeQueryParts[1] : '';
         const finalEndpoint = `/AvailablePhoneNumbers/${country}/${type}.json${queryString ? '?' + queryString : ''}`;
-        console.log('🔄 Converted available numbers endpoint:', finalEndpoint);
         return finalEndpoint;
       }
     }
@@ -339,29 +301,22 @@ class TwilioAPI {
       if (parts.length > 1 && parts[1].startsWith('/')) {
         // Specific number by SID
         const finalEndpoint = `/IncomingPhoneNumbers${parts[1]}.json`;
-        console.log('🔄 Converted specific number endpoint:', finalEndpoint);
         return finalEndpoint;
       }
       const finalEndpoint = '/IncomingPhoneNumbers.json';
-      console.log('🔄 Converted incoming numbers endpoint:', finalEndpoint);
       return finalEndpoint;
     }
     
     // Default: return as-is with .json extension if not present
     const finalEndpoint = endpoint.endsWith('.json') ? endpoint : `${endpoint}.json`;
-    console.log('🔄 Default conversion:', finalEndpoint);
     return finalEndpoint;
   }
 
   // Search for available phone numbers
   async searchAvailableNumbers(country = 'US', options = {}) {
-    console.log('🔍 searchAvailableNumbers called with:', { country, options });
-    
     // Extract type from options to avoid passing it as a query parameter
     const { type, limit, ...searchOptions } = options;
     const numberType = type || 'Local';
-    
-    console.log('🔍 Processing search:', { country, numberType, limit, searchOptions });
     
     // Build query parameters for Twilio API
     const params = new URLSearchParams();
@@ -372,14 +327,11 @@ class TwilioAPI {
     Object.entries(searchOptions).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         params.append(key, value);
-        console.log(`🔍 Added search param: ${key} = ${value}`);
       }
     });
     
     const queryString = params.toString();
     const endpoint = `/available-phone-numbers/${country}/${numberType}?${queryString}`;
-    console.log('🔍 Built endpoint:', endpoint);
-    console.log('🔍 Query parameters:', queryString);
     
     return await this.request(endpoint);
   }
