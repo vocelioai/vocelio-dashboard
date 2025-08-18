@@ -30,7 +30,9 @@ class TwilioAPI {
       hasDirectTwilioAccess: this.hasDirectTwilioAccess,
       isFullyConfigured: this.isFullyConfigured,
       phoneNumbersAPI: this.phoneNumbersAPI ? 'configured' : 'missing',
-      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing'
+      accountSid: this.accountSid ? `${this.accountSid.substring(0, 10)}...` : 'missing',
+      authToken: this.authToken ? 'configured' : 'missing',
+      environment: process.env.NODE_ENV || 'development'
     });
   }
 
@@ -39,11 +41,30 @@ class TwilioAPI {
     console.log('🔍 TwilioAPI Request:', {
       endpoint,
       hasBackendAccess: this.hasBackendAccess,
+      hasDirectTwilioAccess: this.hasDirectTwilioAccess,
       phoneNumbersAPI: this.phoneNumbersAPI,
       backendEndpoint: this.backendEndpoint
     });
     
-    // Primary: Use vocelio.ai backend services
+    // If we're in production and phone numbers are failing, use direct Twilio first
+    if (endpoint === '/incoming-phone-numbers' && this.hasDirectTwilioAccess && 
+        (process.env.NODE_ENV === 'production' || process.env.REACT_APP_ENVIRONMENT === 'production')) {
+      console.log('🚀 Production environment - trying direct Twilio API first...');
+      try {
+        const result = await this.requestDirectTwilio(endpoint, options);
+        if (result && typeof result === 'object') {
+          result.mock = false;
+        }
+        console.log('✅ Direct Twilio API success (production priority)');
+        return result;
+      } catch (error) {
+        console.error('❌ Direct Twilio API failed in production:', error.message);
+        // Don't fall back to vocelio backend in production if Twilio fails
+        throw new Error(`Production Twilio API failed: ${error.message}`);
+      }
+    }
+    
+    // Standard flow: try vocelio backend first
     if (this.hasBackendAccess) {
       try {
         console.log('🚀 Using vocelio.ai backend services...');
