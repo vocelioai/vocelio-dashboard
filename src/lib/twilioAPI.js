@@ -47,9 +47,10 @@ class TwilioAPI {
     });
     
     // If we're in production and phone numbers are failing, use direct Twilio first
-    if (endpoint === '/incoming-phone-numbers' && this.hasDirectTwilioAccess && 
+    if ((endpoint === '/incoming-phone-numbers' || endpoint.includes('/available-phone-numbers/')) && 
+        this.hasDirectTwilioAccess && 
         (process.env.NODE_ENV === 'production' || process.env.REACT_APP_ENVIRONMENT === 'production')) {
-      console.log('🚀 Production environment - trying direct Twilio API first...');
+      console.log('🚀 Production environment - trying direct Twilio API first for phone numbers...');
       try {
         const result = await this.requestDirectTwilio(endpoint, options);
         if (result && typeof result === 'object') {
