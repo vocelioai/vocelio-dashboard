@@ -7,7 +7,8 @@ import {
   Sparkles, Crown, Shield, Lock, Globe, Cpu, Database, Network,
   Volume2, Mic, Speaker, Headphones, Video, Image, FileText,
   Calendar, Timer, Bell, AlertTriangle, CheckCircle, Info,
-  TrendingUp, Activity, PieChart, RotateCcw, RefreshCw, Hash
+  TrendingUp, Activity, PieChart, RotateCcw, RefreshCw, Hash,
+  PhoneForwarded, UserCheck
 } from 'lucide-react';
 
 const FlowBuilderPage = () => {
@@ -66,7 +67,48 @@ const FlowBuilderPage = () => {
       icon: Phone, 
       color: 'from-indigo-500 to-purple-500',
       category: 'action',
-      description: 'Transfer to human agent'
+      description: 'Transfer to human agent',
+      subTypes: ['smart_transfer', 'skill_based_transfer', 'escalation_transfer']
+    },
+    { 
+      id: 'smart_transfer', 
+      label: 'Smart Transfer', 
+      icon: PhoneForwarded, 
+      color: 'from-indigo-600 to-blue-600',
+      category: 'action',
+      description: 'AI-powered intelligent agent matching'
+    },
+    { 
+      id: 'skill_based_transfer', 
+      label: 'Skill Transfer', 
+      icon: Target, 
+      color: 'from-purple-600 to-indigo-600',
+      category: 'action',
+      description: 'Transfer based on agent skills'
+    },
+    { 
+      id: 'escalation_transfer', 
+      label: 'Escalation', 
+      icon: TrendingUp, 
+      color: 'from-red-600 to-orange-600',
+      category: 'action',
+      description: 'Escalate to senior management'
+    },
+    { 
+      id: 'queue_management', 
+      label: 'Queue Control', 
+      icon: Users, 
+      color: 'from-green-600 to-teal-600',
+      category: 'action',
+      description: 'Advanced queue positioning'
+    },
+    { 
+      id: 'agent_selection', 
+      label: 'Agent Selector', 
+      icon: UserCheck, 
+      color: 'from-blue-600 to-cyan-600',
+      category: 'logic',
+      description: 'Dynamic agent selection logic'
     },
     { 
       id: 'webhook', 
@@ -551,6 +593,109 @@ const FlowBuilderPage = () => {
                     <Plus className="w-5 h-5" />
                     <span>Create New Flow</span>
                   </button>
+                </div>
+
+                {/* Transfer Workflow Management */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-white">Transfer Workflows</h3>
+                    <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">
+                      <Plus className="w-4 h-4" />
+                      <span>New Transfer Flow</span>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[
+                      {
+                        id: 'smart-escalation',
+                        name: 'Smart Escalation Flow',
+                        description: 'AI-powered escalation based on sentiment analysis',
+                        type: 'smart_transfer',
+                        triggers: ['angry_customer', 'complex_issue', 'vip_customer'],
+                        successRate: 96.8,
+                        avgTransferTime: '1:23',
+                        status: 'active'
+                      },
+                      {
+                        id: 'skill-based-routing',
+                        name: 'Skill-Based Routing',
+                        description: 'Route calls based on agent expertise and availability',
+                        type: 'skill_based_transfer',
+                        triggers: ['technical_query', 'billing_issue', 'sales_inquiry'],
+                        successRate: 94.2,
+                        avgTransferTime: '0:45',
+                        status: 'active'
+                      },
+                      {
+                        id: 'queue-optimization',
+                        name: 'Queue Optimization',
+                        description: 'Dynamic queue management with priority handling',
+                        type: 'queue_management',
+                        triggers: ['high_priority', 'long_wait_time', 'queue_overflow'],
+                        successRate: 89.5,
+                        avgTransferTime: '2:10',
+                        status: 'draft'
+                      }
+                    ].map((workflow) => (
+                      <div key={workflow.id} className="group bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-gray-700 hover:border-indigo-500 transition-all duration-300">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-3 rounded-xl shadow-lg ${
+                              workflow.type === 'smart_transfer' ? 'bg-gradient-to-br from-indigo-500 to-blue-500' :
+                              workflow.type === 'skill_based_transfer' ? 'bg-gradient-to-br from-purple-500 to-indigo-500' :
+                              'bg-gradient-to-br from-green-500 to-teal-500'
+                            }`}>
+                              {workflow.type === 'smart_transfer' && <Brain className="w-5 h-5 text-white" />}
+                              {workflow.type === 'skill_based_transfer' && <Target className="w-5 h-5 text-white" />}
+                              {workflow.type === 'queue_management' && <Users className="w-5 h-5 text-white" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white group-hover:text-indigo-300 transition-colors">{workflow.name}</h4>
+                              <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                                workflow.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
+                              }`}>
+                                {workflow.status}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-400 text-sm mb-4">{workflow.description}</p>
+
+                        <div className="mb-4">
+                          <div className="text-xs text-gray-500 mb-2">Triggers:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {workflow.triggers.map((trigger) => (
+                              <span key={trigger} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-full">
+                                {trigger.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                            <p className="text-lg font-bold text-green-400">{workflow.successRate}%</p>
+                            <p className="text-xs text-gray-400">Success</p>
+                          </div>
+                          <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                            <p className="text-lg font-bold text-blue-400">{workflow.avgTransferTime}</p>
+                            <p className="text-xs text-gray-400">Avg Time</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <button className="flex-1 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-sm font-medium transition-colors">
+                            Configure
+                          </button>
+                          <button className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                            <TestTube className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

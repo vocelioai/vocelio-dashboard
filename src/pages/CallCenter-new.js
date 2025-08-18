@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneOff, Settings, Users, BarChart3, Clock, Mic, MicOff, Volume2, VolumeX, User, MessageSquare, Calendar, FileText, Zap, Activity, TrendingUp, AlertCircle, CheckCircle, Play, Pause, Square, RotateCcw, Save, Upload, Download, Search, Filter, Bell, Shield, Headphones, Globe, UserCheck, Shuffle, ArrowRight, ArrowDown, Map, Flag, ChevronDown, PhoneForwarded, UserPlus, Briefcase, HeartHandshake, Clock3, Route, Target, Command, Keyboard, FastForward, Rewind, SkipBack, SkipForward, Volume1, Repeat, X, SlidersHorizontal, Radio, Edit3, Copy, Trash2, Plus, Minus, RotateCw, PieChart, LineChart, Calendar as CalendarIcon, Timer, Users2, Brain, Lightbulb, Gauge, Star, Award, TrendingDown, AlertTriangle, Share } from 'lucide-react';
+import { Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneOff, Settings, Users, BarChart3, Clock, Mic, MicOff, Volume2, VolumeX, User, MessageSquare, Calendar, FileText, Zap, Activity, TrendingUp, AlertCircle, CheckCircle, Play, Pause, Square, RotateCcw, Save, Upload, Download, Search, Filter, Bell, Shield, Headphones, Globe, UserCheck, Shuffle, ArrowRight, ArrowDown, Map, Flag, ChevronDown, PhoneForwarded, UserPlus, Briefcase, HeartHandshake, Clock3, Route, Target, Command, Keyboard, FastForward, Rewind, SkipBack, SkipForward, Volume1, Repeat, X, SlidersHorizontal, Radio, Edit3, Copy, Trash2, Plus, Minus, RotateCw, PieChart, LineChart, Calendar as CalendarIcon, Timer, Users2, Brain, Lightbulb, Gauge, Star, Award, TrendingDown, AlertTriangle, Share, GitBranch } from 'lucide-react';
 import twilioVoiceService from '../services/TwilioVoiceService';
 import callCenterApiService from '../services/CallCenterApiService';
 import { useRealTimeData, useContacts } from '../hooks/useRealTimeData';
@@ -49,6 +49,44 @@ const CallCenterDashboard = () => {
   const [businessHours, setBusinessHours] = useState({ start: '09:00', end: '17:00' });
   const [maxWaitTime, setMaxWaitTime] = useState(300);
   const [analyticsDateRange, setAnalyticsDateRange] = useState('7');
+  
+  // Enhanced Agent Management States
+  const [availableAgents, setAvailableAgents] = useState([
+    { id: 1, name: 'Sarah Chen', status: 'available', department: 'support', currentCall: null, skills: ['technical', 'billing'], priority: 'high', queuePosition: 1 },
+    { id: 2, name: 'Mike Torres', status: 'busy', department: 'sales', currentCall: 'C001', skills: ['sales', 'enterprise'], priority: 'high', queuePosition: null },
+    { id: 3, name: 'Lisa Park', status: 'available', department: 'billing', currentCall: null, skills: ['billing', 'refunds'], priority: 'medium', queuePosition: 2 },
+    { id: 4, name: 'David Kim', status: 'away', department: 'support', currentCall: null, skills: ['support', 'technical'], priority: 'medium', queuePosition: null }
+  ]);
+
+  // Advanced Call Management States
+  const [callRoutingVisualization, setCallRoutingVisualization] = useState(true);
+  const [agentQueueView, setAgentQueueView] = useState('detailed');
+  const [transferWorkflowActive, setTransferWorkflowActive] = useState(false);
+  const [routingFlowData, setRoutingFlowData] = useState({
+    currentFlow: 'intelligent-routing',
+    nodes: [
+      { id: 'incoming', type: 'entry', label: 'Incoming Call', position: { x: 50, y: 200 } },
+      { id: 'ai-analysis', type: 'process', label: 'AI Analysis', position: { x: 200, y: 200 } },
+      { id: 'skill-match', type: 'decision', label: 'Skill Matching', position: { x: 350, y: 200 } },
+      { id: 'queue-assign', type: 'process', label: 'Queue Assignment', position: { x: 500, y: 200 } },
+      { id: 'agent-connect', type: 'output', label: 'Agent Connected', position: { x: 650, y: 200 } }
+    ],
+    connections: [
+      { from: 'incoming', to: 'ai-analysis' },
+      { from: 'ai-analysis', to: 'skill-match' },
+      { from: 'skill-match', to: 'queue-assign' },
+      { from: 'queue-assign', to: 'agent-connect' }
+    ]
+  });
+  
+  const [queueMetrics, setQueueMetrics] = useState({
+    totalInQueue: 8,
+    averageWaitTime: 145,
+    longestWait: 320,
+    queueThroughput: 85.2,
+    agentUtilization: 76.8,
+    callAbandonment: 5.2
+  });
   
   const [contacts, setContacts] = useState([
     { id: 1, name: 'John Smith', number: '+1 (555) 123-4567', type: 'lead', priority: 'high', lastCalled: '2024-08-17', status: 'new' },
@@ -782,6 +820,273 @@ const CallCenterDashboard = () => {
     { id: 'hr', name: 'Human Resources', agents: 2, available: 2, avgResponse: '1m 45s', expertise: ['Employment', 'Benefits', 'Policies'] }
   ];
 
+  // Advanced Call Management Functions
+  const handleAgentAssignment = (callId, agentId) => {
+    setAvailableAgents(prev => prev.map(agent => {
+      if (agent.id === agentId) {
+        return { ...agent, status: 'busy', currentCall: callId };
+      }
+      return agent;
+    }));
+    
+    setInboundQueue(prev => prev.map(call => {
+      if (call.id === callId) {
+        return { ...call, assignedAgent: agentId, status: 'assigned' };
+      }
+      return call;
+    }));
+  };
+
+  const handleAgentStatusUpdate = (agentId, newStatus) => {
+    setAvailableAgents(prev => prev.map(agent => {
+      if (agent.id === agentId) {
+        return { ...agent, status: newStatus };
+      }
+      return agent;
+    }));
+  };
+
+  const handleQueueReorder = (dragIndex, hoverIndex) => {
+    setInboundQueue(prev => {
+      const draggedItem = prev[dragIndex];
+      const newQueue = [...prev];
+      newQueue.splice(dragIndex, 1);
+      newQueue.splice(hoverIndex, 0, draggedItem);
+      return newQueue.map((item, index) => ({ ...item, queuePosition: index + 1 }));
+    });
+  };
+
+  const calculateRoutingVisualization = () => {
+    // Simulate real-time routing flow updates
+    return {
+      ...routingFlowData,
+      activeFlow: realCallActive ? 'active' : 'idle',
+      metrics: {
+        callsProcessed: liveMetrics.totalCallsToday,
+        averageRoutingTime: '2.3s',
+        routingAccuracy: '94.2%',
+        queueEfficiency: `${queueMetrics.queueThroughput}%`
+      }
+    };
+  };
+
+  const handleTransferWorkflow = (workflowId, callContext) => {
+    setTransferWorkflowActive(true);
+    
+    // Simulate workflow execution
+    setTimeout(() => {
+      console.log(`Executing transfer workflow: ${workflowId}`, callContext);
+      setTransferWorkflowActive(false);
+      alert(`Transfer workflow "${workflowId}" completed successfully!`);
+    }, 2000);
+  };
+
+  const renderRoutingVisualization = () => (
+    <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <GitBranch size={20} className="text-blue-600" />
+          Call Routing Visualization
+        </h3>
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${realCallActive ? 'bg-green-400 animate-pulse' : 'bg-gray-300'}`}></div>
+          <span className="text-sm text-gray-600">{realCallActive ? 'Active Flow' : 'Idle'}</span>
+        </div>
+      </div>
+      
+      <div className="relative h-64 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 overflow-hidden">
+        <svg width="100%" height="100%" className="absolute inset-0">
+          {/* Flow connections */}
+          {routingFlowData.connections.map((connection, index) => {
+            const fromNode = routingFlowData.nodes.find(n => n.id === connection.from);
+            const toNode = routingFlowData.nodes.find(n => n.id === connection.to);
+            if (!fromNode || !toNode) return null;
+            
+            return (
+              <line
+                key={index}
+                x1={fromNode.position.x + 50}
+                y1={fromNode.position.y + 20}
+                x2={toNode.position.x}
+                y2={toNode.position.y + 20}
+                stroke={realCallActive ? '#3B82F6' : '#9CA3AF'}
+                strokeWidth="2"
+                strokeDasharray={realCallActive ? "0" : "5,5"}
+                className={realCallActive ? 'animate-pulse' : ''}
+              />
+            );
+          })}
+        </svg>
+        
+        {/* Flow nodes */}
+        {routingFlowData.nodes.map((node) => (
+          <div
+            key={node.id}
+            className={`absolute px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all duration-300 ${
+              realCallActive 
+                ? 'bg-blue-100 border-blue-300 text-blue-800 shadow-lg scale-105' 
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
+            style={{ left: node.position.x, top: node.position.y }}
+          >
+            {node.label}
+          </div>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-4 gap-4 mt-4 text-center">
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-2xl font-bold text-gray-900">{liveMetrics.totalCallsToday}</div>
+          <div className="text-xs text-gray-600">Calls Processed</div>
+        </div>
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">2.3s</div>
+          <div className="text-xs text-gray-600">Avg Routing Time</div>
+        </div>
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-2xl font-bold text-green-600">94.2%</div>
+          <div className="text-xs text-gray-600">Routing Accuracy</div>
+        </div>
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="text-2xl font-bold text-purple-600">{queueMetrics.queueThroughput}%</div>
+          <div className="text-xs text-gray-600">Queue Efficiency</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAgentQueueManagement = () => (
+    <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Users size={20} className="text-green-600" />
+          Agent Queue Management
+        </h3>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setAgentQueueView(agentQueueView === 'detailed' ? 'compact' : 'detailed')}
+            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            {agentQueueView === 'detailed' ? 'Compact View' : 'Detailed View'}
+          </button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Agent Status Panel */}
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3">Available Agents</h4>
+          <div className="space-y-3">
+            {availableAgents.map((agent) => (
+              <div 
+                key={agent.id}
+                className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                  agent.status === 'available' ? 'border-green-200 bg-green-50' :
+                  agent.status === 'busy' ? 'border-red-200 bg-red-50' :
+                  'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      agent.status === 'available' ? 'bg-green-400' :
+                      agent.status === 'busy' ? 'bg-red-400' :
+                      'bg-gray-400'
+                    }`}></div>
+                    <div>
+                      <div className="font-medium text-gray-900">{agent.name}</div>
+                      <div className="text-sm text-gray-600">{agent.department}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      agent.status === 'available' ? 'bg-green-100 text-green-800' :
+                      agent.status === 'busy' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {agent.status}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Queue: #{agent.queuePosition || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                
+                {agentQueueView === 'detailed' && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-gray-700">Skills:</span>
+                      {agent.skills.map((skill) => (
+                        <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    {agent.currentCall && (
+                      <div className="text-xs text-gray-600">Current Call: {agent.currentCall}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Queue Status Panel */}
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3">Call Queue Status</h4>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">{queueMetrics.totalInQueue}</div>
+                <div className="text-sm text-blue-800">Calls in Queue</div>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-2xl font-bold text-orange-600">{Math.floor(queueMetrics.averageWaitTime / 60)}m {queueMetrics.averageWaitTime % 60}s</div>
+                <div className="text-sm text-orange-800">Avg Wait Time</div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-white border border-gray-200 rounded-lg">
+              <h5 className="font-medium text-gray-900 mb-3">Queue Performance</h5>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Throughput Rate</span>
+                  <span className="font-medium text-green-600">{queueMetrics.queueThroughput}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Agent Utilization</span>
+                  <span className="font-medium text-blue-600">{queueMetrics.agentUtilization}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Call Abandonment</span>
+                  <span className="font-medium text-red-600">{queueMetrics.callAbandonment}%</span>
+                </div>
+              </div>
+            </div>
+            
+            {inboundQueue.length > 0 && (
+              <div className="p-4 bg-white border border-gray-200 rounded-lg">
+                <h5 className="font-medium text-gray-900 mb-3">Current Queue</h5>
+                <div className="space-y-2">
+                  {inboundQueue.slice(0, 3).map((call, index) => (
+                    <div key={call.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">#{index + 1}</span>
+                        <span className="text-sm text-gray-600">{call.caller || 'Unknown'}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">Wait: {formatTime(call.waitTime || 0)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const TabButton = ({ id, label, icon: Icon, isActive, onClick }) => (
     <button
       onClick={() => onClick(id)}
@@ -910,6 +1215,10 @@ const CallCenterDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Advanced Call Management Components */}
+            {callRoutingVisualization && renderRoutingVisualization()}
+            {renderAgentQueueManagement()}
 
             {/* Enhanced Call Interface */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
