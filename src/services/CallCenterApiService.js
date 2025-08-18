@@ -36,7 +36,7 @@ class CallCenterApiService {
         console.warn(`⚠️  API Warning: ${response.status} ${response.statusText} for ${url}`);
         
         // For now, return mock data for non-critical endpoints
-        if (response.status === 404 && !endpoint.includes('voice') && !endpoint.includes('token') && !endpoint.includes('health')) {
+        if (response.status === 404 && !endpoint.includes('voice') && !endpoint.includes('token') && endpoint !== '/') {
           return { success: true, data: this.getMockData(endpoint) };
         }
         
@@ -50,7 +50,7 @@ class CallCenterApiService {
       console.error(`❌ API Error for ${url}:`, error);
       
       // Return mock data for development (except critical endpoints)
-      if (!endpoint.includes('voice') && !endpoint.includes('token') && !endpoint.includes('health')) {
+      if (!endpoint.includes('voice') && !endpoint.includes('token') && endpoint !== '/') {
         console.log(`🔧 Using mock data for ${endpoint}`);
         return { success: true, data: this.getMockData(endpoint) };
       }
@@ -62,6 +62,7 @@ class CallCenterApiService {
   // Mock data for development when Railway endpoints aren't available yet
   getMockData(endpoint) {
     const mockData = {
+      // Analytics endpoints
       '/api/v1/analytics/calls': {
         total_calls: 1234,
         successful_calls: 1156,
@@ -69,12 +70,52 @@ class CallCenterApiService {
         average_duration: '4:32',
         success_rate: 93.7
       },
+      '/api/v1/analytics': {
+        calls: {
+          total: 1234,
+          successful: 1156,
+          failed: 78,
+          average_duration: '4:32'
+        },
+        agents: {
+          total: 12,
+          active: 8,
+          performance: 94.2
+        },
+        revenue: {
+          total: '$45,230',
+          increase: 12.5
+        }
+      },
       '/api/v1/analytics/agents': {
         total_agents: 12,
         active_agents: 8,
         busy_agents: 3,
-        idle_agents: 1
+        idle_agents: 1,
+        performance_avg: 94.2
       },
+      // System health
+      '/api/v1/system/health': {
+        status: 'healthy',
+        uptime: '99.9%',
+        services: {
+          database: 'healthy',
+          api: 'healthy',
+          voice: 'healthy'
+        },
+        last_check: '2025-08-18T21:47:40.563Z'
+      },
+      // Real-time updates
+      '/api/v1/realtime/updates': {
+        active_calls: 5,
+        queue_size: 2,
+        agents_online: 8,
+        recent_activities: [
+          { type: 'call_started', agent: 'John Doe', time: '2025-08-18T21:45:00Z' },
+          { type: 'call_ended', agent: 'Jane Smith', duration: '3:22', time: '2025-08-18T21:44:30Z' }
+        ]
+      },
+      // Existing mock data
       '/api/v1/calls/active': {
         active_calls: [
           { id: '1', agent: 'John Doe', customer: '+1234567890', duration: '2:15' },
@@ -117,6 +158,25 @@ class CallCenterApiService {
 
   async getRealtimeMetrics() {
     return await this.apiRequest('/api/v1/analytics/realtime');
+  }
+
+  // System Health Methods
+  async getSystemHealth() {
+    return await this.apiRequest('/api/v1/system/health');
+  }
+
+  // Analytics Methods
+  async getAnalytics(dateRange = '7') {
+    return await this.apiRequest(`/api/v1/analytics?range=${dateRange}`);
+  }
+
+  async getAgentMetrics(dateRange = '7') {
+    return await this.apiRequest(`/api/v1/analytics/agents?range=${dateRange}`);
+  }
+
+  // Real-Time Updates
+  async getRealTimeUpdates() {
+    return await this.apiRequest('/api/v1/realtime/updates');
   }
 
   // Call Management
@@ -323,11 +383,6 @@ class CallCenterApiService {
     return await this.apiRequest(`/api/v1/recordings/${recordingId}`, {
       method: 'DELETE'
     });
-  }
-
-  // Health Check
-  async healthCheck() {
-    return await this.apiRequest('/health');
   }
 
   // Export functionality
