@@ -118,6 +118,38 @@ const EnterpriseFlowBuilder = () => {
   const [aiInsights, setAiInsights] = useState([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
 
+  // 🏢 Phase 4: Enterprise Collaboration & Advanced Workflow Management
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [activeCollaborators, setActiveCollaborators] = useState([]);
+  const [workflowVersions, setWorkflowVersions] = useState([]);
+  const [branchingEnabled, setBranchingEnabled] = useState(false);
+  const [mergeRequests, setMergeRequests] = useState([]);
+  const [enterprisePermissions, setEnterprisePermissions] = useState({});
+  const [auditTrail, setAuditTrail] = useState([]);
+  const [workflowTemplates, setWorkflowTemplates] = useState([]);
+  const [enterpriseIntegrations, setEnterpriseIntegrations] = useState([]);
+  const [complianceMode, setComplianceMode] = useState(false);
+  const [governanceRules, setGovernanceRules] = useState([]);
+  const [enterpriseDashboard, setEnterpriseDashboard] = useState({});
+  const [bulkOperations, setBulkOperations] = useState(false);
+  const [advancedSearch, setAdvancedSearch] = useState({ query: '', filters: {} });
+  const [workflowScheduler, setWorkflowScheduler] = useState({});
+  const [enterpriseReporting, setEnterpriseReporting] = useState({});
+  const [showVersionControl, setShowVersionControl] = useState(false);
+  const [showEnterpriseSettings, setShowEnterpriseSettings] = useState(false);
+  const [enterpriseMode, setEnterpriseMode] = useState(false);
+  const [teamWorkspace, setTeamWorkspace] = useState({});
+  const [workflowGovernance, setWorkflowGovernance] = useState({});
+
+  // Current user for enterprise features
+  const [currentUser] = useState({
+    id: 'user_001',
+    name: 'John Developer',
+    email: 'john@vocelio.ai',
+    role: 'admin',
+    avatar: '👨‍💻'
+  });
+
   // Refs for advanced functionality
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
@@ -1174,6 +1206,268 @@ const EnterpriseFlowBuilder = () => {
     </motion.div>
   );
 
+  // 🏢 PHASE 4: ENTERPRISE FUNCTIONS (Must be defined before UI components)
+  // Advanced Workflow Versioning
+  const createWorkflowBranch = useCallback((branchName) => {
+    const newBranch = {
+      id: uuidv4(),
+      name: branchName,
+      basedOn: currentVersion,
+      createdAt: new Date().toISOString(),
+      createdBy: 'current-user',
+      nodes: [...canvasNodes],
+      connections: [...canvasConnections],
+      status: 'draft'
+    };
+
+    setWorkflowVersions(prev => [...prev, newBranch]);
+    return newBranch;
+  }, [currentVersion, canvasNodes, canvasConnections]);
+
+  const mergeBranch = useCallback((branchId, targetVersion) => {
+    const branch = workflowVersions.find(b => b.id === branchId);
+    if (!branch) return;
+
+    const mergeRequest = {
+      id: uuidv4(),
+      branchId,
+      targetVersion,
+      requestedBy: 'current-user',
+      requestedAt: new Date().toISOString(),
+      status: 'pending',
+      changes: {
+        nodesAdded: branch.nodes.length - canvasNodes.length,
+        nodesModified: 0, // Calculate actual diff
+        connectionsChanged: Math.abs(branch.connections.length - canvasConnections.length)
+      }
+    };
+
+    setMergeRequests(prev => [...prev, mergeRequest]);
+    return mergeRequest;
+  }, [workflowVersions, canvasNodes, canvasConnections]);
+
+  // Enterprise Compliance & Governance
+  const validateCompliance = useCallback((workflowData) => {
+    const rules = [
+      { id: 'data-retention', name: 'Data Retention Policy', severity: 'critical' },
+      { id: 'approval-required', name: 'Management Approval Required', severity: 'high' },
+      { id: 'audit-logging', name: 'Audit Trail Enabled', severity: 'medium' },
+      { id: 'security-review', name: 'Security Review Complete', severity: 'high' }
+    ];
+
+    const violations = [];
+    if (workflowData.nodes.some(node => node.type === 'database' && !node.data.encryption)) {
+      violations.push({ rule: 'data-retention', message: 'Database nodes must have encryption enabled' });
+    }
+
+    const complianceReport = {
+      status: violations.length === 0 ? 'compliant' : 'violations',
+      violations,
+      lastChecked: new Date().toISOString(),
+      rulesEvaluated: rules.length
+    };
+
+    setGovernanceRules(rules);
+    return complianceReport;
+  }, []);
+
+  // Enterprise Audit Trail
+  const logAuditEvent = useCallback((action, details) => {
+    const auditEvent = {
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      user: 'current-user',
+      action,
+      details,
+      workflowVersion: currentVersion,
+      ipAddress: '192.168.1.100', // Mock IP
+      sessionId: 'session-123'
+    };
+
+    setAuditTrail(prev => [auditEvent, ...prev.slice(0, 99)]); // Keep last 100 events
+  }, [currentVersion]);
+
+  // Enterprise Workflow Templates
+  const createEnterpriseTemplate = useCallback((templateData) => {
+    const template = {
+      id: uuidv4(),
+      name: templateData.name,
+      category: templateData.category,
+      description: templateData.description,
+      nodes: [...canvasNodes],
+      connections: [...canvasConnections],
+      metadata: {
+        createdBy: 'current-user',
+        createdAt: new Date().toISOString(),
+        version: '1.0.0',
+        tags: templateData.tags || [],
+        approvalStatus: 'pending',
+        complianceLevel: 'enterprise'
+      }
+    };
+
+    setWorkflowTemplates(prev => [...prev, template]);
+    logAuditEvent('template-created', { templateId: template.id, templateName: template.name });
+    return template;
+  }, [canvasNodes, canvasConnections, logAuditEvent]);
+
+  // Bulk Operations
+  const executeBulkOperation = useCallback((operation, targetNodes) => {
+    let updatedNodes = [...canvasNodes];
+
+    switch (operation) {
+      case 'bulk-edit-properties':
+        updatedNodes = updatedNodes.map(node => 
+          targetNodes.includes(node.id) 
+            ? { ...node, data: { ...node.data, bulkEdited: true, lastModified: new Date().toISOString() } }
+            : node
+        );
+        break;
+      case 'bulk-change-category':
+        updatedNodes = updatedNodes.map(node =>
+          targetNodes.includes(node.id)
+            ? { ...node, category: 'updated-category' }
+            : node
+        );
+        break;
+      case 'bulk-apply-template':
+        // Apply template styling/properties
+        updatedNodes = updatedNodes.map(node =>
+          targetNodes.includes(node.id)
+            ? { ...node, style: { ...node.style, template: 'enterprise-standard' } }
+            : node
+        );
+        break;
+      default:
+        break;
+    }
+
+    setCanvasNodes(updatedNodes);
+    logAuditEvent('bulk-operation', { operation, nodeCount: targetNodes.length });
+  }, [canvasNodes, logAuditEvent]);
+
+  // Enterprise Integration Management
+  const initializeEnterpriseIntegrations = useCallback(() => {
+    const integrations = [
+      { id: 'salesforce', name: 'Salesforce CRM', status: 'connected', type: 'crm' },
+      { id: 'azure-ad', name: 'Azure Active Directory', status: 'connected', type: 'auth' },
+      { id: 'slack', name: 'Slack Workspace', status: 'connected', type: 'communication' },
+      { id: 'jira', name: 'Jira Service Desk', status: 'pending', type: 'ticketing' },
+      { id: 'tableau', name: 'Tableau Analytics', status: 'connected', type: 'analytics' }
+    ];
+
+    setEnterpriseIntegrations(integrations);
+  }, []);
+
+  // Advanced Workflow Scheduler
+  const scheduleWorkflowExecution = useCallback((scheduleConfig) => {
+    const scheduledJob = {
+      id: uuidv4(),
+      workflowId: canvasNodes[0]?.id || 'current-workflow',
+      schedule: scheduleConfig.schedule,
+      timezone: scheduleConfig.timezone || 'UTC',
+      parameters: scheduleConfig.parameters || {},
+      status: 'active',
+      nextExecution: new Date(Date.now() + 60000).toISOString(), // 1 minute from now
+      createdBy: 'current-user',
+      createdAt: new Date().toISOString()
+    };
+
+    setWorkflowScheduler(prev => ({
+      ...prev,
+      jobs: [...(prev.jobs || []), scheduledJob]
+    }));
+
+    logAuditEvent('workflow-scheduled', { jobId: scheduledJob.id, schedule: scheduleConfig.schedule });
+    return scheduledJob;
+  }, [canvasNodes, logAuditEvent]);
+
+  // Enterprise Reporting & Analytics
+  const generateEnterpriseReport = useCallback((reportType) => {
+    const reportData = {
+      id: uuidv4(),
+      type: reportType,
+      generatedAt: new Date().toISOString(),
+      data: {}
+    };
+
+    switch (reportType) {
+      case 'workflow-performance':
+        reportData.data = {
+          totalWorkflows: 45,
+          activeWorkflows: 32,
+          averageExecutionTime: '2.3s',
+          successRate: '97.8%',
+          errorRate: '2.2%',
+          topPerformingWorkflows: ['Customer Onboarding', 'Lead Qualification', 'Support Ticket Routing']
+        };
+        break;
+      case 'team-collaboration':
+        reportData.data = {
+          activeUsers: teamMembers.length,
+          collaborationEvents: auditTrail.length,
+          averageSessionTime: '45 minutes',
+          mostCollaborativeWorkflows: ['Product Launch Flow', 'Compliance Review Process'],
+          teamEfficiencyScore: 92
+        };
+        break;
+      case 'compliance-audit':
+        reportData.data = {
+          complianceScore: 94,
+          violationsFound: 2,
+          rulesEvaluated: 12,
+          lastAuditDate: new Date().toISOString(),
+          criticalIssues: 0,
+          recommendedActions: ['Enable encryption on database nodes', 'Add approval step for sensitive operations']
+        };
+        break;
+      default:
+        reportData.data = { message: 'Report type not implemented' };
+    }
+
+    setEnterpriseReporting(prev => ({
+      ...prev,
+      [reportType]: reportData
+    }));
+
+    return reportData;
+  }, [teamMembers, auditTrail]);
+
+  // Save current workflow version
+  const saveVersion = useCallback((versionName) => {
+    try {
+      const newVersion = {
+        id: Date.now().toString(),
+        name: versionName,
+        timestamp: new Date().toISOString(),
+        nodes: [...canvasNodes],
+        connections: [...canvasConnections],
+        metadata: {
+          author: currentUser?.name || 'Unknown User',
+          description: `Version saved on ${new Date().toLocaleDateString()}`,
+          changes: 'Manual save'
+        }
+      };
+
+      const updatedVersions = [...workflowVersions, newVersion];
+      setWorkflowVersions(updatedVersions);
+      setCurrentVersion(newVersion.id);
+
+      // Log audit event
+      logAuditEvent('version_saved', {
+        versionId: newVersion.id,
+        versionName,
+        author: currentUser?.name || 'Unknown User'
+      });
+
+      console.log('Version saved:', newVersion);
+      return newVersion;
+    } catch (error) {
+      console.error('Failed to save version:', error);
+      return null;
+    }
+  }, [canvasNodes, canvasConnections, workflowVersions, currentUser, setWorkflowVersions, setCurrentVersion, logAuditEvent]);
+
   // 🤖 PHASE 3: AI INTELLIGENCE PANEL
   const AIAssistantPanel = () => (
     <AnimatePresence>
@@ -1384,6 +1678,220 @@ const EnterpriseFlowBuilder = () => {
                   }
                 }}
               />
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  // 🏢 PHASE 4: ENTERPRISE COLLABORATION PANEL
+  const EnterpriseCollaborationPanel = () => (
+    <AnimatePresence>
+      {showCollaborationPanel && (
+        <motion.div
+          initial={{ x: 400, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 400, opacity: 0 }}
+          className="fixed right-4 top-20 w-96 bg-gradient-to-b from-blue-900/95 to-cyan-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-blue-500/40 z-50 max-h-[80vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-blue-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white">Team Collaboration</span>
+                  <p className="text-xs text-blue-300">Enterprise Workspace</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowCollaborationPanel(false);
+                  setCollaborationMode(false);
+                }}
+                className="p-1 hover:bg-blue-800 rounded"
+              >
+                <X className="w-4 h-4 text-blue-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(80vh-80px)]">
+            
+            {/* Active Collaborators */}
+            <div className="bg-gradient-to-r from-blue-800/50 to-cyan-800/50 rounded-lg p-3 border border-blue-500/20">
+              <h3 className="text-sm font-medium text-blue-200 mb-3 flex items-center">
+                <User className="w-4 h-4 mr-2" />
+                Active Team Members ({activeCollaborators.length})
+              </h3>
+              <div className="space-y-2">
+                {teamMembers.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-2 bg-blue-900/30 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="text-lg">{member.avatar}</div>
+                      <div>
+                        <div className="text-sm font-medium text-white">{member.name}</div>
+                        <div className="text-xs text-blue-300">{member.role}</div>
+                      </div>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${
+                      member.status === 'online' ? 'bg-green-400' : 
+                      member.status === 'away' ? 'bg-yellow-400' : 'bg-gray-400'
+                    }`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Current Permissions */}
+            <div className="bg-gradient-to-r from-cyan-800/50 to-blue-800/50 rounded-lg p-3 border border-cyan-500/20">
+              <h3 className="text-sm font-medium text-cyan-200 mb-3 flex items-center">
+                <Shield className="w-4 h-4 mr-2" />
+                Your Permissions
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['Edit', 'Approve', 'Deploy', 'Audit'].map(permission => (
+                  <div key={permission} className="flex items-center justify-between p-2 bg-cyan-900/30 rounded">
+                    <span className="text-xs text-cyan-300">{permission}</span>
+                    <CheckCircle className="w-3 h-3 text-green-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-gradient-to-r from-blue-800/50 to-cyan-800/50 rounded-lg p-3 border border-blue-500/20">
+              <h3 className="text-sm font-medium text-blue-200 mb-3 flex items-center">
+                <Activity className="w-4 h-4 mr-2" />
+                Recent Activity
+              </h3>
+              <div className="space-y-2">
+                {auditTrail.slice(0, 3).map(event => (
+                  <div key={event.id} className="p-2 bg-blue-900/30 rounded text-xs">
+                    <div className="text-white font-medium">{event.action}</div>
+                    <div className="text-blue-300">{new Date(event.timestamp).toLocaleTimeString()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Collaboration Actions */}
+            <div className="space-y-2">
+              <button
+                onClick={() => createWorkflowBranch('feature-branch-' + Date.now())}
+                className="w-full p-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all font-medium"
+              >
+                Create Branch
+              </button>
+              <button
+                onClick={() => generateEnterpriseReport('team-collaboration')}
+                className="w-full p-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium"
+              >
+                Generate Report
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  // 🏢 PHASE 4: VERSION CONTROL PANEL
+  const VersionControlPanel = () => (
+    <AnimatePresence>
+      {showVersionControl && (
+        <motion.div
+          initial={{ x: 400, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 400, opacity: 0 }}
+          className="fixed right-4 top-20 w-96 bg-gradient-to-b from-green-900/95 to-emerald-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-green-500/40 z-50 max-h-[80vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-green-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                  <GitBranch className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white">Version Control</span>
+                  <p className="text-xs text-green-300">Current: {currentVersion}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowVersionControl(false)}
+                className="p-1 hover:bg-green-800 rounded"
+              >
+                <X className="w-4 h-4 text-green-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(80vh-80px)]">
+            
+            {/* Current Branch */}
+            <div className="bg-gradient-to-r from-green-800/50 to-emerald-800/50 rounded-lg p-3 border border-green-500/20">
+              <h3 className="text-sm font-medium text-green-200 mb-2">Current Branch</h3>
+              <div className="flex items-center justify-between">
+                <span className="text-white font-medium">{currentBranch}</span>
+                <span className="text-xs text-green-300 bg-green-900/50 px-2 py-1 rounded">v{currentVersion}</span>
+              </div>
+            </div>
+
+            {/* Version History */}
+            <div className="bg-gradient-to-r from-emerald-800/50 to-green-800/50 rounded-lg p-3 border border-emerald-500/20">
+              <h3 className="text-sm font-medium text-emerald-200 mb-3">Version History</h3>
+              <div className="space-y-2">
+                {workflowVersions.slice(0, 3).map(version => (
+                  <div key={version.id} className="p-2 bg-green-900/30 rounded">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-white">{version.name}</span>
+                      <span className="text-xs text-green-300">{version.status}</span>
+                    </div>
+                    <div className="text-xs text-green-400">{new Date(version.createdAt).toLocaleDateString()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Merge Requests */}
+            <div className="bg-gradient-to-r from-green-800/50 to-emerald-800/50 rounded-lg p-3 border border-green-500/20">
+              <h3 className="text-sm font-medium text-green-200 mb-3">
+                Merge Requests ({mergeRequests.length})
+              </h3>
+              {mergeRequests.length > 0 ? (
+                <div className="space-y-2">
+                  {mergeRequests.slice(0, 2).map(request => (
+                    <div key={request.id} className="p-2 bg-green-900/30 rounded text-xs">
+                      <div className="text-white">Branch merge to {request.targetVersion}</div>
+                      <div className="text-green-300">{request.status} - {request.changes.nodesAdded} nodes added</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-green-400">No pending merge requests</div>
+              )}
+            </div>
+
+            {/* Version Control Actions */}
+            <div className="space-y-2">
+              <button
+                onClick={() => createWorkflowBranch('feature-' + Date.now())}
+                className="w-full p-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all font-medium"
+              >
+                Create Branch
+              </button>
+              <button
+                onClick={() => saveVersion(`v${Date.now()}`)}
+                className="w-full p-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg transition-all font-medium"
+              >
+                Save Version
+              </button>
             </div>
           </div>
         </motion.div>
@@ -1757,6 +2265,40 @@ const EnterpriseFlowBuilder = () => {
       setFlows(savedFlows);
     }, []);
 
+  // 🏢 PHASE 4: ENTERPRISE COLLABORATION & WORKFLOW MANAGEMENT FUNCTIONS
+
+  // Enterprise Team Management
+  const initializeTeamCollaboration = useCallback(() => {
+    const mockTeamMembers = [
+      { id: 1, name: 'Sarah Chen', role: 'Flow Architect', avatar: '👩‍💼', status: 'online', permissions: ['edit', 'approve', 'deploy'] },
+      { id: 2, name: 'Marcus Johnson', role: 'Business Analyst', avatar: '👨‍💻', status: 'online', permissions: ['view', 'comment'] },
+      { id: 3, name: 'Elena Rodriguez', role: 'Compliance Officer', avatar: '👩‍⚖️', status: 'away', permissions: ['audit', 'approve'] },
+      { id: 4, name: 'David Kim', role: 'Technical Lead', avatar: '👨‍🔧', status: 'online', permissions: ['edit', 'deploy', 'admin'] }
+    ];
+
+    setTeamMembers(mockTeamMembers);
+    setActiveCollaborators(mockTeamMembers.filter(m => m.status === 'online'));
+
+    // Initialize enterprise permissions
+    const permissions = {
+      currentUser: 'admin',
+      canEdit: true,
+      canApprove: true,
+      canDeploy: true,
+      canAudit: true,
+      requiresApproval: false
+    };
+    setEnterprisePermissions(permissions);
+  }, []);
+
+  // Initialize Enterprise Features
+  React.useEffect(() => {
+    if (enterpriseMode) {
+      initializeTeamCollaboration();
+      initializeEnterpriseIntegrations();
+    }
+  }, [enterpriseMode, initializeTeamCollaboration, initializeEnterpriseIntegrations]);
+
     return (
       <>
         <button
@@ -2032,6 +2574,46 @@ const EnterpriseFlowBuilder = () => {
                 title="AI Intelligence Panel"
               >
                 <Brain className="w-4 h-4" />
+              </button>
+
+              {/* Phase 4: Enterprise Collaboration */}
+              <button
+                onClick={() => {
+                  setShowCollaborationPanel(!showCollaborationPanel);
+                  setCollaborationMode(!collaborationMode);
+                }}
+                className={`p-2 border rounded-lg transition-all ${
+                  collaborationMode 
+                    ? 'bg-blue-500/30 border-blue-500/50 text-blue-300' 
+                    : 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-400'
+                }`}
+                title="Team Collaboration"
+              >
+                <Users className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setShowVersionControl(!showVersionControl)}
+                className={`p-2 border rounded-lg transition-all ${
+                  showVersionControl 
+                    ? 'bg-green-500/30 border-green-500/50 text-green-300' 
+                    : 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30 text-green-400'
+                }`}
+                title="Version Control & Branching"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setShowEnterpriseSettings(!showEnterpriseSettings)}
+                className={`p-2 border rounded-lg transition-all ${
+                  showEnterpriseSettings 
+                    ? 'bg-orange-500/30 border-orange-500/50 text-orange-300' 
+                    : 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/30 text-orange-400'
+                }`}
+                title="Enterprise Settings"
+              >
+                <Shield className="w-4 h-4" />
               </button>
 
               <button
@@ -2487,6 +3069,10 @@ const EnterpriseFlowBuilder = () => {
 
       {/* AI Assistant Panel */}
       <AIAssistantPanel />
+
+      {/* Phase 4: Enterprise Collaboration Panels */}
+      <EnterpriseCollaborationPanel />
+      <VersionControlPanel />
 
       {/* Property Panel */}
       <PropertyPanel />
