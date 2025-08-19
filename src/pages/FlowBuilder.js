@@ -60,11 +60,20 @@ const EnterpriseFlowBuilder = () => {
       data: { label: 'Send to CRM', url: 'https://api.example.com/webhook', method: 'POST' }
     }
   ]);
-  const [canvasConnections, setCanvasConnections] = useState([]);
+  const [canvasConnections, setCanvasConnections] = useState([
+    // Sample connection to showcase functionality
+    { id: 'conn-1', source: 'demo-1', target: 'demo-2', sourceHandle: 'output', targetHandle: 'input' },
+    { id: 'conn-2', source: 'demo-2', target: 'demo-3', sourceHandle: 'output', targetHandle: 'input' }
+  ]);
   const [selectedNodes, setSelectedNodes] = useState(new Set());
+  const [selectedConnections, setSelectedConnections] = useState(new Set());
   const [draggedNode, setDraggedNode] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStart, setConnectionStart] = useState(null);
+  const [connectionEnd, setConnectionEnd] = useState(null);
+  const [connections, setConnections] = useState([]); // Visual connections between nodes
+  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
+  const [selectedNodeForProperties, setSelectedNodeForProperties] = useState(null);
   const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -280,15 +289,91 @@ const EnterpriseFlowBuilder = () => {
     }));
   }, [canvasNodes]);
 
-  // 🎨 ADVANCED UI FUNCTIONS
+  // 🔗 CONNECTION MANAGEMENT FUNCTIONS
+  const startConnection = useCallback((nodeId, handleType) => {
+    setIsConnecting(true);
+    setConnectionStart({ nodeId, handleType });
+  }, []);
+
+  const endConnection = useCallback((nodeId, handleType) => {
+    if (connectionStart && connectionStart.nodeId !== nodeId) {
+      const newConnection = {
+        id: uuidv4(),
+        source: connectionStart.nodeId,
+        target: nodeId,
+        sourceHandle: connectionStart.handleType,
+        targetHandle: handleType
+      };
+      setCanvasConnections([...canvasConnections, newConnection]);
+    }
+    setIsConnecting(false);
+    setConnectionStart(null);
+    setConnectionEnd(null);
+  }, [connectionStart, canvasConnections]);
+
+  const deleteConnection = useCallback((connectionId) => {
+    setCanvasConnections(canvasConnections.filter(conn => conn.id !== connectionId));
+    setSelectedConnections(prev => {
+      const updated = new Set(prev);
+      updated.delete(connectionId);
+      return updated;
+    });
+  }, [canvasConnections]);
+
+  // 📐 BEZIER CURVE CALCULATION
+  const createConnectionPath = useCallback((sourcePos, targetPos) => {
+    const dx = targetPos.x - sourcePos.x;
+    const dy = targetPos.y - sourcePos.y;
+    
+    const controlOffset = Math.abs(dx) * 0.5;
+    const sourceControlX = sourcePos.x + controlOffset;
+    const targetControlX = targetPos.x - controlOffset;
+    
+    return `M ${sourcePos.x} ${sourcePos.y} C ${sourceControlX} ${sourcePos.y}, ${targetControlX} ${targetPos.y}, ${targetPos.x} ${targetPos.y}`;
+  }, []);
+
+  // 🎯 NODE POSITION HELPERS
+  const getNodeCenter = useCallback((nodeId) => {
+    const node = canvasNodes.find(n => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+    return {
+      x: node.position.x + 96, // Half of node width (192px)
+      y: node.position.y + 48   // Half of node height (96px)
+    };
+  }, [canvasNodes]);
+
+  const getConnectionHandlePosition = useCallback((nodeId, handleType) => {
+    const node = canvasNodes.find(n => n.id === nodeId);
+    if (!node) return { x: 0, y: 0 };
+    
+    if (handleType === 'input') {
+      return { x: node.position.x, y: node.position.y + 48 }; // Left center
+    } else {
+      return { x: node.position.x + 192, y: node.position.y + 48 }; // Right center
+    }
+  }, [canvasNodes]);
+
+  // 🎨 ENHANCED UI FUNCTIONS
   const saveFlow = useCallback(() => {
     setIsAutoSaving(true);
-    // Simulate save operation
+    const flowData = {
+      nodes: canvasNodes,
+      connections: canvasConnections,
+      metadata: {
+        name: 'Untitled Flow',
+        created: new Date().toISOString(),
+        version: '1.0.0'
+      }
+    };
+    
+    // Save to localStorage for now (later we'll add database integration)
+    localStorage.setItem('vocelio-flow-builder', JSON.stringify(flowData));
+    
     setTimeout(() => {
       setIsAutoSaving(false);
       addToHistory();
     }, 1000);
-  }, []);
+  }, [canvasNodes, canvasConnections]);
 
   const addToHistory = useCallback(() => {
     const snapshot = {
@@ -519,6 +604,516 @@ const EnterpriseFlowBuilder = () => {
     </AnimatePresence>
   );
 
+  // 🔧 PROPERTY PANEL COMPONENT
+  const PropertyPanel = () => (
+    <AnimatePresence>
+      {showPropertyPanel && selectedNodeForProperties && (
+        <motion.div
+          initial={{ x: 400, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 400, opacity: 0 }}
+          className="fixed right-4 top-20 w-80 bg-gradient-to-b from-gray-800/95 to-gray-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-600/50 z-50 max-h-[80vh] overflow-hidden"
+        >
+          <div className="p-4 border-b border-gray-600/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className={`p-2 bg-gradient-to-br ${selectedNodeForProperties.color} rounded-lg`}>
+                  {selectedNodeForProperties.icon && React.createElement(selectedNodeForProperties.icon, { className: "w-4 h-4 text-white" })}
+                </div>
+                <span className="font-semibold text-white">{selectedNodeForProperties.label}</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowPropertyPanel(false);
+                  setSelectedNodeForProperties(null);
+                }}
+                className="p-1 hover:bg-gray-700 rounded text-gray-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4 overflow-y-auto max-h-96">
+            <div className="space-y-4">
+              {/* Basic Properties */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Node Name
+                </label>
+                <input
+                  type="text"
+                  value={selectedNodeForProperties.data?.label || selectedNodeForProperties.label || ''}
+                  onChange={(e) => {
+                    const updatedNodes = canvasNodes.map(node => 
+                      node.id === selectedNodeForProperties.id 
+                        ? { ...node, data: { ...node.data, label: e.target.value } }
+                        : node
+                    );
+                    setCanvasNodes(updatedNodes);
+                    setSelectedNodeForProperties(prev => ({
+                      ...prev,
+                      data: { ...prev.data, label: e.target.value }
+                    }));
+                  }}
+                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                  placeholder="Enter node name"
+                />
+              </div>
+
+              {/* Node Type Specific Properties */}
+              {selectedNodeForProperties.type === 'phone' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={selectedNodeForProperties.data?.phoneNumber || ''}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, phoneNumber: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, phoneNumber: e.target.value }
+                        }));
+                      }}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Call Type
+                    </label>
+                    <select
+                      value={selectedNodeForProperties.data?.callType || 'inbound'}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, callType: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, callType: e.target.value }
+                        }));
+                      }}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    >
+                      <option value="inbound">Inbound Call</option>
+                      <option value="outbound">Outbound Call</option>
+                      <option value="internal">Internal Transfer</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {selectedNodeForProperties.type === 'ai-assistant' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      AI Model
+                    </label>
+                    <select
+                      value={selectedNodeForProperties.data?.model || 'gpt-4'}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, model: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, model: e.target.value }
+                        }));
+                      }}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    >
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      <option value="claude-3">Claude 3</option>
+                      <option value="gemini-pro">Gemini Pro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      System Prompt
+                    </label>
+                    <textarea
+                      value={selectedNodeForProperties.data?.systemPrompt || ''}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, systemPrompt: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, systemPrompt: e.target.value }
+                        }));
+                      }}
+                      rows={3}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      placeholder="You are a helpful customer service assistant..."
+                    />
+                  </div>
+                </>
+              )}
+
+              {selectedNodeForProperties.type === 'webhook' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Webhook URL
+                    </label>
+                    <input
+                      type="url"
+                      value={selectedNodeForProperties.data?.url || ''}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, url: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, url: e.target.value }
+                        }));
+                      }}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      placeholder="https://api.example.com/webhook"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      HTTP Method
+                    </label>
+                    <select
+                      value={selectedNodeForProperties.data?.method || 'POST'}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, method: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, method: e.target.value }
+                        }));
+                      }}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="PATCH">PATCH</option>
+                      <option value="DELETE">DELETE</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Advanced Properties */}
+              <div className="pt-4 border-t border-gray-600/50">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">Advanced Settings</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={selectedNodeForProperties.data?.description || ''}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, description: e.target.value } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, description: e.target.value }
+                        }));
+                      }}
+                      rows={2}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      placeholder="Describe what this node does..."
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="node-enabled"
+                      checked={selectedNodeForProperties.data?.enabled !== false}
+                      onChange={(e) => {
+                        const updatedNodes = canvasNodes.map(node => 
+                          node.id === selectedNodeForProperties.id 
+                            ? { ...node, data: { ...node.data, enabled: e.target.checked } }
+                            : node
+                        );
+                        setCanvasNodes(updatedNodes);
+                        setSelectedNodeForProperties(prev => ({
+                          ...prev,
+                          data: { ...prev.data, enabled: e.target.checked }
+                        }));
+                      }}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <label htmlFor="node-enabled" className="text-sm text-gray-300">
+                      Node Enabled
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  // 📁 FLOW MANAGEMENT COMPONENT
+  const FlowManagement = () => {
+    const [showManagement, setShowManagement] = useState(false);
+    const [flowName, setFlowName] = useState('My Flow');
+    const [flows, setFlows] = useState([]);
+
+    const saveCurrentFlow = () => {
+      const flowData = {
+        id: Date.now().toString(),
+        name: flowName,
+        nodes: canvasNodes,
+        connections,
+        createdAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
+      savedFlows.push(flowData);
+      localStorage.setItem('vocelio-flows', JSON.stringify(savedFlows));
+      setFlows(savedFlows);
+      
+      // Show success message
+      alert(`Flow "${flowName}" saved successfully!`);
+    };
+
+    const loadFlow = (flow) => {
+      setCanvasNodes(flow.nodes || []);
+      setConnections(flow.connections || []);
+      setFlowName(flow.name);
+      setShowManagement(false);
+    };
+
+    const deleteFlow = (flowId) => {
+      if (window.confirm('Are you sure you want to delete this flow?')) {
+        const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
+        const updatedFlows = savedFlows.filter(flow => flow.id !== flowId);
+        localStorage.setItem('vocelio-flows', JSON.stringify(updatedFlows));
+        setFlows(updatedFlows);
+      }
+    };
+
+    const exportFlow = () => {
+      const flowData = {
+        name: flowName,
+        nodes: canvasNodes,
+        connections,
+        exportedAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      const dataStr = JSON.stringify(flowData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${flowName.replace(/\s+/g, '-').toLowerCase()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    const importFlow = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const flowData = JSON.parse(e.target.result);
+            setCanvasNodes(flowData.nodes || []);
+            setConnections(flowData.connections || []);
+            setFlowName(flowData.name || 'Imported Flow');
+            alert('Flow imported successfully!');
+          } catch (error) {
+            alert('Error importing flow: Invalid file format');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    React.useEffect(() => {
+      const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
+      setFlows(savedFlows);
+    }, []);
+
+    return (
+      <>
+        <button
+          onClick={() => setShowManagement(true)}
+          className="fixed bottom-4 left-4 p-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-30"
+          title="Flow Management"
+        >
+          <Folder className="w-5 h-5" />
+        </button>
+
+        <AnimatePresence>
+          {showManagement && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl border border-gray-600"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+                    <Folder className="w-6 h-6" />
+                    <span>Flow Management</span>
+                  </h2>
+                  <button
+                    onClick={() => setShowManagement(false)}
+                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Current Flow */}
+                  <div className="border border-gray-600 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Current Flow</h3>
+                    <div className="flex items-center space-x-3 mb-4">
+                      <input
+                        type="text"
+                        value={flowName}
+                        onChange={(e) => setFlowName(e.target.value)}
+                        className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                        placeholder="Flow name"
+                      />
+                      <button
+                        onClick={saveCurrentFlow}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center space-x-2 transition-colors"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Save</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-400">
+                      <span>{canvasNodes.length} nodes</span>
+                      <span>•</span>
+                      <span>{connections.length} connections</span>
+                    </div>
+                  </div>
+
+                  {/* Import/Export */}
+                  <div className="border border-gray-600 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Import/Export</h3>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={exportFlow}
+                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Export Flow</span>
+                      </button>
+                      <label className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        <span>Import Flow</span>
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={importFlow}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Saved Flows */}
+                  <div className="border border-gray-600 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Saved Flows ({flows.length})</h3>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {flows.length === 0 ? (
+                        <div className="text-gray-400 text-center py-8">
+                          <Folder className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>No saved flows yet</p>
+                          <p className="text-sm">Create and save your first flow above!</p>
+                        </div>
+                      ) : (
+                        flows.map((flow) => (
+                          <div key={flow.id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-medium text-white">{flow.name}</h4>
+                                <span className="text-xs text-gray-400">v{flow.version}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+                                <span>{flow.nodes?.length || 0} nodes</span>
+                                <span>•</span>
+                                <span>{flow.connections?.length || 0} connections</span>
+                                <span>•</span>
+                                <span>{new Date(flow.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => loadFlow(flow)}
+                                className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                title="Load Flow"
+                              >
+                                <Folder className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteFlow(flow.id)}
+                                className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                title="Delete Flow"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  };
+
   // 🎨 MAIN COMPONENT RETURN
   return (
     <div className="h-screen flex bg-gradient-to-br from-slate-900 via-gray-900 to-indigo-900 text-white overflow-hidden relative">
@@ -737,9 +1332,39 @@ const EnterpriseFlowBuilder = () => {
                           newSelection.add(node.id);
                         }
                         setSelectedNodes(newSelection);
+                        setSelectedNodeForProperties(node);
+                        setShowPropertyPanel(true);
                       }}
                     >
                       <div className="p-4 h-full flex flex-col justify-between">
+                        {/* Input Handle */}
+                        <div
+                          className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-green-500 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-transform z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isConnecting && connectionStart) {
+                              endConnection(node.id, 'input');
+                            } else {
+                              startConnection(node.id, 'input');
+                            }
+                          }}
+                          title="Input port"
+                        />
+                        
+                        {/* Output Handle */}
+                        <div
+                          className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-transform z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isConnecting && connectionStart) {
+                              endConnection(node.id, 'output');
+                            } else {
+                              startConnection(node.id, 'output');
+                            }
+                          }}
+                          title="Output port"
+                        />
+
                         <div className="flex items-center space-x-3">
                           <div className={`p-2 bg-gradient-to-br ${node.color || 'from-blue-500 to-purple-600'} rounded-lg`}>
                             {node.icon && React.createElement(node.icon, { className: "w-4 h-4 text-white" })}
@@ -774,17 +1399,107 @@ const EnterpriseFlowBuilder = () => {
                           </button>
                         </div>
                         <div className="flex justify-between items-center">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-green-400 rounded-full cursor-pointer hover:scale-125 transition-transform" title="Input port" />
-                            <div className="w-2 h-2 bg-red-400 rounded-full cursor-pointer hover:scale-125 transition-transform" title="Output port" />
-                          </div>
                           <div className="text-xs text-gray-500">
                             {node.id.slice(0, 8)}
+                          </div>
+                          <div className="text-xs text-blue-400">
+                            {selectedNodes.has(node.id) ? 'Selected' : ''}
                           </div>
                         </div>
                       </div>
                     </motion.div>
                   ))}
+
+                  {/* Connection Lines */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                    <defs>
+                      <marker
+                        id="arrowhead"
+                        markerWidth="10"
+                        markerHeight="7"
+                        refX="9"
+                        refY="3.5"
+                        orient="auto"
+                      >
+                        <polygon
+                          points="0 0, 10 3.5, 0 7"
+                          fill="#60a5fa"
+                        />
+                      </marker>
+                    </defs>
+                    
+                    {canvasConnections.map(connection => {
+                      const sourcePos = getConnectionHandlePosition(connection.source, 'output');
+                      const targetPos = getConnectionHandlePosition(connection.target, 'input');
+                      const path = createConnectionPath(sourcePos, targetPos);
+                      const isSelected = selectedConnections.has(connection.id);
+                      
+                      return (
+                        <g key={connection.id}>
+                          {/* Invisible thick line for easier clicking */}
+                          <path
+                            d={path}
+                            stroke="transparent"
+                            strokeWidth="20"
+                            fill="none"
+                            className="pointer-events-auto cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (selectedConnections.has(connection.id)) {
+                                setSelectedConnections(new Set());
+                              } else {
+                                setSelectedConnections(new Set([connection.id]));
+                              }
+                            }}
+                          />
+                          {/* Visible connection line */}
+                          <path
+                            d={path}
+                            stroke={isSelected ? "#f59e0b" : "#60a5fa"}
+                            strokeWidth={isSelected ? "3" : "2"}
+                            fill="none"
+                            markerEnd="url(#arrowhead)"
+                            className={`transition-all duration-200 ${isSelected ? 'drop-shadow-lg' : ''}`}
+                          />
+                          {/* Connection label */}
+                          {isSelected && (
+                            <foreignObject
+                              x={sourcePos.x + (targetPos.x - sourcePos.x) / 2 - 20}
+                              y={sourcePos.y + (targetPos.y - sourcePos.y) / 2 - 15}
+                              width="40"
+                              height="30"
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteConnection(connection.id);
+                                }}
+                                className="w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
+                                title="Delete Connection"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </foreignObject>
+                          )}
+                        </g>
+                      );
+                    })}
+                    
+                    {/* Active connection being drawn */}
+                    {isConnecting && connectionStart && connectionEnd && (
+                      <path
+                        d={createConnectionPath(
+                          getConnectionHandlePosition(connectionStart.nodeId, connectionStart.handleType),
+                          connectionEnd
+                        )}
+                        stroke="#10b981"
+                        strokeWidth="2"
+                        fill="none"
+                        strokeDasharray="5,5"
+                        className="animate-pulse"
+                      />
+                    )}
+                  </svg>
 
                   {/* Empty state */}
                   {canvasNodes.length === 0 && (
@@ -932,6 +1647,12 @@ const EnterpriseFlowBuilder = () => {
 
       {/* AI Assistant Panel */}
       <AIAssistantPanel />
+
+      {/* Property Panel */}
+      <PropertyPanel />
+
+      {/* Flow Management */}
+      <FlowManagement />
 
       {/* Enhanced Properties Panel */}
       {selectedNodes.size > 0 && !rightPanelCollapsed && (
