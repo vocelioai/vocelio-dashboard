@@ -14,7 +14,7 @@ import {
   Settings, Users, MessageSquare, Phone, Database, Globe, 
   Zap, Bot, Shield, BarChart3, TestTube, Clock, Bell,
   Plus, Search, Filter, Grid, List, Eye, EyeOff, Lock,
-  Unlock, Copy, Trash2, Move, RotateCw, Maximize,
+  Unlock, Copy, Trash2, Move, RotateClockwise, Maximize,
   Minimize, X, ChevronDown, ChevronUp, ChevronLeft,
   ChevronRight, Home, Folder, FileText, Code, Image,
   Video, Music, Mail, Calendar, Map, Star, Heart,
@@ -30,36 +30,7 @@ import {
 const EnterpriseFlowBuilder = () => {
   // 🚀 ENHANCED STATE MANAGEMENT
   const [activeView, setActiveView] = useState('canvas');
-  const [canvasNodes, setCanvasNodes] = useState([
-    // Sample nodes to showcase functionality
-    {
-      id: 'demo-1',
-      type: 'phone',
-      label: 'Phone Call',
-      icon: Phone,
-      color: 'from-green-500 to-emerald-600',
-      position: { x: 200, y: 150 },
-      data: { label: 'Incoming Call', phoneNumber: '+1 (555) 123-4567' }
-    },
-    {
-      id: 'demo-2',
-      type: 'ai-assistant',
-      label: 'AI Assistant',
-      icon: Bot,
-      color: 'from-purple-500 to-indigo-600',
-      position: { x: 500, y: 200 },
-      data: { label: 'AI Processing', model: 'gpt-4', systemPrompt: 'You are a helpful customer service assistant.' }
-    },
-    {
-      id: 'demo-3',
-      type: 'webhook',
-      label: 'Webhook',
-      icon: Globe,
-      color: 'from-teal-500 to-green-600',
-      position: { x: 350, y: 350 },
-      data: { label: 'Send to CRM', url: 'https://api.example.com/webhook', method: 'POST' }
-    }
-  ]);
+  const [canvasNodes, setCanvasNodes] = useState([]);
   const [canvasConnections, setCanvasConnections] = useState([]);
   const [selectedNodes, setSelectedNodes] = useState(new Set());
   const [draggedNode, setDraggedNode] = useState(null);
@@ -101,7 +72,7 @@ const EnterpriseFlowBuilder = () => {
     // Routing & Logic Nodes
     { id: 'condition', label: 'Condition', icon: Route, color: 'from-yellow-500 to-orange-600', category: 'Logic' },
     { id: 'switch', label: 'Switch', icon: Signpost, color: 'from-purple-500 to-pink-600', category: 'Logic' },
-    { id: 'loop', label: 'Loop', icon: RotateCw, color: 'from-green-500 to-blue-600', category: 'Logic' },
+    { id: 'loop', label: 'Loop', icon: RotateClockwise, color: 'from-green-500 to-blue-600', category: 'Logic' },
     { id: 'timer', label: 'Timer', icon: Clock, color: 'from-orange-500 to-red-600', category: 'Logic' },
 
     // Integration Nodes
@@ -379,16 +350,16 @@ const EnterpriseFlowBuilder = () => {
     <motion.div 
       initial={{ x: -300 }}
       animate={{ x: leftPanelCollapsed ? -250 : 0 }}
-      className={`${leftPanelCollapsed ? 'w-16' : 'w-80'} bg-black/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 relative z-20 h-full`}
+      className={`${leftPanelCollapsed ? 'w-16' : 'w-80'} bg-black/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 relative z-20`}
     >
-      <div className="p-4 border-b border-white/10 flex-shrink-0">
+      <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
           {!leftPanelCollapsed && (
             <h2 className="text-lg font-bold text-white">Node Library</h2>
           )}
           <button
             onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
             {leftPanelCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -422,14 +393,11 @@ const EnterpriseFlowBuilder = () => {
                         key={nodeType.id}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 cursor-grab active:cursor-grabbing transition-all group"
+                        className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 cursor-pointer transition-all group"
                         draggable
                         onDragStart={(e) => {
                           setDraggedNode(nodeType);
                           e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        onDragEnd={() => {
-                          setDraggedNode(null);
                         }}
                       >
                         <div className="flex items-center space-x-3">
@@ -599,16 +567,6 @@ const EnterpriseFlowBuilder = () => {
                 <Users className="w-4 h-4" />
               </button>
 
-              {selectedNodes.size > 0 && (
-                <button
-                  onClick={deleteSelectedNodes}
-                  className="p-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg transition-all text-red-400"
-                  title={`Delete ${selectedNodes.size} selected node${selectedNodes.size > 1 ? 's' : ''}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-
               <button
                 onClick={saveFlow}
                 className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-gray-300"
@@ -635,104 +593,28 @@ const EnterpriseFlowBuilder = () => {
             ref={canvasRef}
             className="flex-1 bg-gradient-to-br from-gray-900/50 to-slate-900/50 relative overflow-hidden"
             style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)', backgroundSize: '20px 20px' }}
-            onClick={(e) => {
-              // Clear selection when clicking on empty canvas
-              if (e.target === e.currentTarget) {
-                setSelectedNodes(new Set());
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (draggedNode) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                const x = e.clientX - rect.left - 96; // Center the node (192px width / 2)
-                const y = e.clientY - rect.top - 48; // Center the node (96px height / 2)
-                
-                const newNode = {
-                  id: uuidv4(),
-                  type: draggedNode.id,
-                  label: draggedNode.label,
-                  icon: draggedNode.icon,
-                  color: draggedNode.color,
-                  position: { x, y },
-                  data: { label: draggedNode.label }
-                };
-                
-                setCanvasNodes([...canvasNodes, newNode]);
-                setDraggedNode(null);
-              }
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-            }}
           >
             {activeView === 'canvas' && (
               <div className="absolute inset-0">
                 {/* Canvas Content */}
                 <div className="w-full h-full relative">
-                  {/* Selection indicator */}
-                  {selectedNodes.size > 0 && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-lg z-20">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                          {selectedNodes.size} node{selectedNodes.size > 1 ? 's' : ''} selected
-                        </span>
-                        <button
-                          onClick={() => setSelectedNodes(new Set())}
-                          className="ml-2 p-1 hover:bg-white/20 rounded"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Render nodes */}
                   {memoizedNodes.map(node => (
                     <motion.div
                       key={node.id}
                       className={`absolute w-48 h-24 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 ${
                         selectedNodes.has(node.id) ? 'border-blue-500 shadow-lg shadow-blue-500/25' : 'border-gray-600'
-                      } cursor-move transition-all hover:scale-105 group`}
+                      } cursor-pointer transition-all hover:scale-105`}
                       style={{
                         left: node.position?.x || 100,
                         top: node.position?.y || 100
                       }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      drag
-                      dragConstraints={canvasRef}
-                      onDragStart={() => {
-                        if (!selectedNodes.has(node.id)) {
-                          setSelectedNodes(new Set([node.id]));
-                        }
-                      }}
-                      onDragEnd={(event, info) => {
-                        const newNodes = canvasNodes.map(n => {
-                          if (selectedNodes.has(n.id)) {
-                            return {
-                              ...n,
-                              position: {
-                                x: n.id === node.id ? n.position.x + info.offset.x : n.position.x,
-                                y: n.id === node.id ? n.position.y + info.offset.y : n.position.y
-                              }
-                            };
-                          }
-                          return n;
-                        });
-                        setCanvasNodes(newNodes);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newSelection = new Set();
-                        if (e.ctrlKey || e.metaKey) {
-                          newSelection.add(...selectedNodes);
-                          if (selectedNodes.has(node.id)) {
-                            newSelection.delete(node.id);
-                          } else {
-                            newSelection.add(node.id);
-                          }
+                      onClick={() => {
+                        const newSelection = new Set(selectedNodes);
+                        if (newSelection.has(node.id)) {
+                          newSelection.delete(node.id);
                         } else {
                           newSelection.add(node.id);
                         }
@@ -752,31 +634,11 @@ const EnterpriseFlowBuilder = () => {
                               {node.type || 'Node'}
                             </p>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newNodes = canvasNodes.filter(n => n.id !== node.id);
-                              const newConnections = canvasConnections.filter(conn => 
-                                conn.source !== node.id && conn.target !== node.id
-                              );
-                              setCanvasNodes(newNodes);
-                              setCanvasConnections(newConnections);
-                              setSelectedNodes(prev => {
-                                const updated = new Set(prev);
-                                updated.delete(node.id);
-                                return updated;
-                              });
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
-                            title="Delete Node"
-                          >
-                            <X className="w-3 h-3 text-red-400" />
-                          </button>
                         </div>
                         <div className="flex justify-between items-center">
                           <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-green-400 rounded-full cursor-pointer hover:scale-125 transition-transform" title="Input port" />
-                            <div className="w-2 h-2 bg-red-400 rounded-full cursor-pointer hover:scale-125 transition-transform" title="Output port" />
+                            <div className="w-2 h-2 bg-green-400 rounded-full" title="Input" />
+                            <div className="w-2 h-2 bg-red-400 rounded-full" title="Output" />
                           </div>
                           <div className="text-xs text-gray-500">
                             {node.id.slice(0, 8)}
@@ -799,25 +661,6 @@ const EnterpriseFlowBuilder = () => {
                         >
                           Create New Flow
                         </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Demo showcase message */}
-                  {canvasNodes.length > 0 && (
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-500/30 rounded-lg p-4 max-w-md">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Sparkles className="w-5 h-5 text-blue-400" />
-                        <h3 className="font-semibold text-white">World-Class Flow Builder</h3>
-                      </div>
-                      <p className="text-sm text-blue-200 mb-3">
-                        🎯 This is one of the world's most advanced flow builders with AI-powered features, real-time collaboration, and 20+ enterprise node types!
-                      </p>
-                      <div className="space-y-1 text-xs text-blue-300">
-                        <p>✅ Drag & drop nodes from sidebar</p>
-                        <p>✅ Select nodes to edit properties</p>
-                        <p>✅ Use Ctrl+S to save, Ctrl+Z to undo</p>
-                        <p>✅ Click AI Assistant for optimization</p>
                       </div>
                     </div>
                   )}
