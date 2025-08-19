@@ -23,7 +23,8 @@ import {
   TrendingUp, Award, Gift, Sparkles, Wand2, Palette,
   Layers, Monitor, Smartphone, Tablet, Cpu, Workflow,
   Network, Server, Cloud, Link, Anchor, Compass,
-  Navigation, Route, Signpost, MapPin, Locate
+  Navigation, Route, Signpost, MapPin, Locate, GitBranch,
+  Loader2
 } from 'lucide-react';
 
 // 🎯 WORLD-CLASS ENTERPRISE FLOW BUILDER COMPONENT
@@ -74,6 +75,7 @@ const EnterpriseFlowBuilder = () => {
   const [connections, setConnections] = useState([]); // Visual connections between nodes
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [selectedNodeForProperties, setSelectedNodeForProperties] = useState(null);
+  const [flowName, setFlowName] = useState('Untitled Flow'); // Main flow name
   const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
@@ -86,6 +88,18 @@ const EnterpriseFlowBuilder = () => {
   const [flowTesting, setFlowTesting] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [performanceMetrics, setPerformanceMetrics] = useState({});
+
+  // Phase 2: Advanced Flow Management State
+  const [flowVersions, setFlowVersions] = useState([]);
+  const [currentVersion, setCurrentVersion] = useState('1.0.0');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [isValidating, setIsValidating] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [flowBranches, setFlowBranches] = useState([]);
+  const [currentBranch, setCurrentBranch] = useState('main');
 
   // Refs for advanced functionality
   const canvasRef = useRef(null);
@@ -132,8 +146,8 @@ const EnterpriseFlowBuilder = () => {
     { id: 'audit-log', label: 'Audit Log', icon: FileText, color: 'from-indigo-500 to-blue-600', category: 'Security' },
   ], []);
 
-  // 🎨 FLOW TEMPLATES
-  const flowTemplates = useMemo(() => [
+  // 🎨 FLOW TEMPLATES - Phase 2 Advanced Template System
+  const [flowTemplates, setFlowTemplates] = useState([
     {
       id: 'customer-service',
       name: 'Customer Service Flow',
@@ -142,7 +156,24 @@ const EnterpriseFlowBuilder = () => {
       complexity: 'Advanced',
       estimatedSetup: '15 min',
       nodes: 12,
-      features: ['AI Assistant', 'Smart Routing', 'Analytics']
+      features: ['AI Assistant', 'Smart Routing', 'Analytics'],
+      category: 'Customer Service',
+      version: '2.1.0',
+      author: 'Vocelio Team',
+      downloads: 2847,
+      rating: 4.9,
+      tags: ['ai', 'routing', 'support'],
+      preview: {
+        nodes: [
+          { id: '1', type: 'start', x: 100, y: 100 },
+          { id: '2', type: 'ai-assistant', x: 300, y: 100 },
+          { id: '3', type: 'decision', x: 500, y: 100 }
+        ],
+        connections: [
+          { from: '1', to: '2' },
+          { from: '2', to: '3' }
+        ]
+      }
     },
     {
       id: 'sales-automation',
@@ -152,7 +183,24 @@ const EnterpriseFlowBuilder = () => {
       complexity: 'Expert',
       estimatedSetup: '25 min',
       nodes: 18,
-      features: ['CRM Integration', 'Lead Scoring', 'Follow-up']
+      features: ['CRM Integration', 'Lead Scoring', 'Follow-up'],
+      category: 'Sales',
+      version: '3.0.0',
+      author: 'Sales Team',
+      downloads: 1923,
+      rating: 4.8,
+      tags: ['crm', 'sales', 'automation'],
+      preview: {
+        nodes: [
+          { id: '1', type: 'start', x: 100, y: 100 },
+          { id: '2', type: 'crm-lookup', x: 300, y: 100 },
+          { id: '3', type: 'lead-scoring', x: 500, y: 100 }
+        ],
+        connections: [
+          { from: '1', to: '2' },
+          { from: '2', to: '3' }
+        ]
+      }
     },
     {
       id: 'marketing-campaign',
@@ -162,9 +210,80 @@ const EnterpriseFlowBuilder = () => {
       complexity: 'Intermediate',
       estimatedSetup: '20 min',
       nodes: 15,
-      features: ['A/B Testing', 'Segmentation', 'Analytics']
+      features: ['A/B Testing', 'Segmentation', 'Analytics'],
+      category: 'Marketing',
+      version: '1.8.0',
+      author: 'Marketing Team',
+      downloads: 3156,
+      rating: 4.7,
+      tags: ['marketing', 'ab-test', 'analytics'],
+      preview: {
+        nodes: [
+          { id: '1', type: 'start', x: 100, y: 100 },
+          { id: '2', type: 'segment', x: 300, y: 100 },
+          { id: '3', type: 'ab-test', x: 500, y: 100 }
+        ],
+        connections: [
+          { from: '1', to: '2' },
+          { from: '2', to: '3' }
+        ]
+      }
     },
-  ], []);
+    {
+      id: 'voice-survey',
+      name: 'Voice Survey Flow',
+      thumbnail: '📋',
+      description: 'Interactive voice survey with analytics',
+      complexity: 'Beginner',
+      estimatedSetup: '10 min',
+      nodes: 8,
+      features: ['Voice Recording', 'Data Collection', 'Reports'],
+      category: 'Research',
+      version: '1.5.0',
+      author: 'Research Team',
+      downloads: 1654,
+      rating: 4.6,
+      tags: ['survey', 'voice', 'data'],
+      preview: {
+        nodes: [
+          { id: '1', type: 'start', x: 100, y: 100 },
+          { id: '2', type: 'voice-prompt', x: 300, y: 100 },
+          { id: '3', type: 'record', x: 500, y: 100 }
+        ],
+        connections: [
+          { from: '1', to: '2' },
+          { from: '2', to: '3' }
+        ]
+      }
+    },
+    {
+      id: 'appointment-booking',
+      name: 'Appointment Booking',
+      thumbnail: '📅',
+      description: 'Smart appointment scheduling system',
+      complexity: 'Intermediate',
+      estimatedSetup: '18 min',
+      nodes: 14,
+      features: ['Calendar Integration', 'Reminders', 'Confirmations'],
+      category: 'Scheduling',
+      version: '2.3.0',
+      author: 'Scheduling Team',
+      downloads: 2341,
+      rating: 4.8,
+      tags: ['calendar', 'booking', 'reminders'],
+      preview: {
+        nodes: [
+          { id: '1', type: 'start', x: 100, y: 100 },
+          { id: '2', type: 'calendar-check', x: 300, y: 100 },
+          { id: '3', type: 'booking', x: 500, y: 100 }
+        ],
+        connections: [
+          { from: '1', to: '2' },
+          { from: '2', to: '3' }
+        ]
+      }
+    }
+  ]);
 
   // 🚀 WORLD-CLASS KEYBOARD SHORTCUTS
   useHotkeys('ctrl+s, cmd+s', (e) => {
@@ -280,6 +399,181 @@ const EnterpriseFlowBuilder = () => {
       debouncedSave.cancel();
     };
   }, [canvasNodes, canvasConnections]);
+
+  // 🚀 Phase 2: Advanced Template Management
+  const createTemplateFromFlow = useCallback(() => {
+    const template = {
+      id: `template_${Date.now()}`,
+      name: flowName || 'Custom Template',
+      thumbnail: '🎨',
+      description: 'Custom flow template',
+      complexity: canvasNodes.length > 15 ? 'Expert' : canvasNodes.length > 8 ? 'Intermediate' : 'Beginner',
+      estimatedSetup: `${Math.ceil(canvasNodes.length * 1.5)} min`,
+      nodes: canvasNodes.length,
+      features: ['Custom Logic', 'Personalized Flow'],
+      category: 'Custom',
+      version: '1.0.0',
+      author: 'You',
+      downloads: 0,
+      rating: 5.0,
+      tags: ['custom', 'personal'],
+      preview: {
+        nodes: canvasNodes.slice(0, 3),
+        connections: connections.slice(0, 2)
+      },
+      flowData: { nodes: canvasNodes, connections }
+    };
+    
+    setFlowTemplates(prev => [...prev, template]);
+    setShowTemplateModal(false);
+  }, [flowName, canvasNodes, connections]);
+
+  const loadTemplate = useCallback((templateId) => {
+    const template = flowTemplates.find(t => t.id === templateId);
+    if (template && template.flowData) {
+      setCanvasNodes(template.flowData.nodes);
+      setConnections(template.flowData.connections);
+      setFlowName(template.name);
+      addToHistory({ nodes: template.flowData.nodes, connections: template.flowData.connections });
+    }
+  }, [flowTemplates]);
+
+  // 🔀 Version Control System
+  const createVersion = useCallback((versionName, description = '') => {
+    const newVersion = {
+      id: `v_${Date.now()}`,
+      version: versionName || `${parseInt(currentVersion.split('.')[0]) + 1}.0.0`,
+      name: versionName,
+      description,
+      timestamp: new Date().toISOString(),
+      author: 'Current User',
+      flowData: { nodes: canvasNodes, connections },
+      branch: currentBranch,
+      changes: validationErrors.length === 0 ? 'Stable' : 'Has Issues'
+    };
+    
+    setFlowVersions(prev => [...prev, newVersion]);
+    setCurrentVersion(newVersion.version);
+    setShowVersionModal(false);
+  }, [canvasNodes, connections, currentVersion, currentBranch, validationErrors]);
+
+  const loadVersion = useCallback((versionId) => {
+    const version = flowVersions.find(v => v.id === versionId);
+    if (version) {
+      setCanvasNodes(version.flowData.nodes);
+      setConnections(version.flowData.connections);
+      setCurrentVersion(version.version);
+      addToHistory(version.flowData);
+    }
+  }, [flowVersions]);
+
+  const createBranch = useCallback((branchName) => {
+    const newBranch = {
+      id: `branch_${Date.now()}`,
+      name: branchName,
+      createdFrom: currentBranch,
+      timestamp: new Date().toISOString(),
+      flowData: { nodes: canvasNodes, connections }
+    };
+    
+    setFlowBranches(prev => [...prev, newBranch]);
+    setCurrentBranch(branchName);
+  }, [currentBranch, canvasNodes, connections]);
+
+  // 🔍 Advanced Flow Validation
+  const validateFlow = useCallback(() => {
+    setIsValidating(true);
+    const errors = [];
+    
+    // Check for orphaned nodes
+    const connectedNodeIds = new Set();
+    connections.forEach(conn => {
+      connectedNodeIds.add(conn.from);
+      connectedNodeIds.add(conn.to);
+    });
+    
+    canvasNodes.forEach(node => {
+      if (!connectedNodeIds.has(node.id) && node.type !== 'start' && node.type !== 'end') {
+        errors.push({
+          id: `orphan_${node.id}`,
+          type: 'warning',
+          message: `Node "${node.label}" is not connected`,
+          nodeId: node.id
+        });
+      }
+    });
+
+    // Check for missing end nodes
+    const hasEndNode = canvasNodes.some(node => node.type === 'end');
+    if (canvasNodes.length > 1 && !hasEndNode) {
+      errors.push({
+        id: 'no_end_node',
+        type: 'error',
+        message: 'Flow must have at least one end node'
+      });
+    }
+
+    // Check for circular references
+    const visited = new Set();
+    const checkCircular = (nodeId, path = []) => {
+      if (path.includes(nodeId)) {
+        errors.push({
+          id: `circular_${Date.now()}`,
+          type: 'error',
+          message: `Circular reference detected: ${path.join(' → ')} → ${nodeId}`,
+          nodeIds: [...path, nodeId]
+        });
+        return;
+      }
+      
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      
+      const outgoingConnections = connections.filter(conn => conn.from === nodeId);
+      outgoingConnections.forEach(conn => {
+        checkCircular(conn.to, [...path, nodeId]);
+      });
+    };
+    
+    const startNodes = canvasNodes.filter(node => node.type === 'start');
+    startNodes.forEach(startNode => checkCircular(startNode.id));
+
+    setValidationErrors(errors);
+    setIsValidating(false);
+    
+    return errors.length === 0;
+  }, [canvasNodes, connections]);
+
+  // 👥 Collaboration Functions
+  const inviteCollaborator = useCallback((email, role = 'editor') => {
+    const newUser = {
+      id: `user_${Date.now()}`,
+      email,
+      role,
+      status: 'invited',
+      joinedAt: new Date().toISOString()
+    };
+    
+    setOnlineUsers(prev => [...prev, newUser]);
+    
+    if (socketRef.current) {
+      socketRef.current.emit('invite-user', { email, role, flowId: 'current' });
+    }
+  }, []);
+
+  const startCollaboration = useCallback(() => {
+    setCollaborationMode(true);
+    setShowCollaborationPanel(true);
+  }, []);
+
+  const stopCollaboration = useCallback(() => {
+    setCollaborationMode(false);
+    setShowCollaborationPanel(false);
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+    setOnlineUsers([]);
+  }, []);
 
   // 📊 PERFORMANCE OPTIMIZATION
   const memoizedNodes = useMemo(() => {
@@ -1212,6 +1506,41 @@ const EnterpriseFlowBuilder = () => {
                 <Save className="w-4 h-4" />
               </button>
 
+              {/* Phase 2: Advanced Controls */}
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-blue-400"
+                title="Flow Templates"
+              >
+                <Folder className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setShowVersionModal(true)}
+                className="p-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg transition-all text-green-400"
+                title="Version Control"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={startCollaboration}
+                className={`p-2 rounded-lg transition-all ${
+                  collaborationMode ? 'bg-purple-500 text-white' : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
+                }`}
+                title="Start Collaboration"
+              >
+                <Users className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={validateFlow}
+                className="p-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-lg transition-all text-orange-400"
+                title="Validate Flow"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </button>
+
               <button
                 onClick={() => setAiAssistantExpanded(!aiAssistantExpanded)}
                 className="p-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-all text-white shadow-lg"
@@ -1921,6 +2250,297 @@ const EnterpriseFlowBuilder = () => {
           </div>
         </div>
       )}
+
+      {/* Phase 2: Advanced Template Modal */}
+      <AnimatePresence>
+        {showTemplateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setShowTemplateModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-white/20"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Flow Templates</h2>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {flowTemplates.map(template => (
+                  <motion.div
+                    key={template.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-gray-800 rounded-lg p-4 border border-white/10 cursor-pointer hover:border-blue-500/50"
+                    onClick={() => loadTemplate(template.id)}
+                  >
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="text-2xl">{template.thumbnail}</div>
+                      <div>
+                        <h3 className="font-semibold text-white">{template.name}</h3>
+                        <p className="text-sm text-gray-400">{template.category} • v{template.version}</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-300 mb-3">{template.description}</p>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        template.complexity === 'Beginner' ? 'bg-green-500/20 text-green-400' :
+                        template.complexity === 'Intermediate' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {template.complexity}
+                      </span>
+                      <span className="text-xs text-gray-400">{template.estimatedSetup}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>⭐ {template.rating}</span>
+                      <span>📥 {template.downloads.toLocaleString()}</span>
+                      <span>🧩 {template.nodes} nodes</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {template.tags.map(tag => (
+                        <span key={tag} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <button
+                  onClick={createTemplateFromFlow}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Template from Current Flow</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Phase 2: Version Control Modal */}
+      <AnimatePresence>
+        {showVersionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setShowVersionModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 rounded-xl p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-white/20"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Version Control</h2>
+                <button
+                  onClick={() => setShowVersionModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <GitBranch className="w-5 h-5 text-blue-400" />
+                    <span className="text-white">Current: {currentBranch}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Tag className="w-5 h-5 text-green-400" />
+                    <span className="text-white">v{currentVersion}</span>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => createVersion()}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create Version</span>
+                  </button>
+                  <button
+                    onClick={() => createBranch(`branch_${Date.now()}`)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    <span>New Branch</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Version History</h3>
+                {flowVersions.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No versions created yet</p>
+                ) : (
+                  flowVersions.map(version => (
+                    <motion.div
+                      key={version.id}
+                      whileHover={{ scale: 1.01 }}
+                      className="bg-gray-800 rounded-lg p-4 border border-white/10 cursor-pointer hover:border-blue-500/50"
+                      onClick={() => loadVersion(version.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-semibold text-white">v{version.version}</span>
+                            <span className="text-sm text-gray-400">by {version.author}</span>
+                          </div>
+                          <p className="text-sm text-gray-300">{version.description || 'No description'}</p>
+                          <p className="text-xs text-gray-500">{new Date(version.timestamp).toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            version.changes === 'Stable' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {version.changes}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Phase 2: Collaboration Panel */}
+      <AnimatePresence>
+        {showCollaborationPanel && (
+          <motion.div
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className="fixed right-0 top-0 h-full w-80 bg-gray-900 border-l border-white/20 z-40 flex flex-col"
+          >
+            <div className="p-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Collaboration</h3>
+                <button
+                  onClick={() => setShowCollaborationPanel(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Online Users ({onlineUsers.length})</h4>
+                <div className="space-y-2">
+                  {onlineUsers.map(user => (
+                    <div key={user.id} className="flex items-center space-x-3 p-2 bg-gray-800 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                        {user.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-white">{user.email}</p>
+                        <p className="text-xs text-gray-400">{user.role}</p>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${
+                        user.status === 'online' ? 'bg-green-400' : 'bg-gray-400'
+                      }`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Invite Collaborator</h4>
+                <div className="flex space-x-2">
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    className="flex-1 px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white placeholder-gray-400"
+                  />
+                  <button
+                    onClick={() => inviteCollaborator('user@example.com')}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
+                  >
+                    Invite
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Flow Validation</h4>
+                <button
+                  onClick={validateFlow}
+                  disabled={isValidating}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 rounded-lg text-white"
+                >
+                  {isValidating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Validating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Validate Flow</span>
+                    </>
+                  )}
+                </button>
+                
+                {validationErrors.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {validationErrors.map(error => (
+                      <div
+                        key={error.id}
+                        className={`p-2 rounded-lg text-sm ${
+                          error.type === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
+                        }`}
+                      >
+                        {error.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-white/10">
+              <button
+                onClick={stopCollaboration}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+              >
+                <X className="w-4 h-4" />
+                <span>Stop Collaboration</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
