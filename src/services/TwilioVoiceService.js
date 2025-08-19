@@ -251,14 +251,30 @@ class TwilioVoiceService {
         throw new Error('Another call is already in progress');
       }
 
-      console.log('📞 Making outbound call to:', phoneNumber);
+      // CRITICAL FIX: Validate and format phone number
+      if (!phoneNumber || typeof phoneNumber !== 'string') {
+        throw new Error(`Invalid phone number: ${phoneNumber}. Must be a string.`);
+      }
 
-      // Prepare call parameters
+      // Auto-format phone number (add + prefix if missing)
+      let formattedPhoneNumber = phoneNumber.trim();
+      if (!formattedPhoneNumber.startsWith('+')) {
+        formattedPhoneNumber = '+' + formattedPhoneNumber;
+      }
+
+      console.log('📞 DEBUG: Making outbound call');
+      console.log('📞 DEBUG: Original phoneNumber:', phoneNumber);
+      console.log('📞 DEBUG: Formatted phoneNumber:', formattedPhoneNumber);
+      console.log('📞 DEBUG: Options:', options);
+
+      // Prepare call parameters with validated phone number
       const callParams = {
-        To: phoneNumber,
+        To: formattedPhoneNumber,
         From: this.config.phoneNumber,
         ...options
       };
+
+      console.log('📞 DEBUG: Final callParams:', callParams);
 
       // Make the call
       const call = await this.device.connect(callParams);
@@ -361,6 +377,13 @@ class TwilioVoiceService {
       this.onError && this.onError(`Failed to end call: ${error.message}`);
       return { success: false, error: error.message };
     }
+  }
+
+  /**
+   * Hangup the current call (alias for endCall)
+   */
+  async hangup() {
+    return this.endCall();
   }
 
   /**

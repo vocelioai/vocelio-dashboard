@@ -515,18 +515,19 @@ const CallCenterDashboard = () => {
 
       try {
         console.log('📞 Starting outbound call to:', phoneNumber);
+        console.log('📞 DEBUG: CallCenter phoneNumber:', phoneNumber);
+        console.log('📞 DEBUG: selectedVoice:', selectedVoice);
         setCallStatus('connecting');
         
-        // Use Twilio Voice Service for real calls
-        const callParams = {
-          to: phoneNumber,
-          from: process.env.REACT_APP_TWILIO_PHONE_NUMBER,
+        // Use Twilio Voice Service for real calls with CORRECT parameter format
+        const callOptions = {
           voice: selectedVoice.toLowerCase(),
           prompt: prompt,
           firstSentence: firstSentence
         };
 
-        await twilioService.makeCall(callParams);
+        console.log('📞 DEBUG: Calling makeCall with phoneNumber:', phoneNumber, 'callOptions:', callOptions);
+        await twilioService.makeCall(phoneNumber, callOptions);
         
         // Log call to backend
         if (isConnectedToBackend) {
