@@ -1,3346 +1,740 @@
-// 🚀 WORLD-CLASS ENTERPRISE FLOW BUILDER 🚀
-// The most advanced and feature-rich flow builder in the world
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import io from 'socket.io-client';
-import { Editor } from '@monaco-editor/react';
-import { useHotkeys } from 'react-hotkeys-hook';
-import debounce from 'lodash.debounce';
-import { v4 as uuidv4 } from 'uuid';
-
-// Icons from lucide-react
-import {
-  Play, Square, RotateCcw, Save, Share2, Download, Upload, 
-  Settings, Users, MessageSquare, Phone, Database, Globe, 
-  Zap, Bot, Shield, BarChart3, TestTube, Clock, Bell,
-  Plus, Search, Filter, Grid, List, Eye, EyeOff, Lock,
-  Unlock, Copy, Trash2, Move, RotateCw, Maximize,
-  Minimize, X, ChevronDown, ChevronUp, ChevronLeft,
-  ChevronRight, Home, Folder, FileText, Code, Image,
-  Video, Music, Mail, Calendar, Map, Star, Heart,
-  Bookmark, Tag, Flag, AlertCircle, CheckCircle, 
-  XCircle, Info, HelpCircle, Lightbulb, Target,
-  TrendingUp, Award, Gift, Sparkles, Wand2, Palette,
-  Layers, Monitor, Smartphone, Tablet, Cpu, Workflow,
-  Network, Server, Cloud, Link, Anchor, Compass,
-  Navigation, Route, Signpost, MapPin, Locate, GitBranch,
-  Loader2, Brain, User, Activity
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  Plus, Minus, RotateCcw, Maximize, Map, Grid, Layers, 
+  Clock, Moon, Copy, Save, TestTube, Phone, Rocket,
+  X, Settings, Command, Search, ChevronRight, Zap,
+  Calendar, Mail, Smartphone, MessageSquare, Trash2,
+  Eye, EyeOff, Download, Upload, Pause, Play
 } from 'lucide-react';
 
-// 🎯 WORLD-CLASS ENTERPRISE FLOW BUILDER COMPONENT
-const EnterpriseFlowBuilder = () => {
-  // 🚀 ENHANCED STATE MANAGEMENT
-  const [activeView, setActiveView] = useState('canvas');
-  const [canvasNodes, setCanvasNodes] = useState([
-    // Sample nodes to showcase functionality
-    {
-      id: 'demo-1',
-      type: 'phone',
-      label: 'Phone Call',
-      icon: Phone,
-      color: 'from-green-500 to-emerald-600',
-      position: { x: 200, y: 150 },
-      data: { label: 'Incoming Call', phoneNumber: '+1 (555) 123-4567' }
-    },
-    {
-      id: 'demo-2',
-      type: 'ai-assistant',
-      label: 'AI Assistant',
-      icon: Bot,
-      color: 'from-purple-500 to-indigo-600',
-      position: { x: 500, y: 200 },
-      data: { label: 'AI Processing', model: 'gpt-4', systemPrompt: 'You are a helpful customer service assistant.' }
-    },
-    {
-      id: 'demo-3',
-      type: 'webhook',
-      label: 'Webhook',
-      icon: Globe,
-      color: 'from-teal-500 to-green-600',
-      position: { x: 350, y: 350 },
-      data: { label: 'Send to CRM', url: 'https://api.example.com/webhook', method: 'POST' }
-    }
-  ]);
-  const [canvasConnections, setCanvasConnections] = useState([
-    // Sample connection to showcase functionality
-    { id: 'conn-1', source: 'demo-1', target: 'demo-2', sourceHandle: 'output', targetHandle: 'input' },
-    { id: 'conn-2', source: 'demo-2', target: 'demo-3', sourceHandle: 'output', targetHandle: 'input' }
-  ]);
-  const [selectedNodes, setSelectedNodes] = useState(new Set());
-  const [selectedConnections, setSelectedConnections] = useState(new Set());
-  const [draggedNode, setDraggedNode] = useState(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionStart, setConnectionStart] = useState(null);
-  const [connectionEnd, setConnectionEnd] = useState(null);
-  const [connections, setConnections] = useState([]); // Visual connections between nodes
-  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
-  const [selectedNodeForProperties, setSelectedNodeForProperties] = useState(null);
-  const [flowName, setFlowName] = useState('Untitled Flow'); // Main flow name
-  const [showCreateFlowModal, setShowCreateFlowModal] = useState(false);
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
-  const [aiAssistantExpanded, setAiAssistantExpanded] = useState(true);
-  const [realTimeUsers, setRealTimeUsers] = useState([]);
-  const [flowHistory, setFlowHistory] = useState([]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [collaborationMode, setCollaborationMode] = useState(false);
-  const [flowTesting, setFlowTesting] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [performanceMetrics, setPerformanceMetrics] = useState({});
-
-  // Phase 2: Advanced Flow Management State
-  const [flowVersions, setFlowVersions] = useState([]);
-  const [currentVersion, setCurrentVersion] = useState('1.0.0');
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [showVersionModal, setShowVersionModal] = useState(false);
-  const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
-  const [validationErrors, setValidationErrors] = useState([]);
-  const [isValidating, setIsValidating] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [flowBranches, setFlowBranches] = useState([]);
-  const [currentBranch, setCurrentBranch] = useState('main');
-
-  // Phase 3 State: AI-Powered Intelligence & Advanced Analytics
-  const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [flowOptimizations, setFlowOptimizations] = useState([]);
-  const [predictiveAnalytics, setPredictiveAnalytics] = useState({});
-  const [smartRecommendations, setSmartRecommendations] = useState([]);
-  const [behaviorAnalysis, setBehaviorAnalysis] = useState({});
-  const [performanceInsights, setPerformanceInsights] = useState({});
-  const [aiAssistantActive, setAiAssistantActive] = useState(false);
-  const [contextualHelp, setContextualHelp] = useState(null);
-  const [flowComplexityScore, setFlowComplexityScore] = useState(0);
-  const [aiOptimizationMode, setAiOptimizationMode] = useState('balanced');
-  const [intelligentSuggestions, setIntelligentSuggestions] = useState([]);
-  const [advancedMetrics, setAdvancedMetrics] = useState({});
-  const [realTimeOptimization, setRealTimeOptimization] = useState(false);
-  const [aiInsights, setAiInsights] = useState([]);
-  const [showAiPanel, setShowAiPanel] = useState(false);
-
-  // 🏢 Phase 4: Enterprise Collaboration & Advanced Workflow Management
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [activeCollaborators, setActiveCollaborators] = useState([]);
-  const [workflowVersions, setWorkflowVersions] = useState([]);
-  const [branchingEnabled, setBranchingEnabled] = useState(false);
-  const [mergeRequests, setMergeRequests] = useState([]);
-  const [enterprisePermissions, setEnterprisePermissions] = useState({});
-  const [auditTrail, setAuditTrail] = useState([]);
-  const [workflowTemplates, setWorkflowTemplates] = useState([]);
-  const [enterpriseIntegrations, setEnterpriseIntegrations] = useState([]);
-  const [complianceMode, setComplianceMode] = useState(false);
-  const [governanceRules, setGovernanceRules] = useState([]);
-  const [enterpriseDashboard, setEnterpriseDashboard] = useState({});
-  const [bulkOperations, setBulkOperations] = useState(false);
-  const [advancedSearch, setAdvancedSearch] = useState({ query: '', filters: {} });
-  const [workflowScheduler, setWorkflowScheduler] = useState({});
-  const [enterpriseReporting, setEnterpriseReporting] = useState({});
-  const [showVersionControl, setShowVersionControl] = useState(false);
-  const [showEnterpriseSettings, setShowEnterpriseSettings] = useState(false);
-  const [enterpriseMode, setEnterpriseMode] = useState(false);
-  const [teamWorkspace, setTeamWorkspace] = useState({});
-  const [workflowGovernance, setWorkflowGovernance] = useState({});
-
-  // Current user for enterprise features
-  const [currentUser] = useState({
-    id: 'user_001',
-    name: 'John Developer',
-    email: 'john@vocelio.ai',
-    role: 'admin',
-    avatar: '👨‍💻'
+const VocelioAIPlatform = () => {
+  // State management
+  const [currentZoom, setCurrentZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [minimapVisible, setMinimapVisible] = useState(true);
+  const [gridVisible, setGridVisible] = useState(false);
+  const [layersVisible, setLayersVisible] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [commandPaletteVisible, setCommandPaletteVisible] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
+  const [currentEditingNode, setCurrentEditingNode] = useState(null);
+  const [nodeCounter, setNodeCounter] = useState(1);
+  const [notifications, setNotifications] = useState([]);
+  const [activeTab, setActiveTab] = useState('featured');
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragElement, setDragElement] = useState(null);
+  
+  // Form states
+  const [nodeForm, setNodeForm] = useState({
+    name: '',
+    type: 'Large Text',
+    prompt: '',
+    plainText: '',
+    loopCondition: '',
+    temperature: 0.5,
+    staticText: false,
+    globalNode: false,
+    skipResponse: false,
+    blockInterruptions: false,
+    disableRecording: false
   });
 
-  // Refs for advanced functionality
+  // Refs
   const canvasRef = useRef(null);
-  const socketRef = useRef(null);
-  const autoSaveRef = useRef(null);
-  const historyRef = useRef([]);
+  const commandSearchRef = useRef(null);
 
-  // 🌟 20+ ENTERPRISE NODE TYPES
-  const nodeTypes = useMemo(() => [
-    // AI & ML Nodes
-    { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, color: 'from-purple-500 to-indigo-600', category: 'AI' },
-    { id: 'ml-prediction', label: 'ML Prediction', icon: TrendingUp, color: 'from-green-500 to-teal-600', category: 'AI' },
-    { id: 'nlp-processor', label: 'NLP Processor', icon: MessageSquare, color: 'from-blue-500 to-purple-600', category: 'AI' },
-    { id: 'vision-ai', label: 'Vision AI', icon: Eye, color: 'from-orange-500 to-red-600', category: 'AI' },
-
-    // Communication Nodes
-    { id: 'phone', label: 'Phone Call', icon: Phone, color: 'from-green-500 to-emerald-600', category: 'Communication' },
-    { id: 'sms', label: 'SMS', icon: MessageSquare, color: 'from-blue-500 to-cyan-600', category: 'Communication' },
-    { id: 'email', label: 'Email', icon: Mail, color: 'from-red-500 to-pink-600', category: 'Communication' },
-    { id: 'voicemail', label: 'Voicemail', icon: Music, color: 'from-indigo-500 to-purple-600', category: 'Communication' },
-
-    // Routing & Logic Nodes
-    { id: 'condition', label: 'Condition', icon: Route, color: 'from-yellow-500 to-orange-600', category: 'Logic' },
-    { id: 'switch', label: 'Switch', icon: Signpost, color: 'from-purple-500 to-pink-600', category: 'Logic' },
-    { id: 'loop', label: 'Loop', icon: RotateCw, color: 'from-green-500 to-blue-600', category: 'Logic' },
-    { id: 'timer', label: 'Timer', icon: Clock, color: 'from-orange-500 to-red-600', category: 'Logic' },
-
-    // Integration Nodes
-    { id: 'webhook', label: 'Webhook', icon: Globe, color: 'from-teal-500 to-green-600', category: 'Integration' },
-    { id: 'database', label: 'Database', icon: Database, color: 'from-gray-500 to-slate-600', category: 'Integration' },
-    { id: 'api-call', label: 'API Call', icon: Network, color: 'from-blue-500 to-indigo-600', category: 'Integration' },
-    { id: 'cloud-service', label: 'Cloud Service', icon: Cloud, color: 'from-sky-500 to-blue-600', category: 'Integration' },
-
-    // Analytics & Testing Nodes
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'from-violet-500 to-purple-600', category: 'Analytics' },
-    { id: 'ab-test', label: 'A/B Test', icon: TestTube, color: 'from-emerald-500 to-green-600', category: 'Testing' },
-    { id: 'performance', label: 'Performance', icon: Cpu, color: 'from-red-500 to-orange-600', category: 'Analytics' },
-    { id: 'monitoring', label: 'Monitoring', icon: Monitor, color: 'from-blue-500 to-cyan-600', category: 'Analytics' },
-
-    // Security & Compliance Nodes
-    { id: 'auth', label: 'Authentication', icon: Shield, color: 'from-red-500 to-pink-600', category: 'Security' },
-    { id: 'encryption', label: 'Encryption', icon: Lock, color: 'from-gray-500 to-slate-600', category: 'Security' },
-    { id: 'compliance', label: 'Compliance', icon: Award, color: 'from-yellow-500 to-orange-600', category: 'Security' },
-    { id: 'audit-log', label: 'Audit Log', icon: FileText, color: 'from-indigo-500 to-blue-600', category: 'Security' },
-  ], []);
-
-  // 🎨 FLOW TEMPLATES - Phase 2 Advanced Template System
-  const [flowTemplates, setFlowTemplates] = useState([
+  // Initial nodes data
+  const [nodes, setNodes] = useState([
     {
-      id: 'customer-service',
-      name: 'Customer Service Flow',
-      thumbnail: '🎧',
-      description: 'Advanced customer service with AI routing',
-      complexity: 'Advanced',
-      estimatedSetup: '15 min',
-      nodes: 12,
-      features: ['AI Assistant', 'Smart Routing', 'Analytics'],
-      category: 'Customer Service',
-      version: '2.1.0',
-      author: 'Vocelio Team',
-      downloads: 2847,
-      rating: 4.9,
-      tags: ['ai', 'routing', 'support'],
-      preview: {
-        nodes: [
-          { id: '1', type: 'start', x: 100, y: 100 },
-          { id: '2', type: 'ai-assistant', x: 300, y: 100 },
-          { id: '3', type: 'decision', x: 500, y: 100 }
-        ],
-        connections: [
-          { from: '1', to: '2' },
-          { from: '2', to: '3' }
-        ]
-      }
+      id: 'start',
+      type: 'Start',
+      icon: '🚀',
+      title: 'Start',
+      content: 'Entry point for all conversations',
+      badge: 'Default',
+      position: { x: 200, y: 100 }
     },
     {
-      id: 'sales-automation',
-      name: 'Sales Automation',
-      thumbnail: '💼',
-      description: 'Complete sales funnel automation',
-      complexity: 'Expert',
-      estimatedSetup: '25 min',
-      nodes: 18,
-      features: ['CRM Integration', 'Lead Scoring', 'Follow-up'],
-      category: 'Sales',
-      version: '3.0.0',
-      author: 'Sales Team',
-      downloads: 1923,
-      rating: 4.8,
-      tags: ['crm', 'sales', 'automation'],
-      preview: {
-        nodes: [
-          { id: '1', type: 'start', x: 100, y: 100 },
-          { id: '2', type: 'crm-lookup', x: 300, y: 100 },
-          { id: '3', type: 'lead-scoring', x: 500, y: 100 }
-        ],
-        connections: [
-          { from: '1', to: '2' },
-          { from: '2', to: '3' }
-        ]
-      }
+      id: 'introduction',
+      type: 'Introduce the services',
+      icon: '👋',
+      title: 'Introduce the services',
+      content: 'Give a brief explanation of Vocelio and our services to the client',
+      badge: 'Large Text',
+      position: { x: 200, y: 250 }
     },
     {
-      id: 'marketing-campaign',
-      name: 'Marketing Campaign',
-      thumbnail: '📈',
-      description: 'Multi-channel marketing automation',
-      complexity: 'Intermediate',
-      estimatedSetup: '20 min',
-      nodes: 15,
-      features: ['A/B Testing', 'Segmentation', 'Analytics'],
-      category: 'Marketing',
-      version: '1.8.0',
-      author: 'Marketing Team',
-      downloads: 3156,
-      rating: 4.7,
-      tags: ['marketing', 'ab-test', 'analytics'],
-      preview: {
-        nodes: [
-          { id: '1', type: 'start', x: 100, y: 100 },
-          { id: '2', type: 'segment', x: 300, y: 100 },
-          { id: '3', type: 'ab-test', x: 500, y: 100 }
-        ],
-        connections: [
-          { from: '1', to: '2' },
-          { from: '2', to: '3' }
-        ]
-      }
+      id: 'user-response',
+      type: 'User responded',
+      icon: '👤',
+      title: 'User responded',
+      content: "Process user's initial response",
+      badge: 'Default',
+      position: { x: 200, y: 400 }
     },
     {
-      id: 'voice-survey',
-      name: 'Voice Survey Flow',
-      thumbnail: '📋',
-      description: 'Interactive voice survey with analytics',
-      complexity: 'Beginner',
-      estimatedSetup: '10 min',
-      nodes: 8,
-      features: ['Voice Recording', 'Data Collection', 'Reports'],
-      category: 'Research',
-      version: '1.5.0',
-      author: 'Research Team',
-      downloads: 1654,
-      rating: 4.6,
-      tags: ['survey', 'voice', 'data'],
-      preview: {
-        nodes: [
-          { id: '1', type: 'start', x: 100, y: 100 },
-          { id: '2', type: 'voice-prompt', x: 300, y: 100 },
-          { id: '3', type: 'record', x: 500, y: 100 }
-        ],
-        connections: [
-          { from: '1', to: '2' },
-          { from: '2', to: '3' }
-        ]
-      }
+      id: 'reschedule',
+      type: 'New Node 16',
+      icon: '📅',
+      title: 'New Node 16',
+      content: 'Ask for time for reschedule',
+      badge: 'Default',
+      position: { x: 500, y: 100 }
     },
     {
-      id: 'appointment-booking',
-      name: 'Appointment Booking',
-      thumbnail: '📅',
-      description: 'Smart appointment scheduling system',
-      complexity: 'Intermediate',
-      estimatedSetup: '18 min',
-      nodes: 14,
-      features: ['Calendar Integration', 'Reminders', 'Confirmations'],
-      category: 'Scheduling',
-      version: '2.3.0',
-      author: 'Scheduling Team',
-      downloads: 2341,
-      rating: 4.8,
-      tags: ['calendar', 'booking', 'reminders'],
-      preview: {
-        nodes: [
-          { id: '1', type: 'start', x: 100, y: 100 },
-          { id: '2', type: 'calendar-check', x: 300, y: 100 },
-          { id: '3', type: 'booking', x: 500, y: 100 }
-        ],
-        connections: [
-          { from: '1', to: '2' },
-          { from: '2', to: '3' }
-        ]
-      }
+      id: 'endcall',
+      type: 'End Call',
+      icon: '📞',
+      title: 'End Call',
+      content: 'Say Thanks so much for your time. I\'ve marked you as not interested for now.',
+      badge: 'End Call',
+      position: { x: 500, y: 250 }
+    },
+    {
+      id: 'technology',
+      type: 'Introducing our technology',
+      icon: '⚡',
+      title: 'Introducing our technology',
+      content: 'Ask the user if they would like to book a meeting with one of our specialists',
+      badge: 'Default',
+      position: { x: 500, y: 400 }
     }
   ]);
 
-  // 🚀 WORLD-CLASS KEYBOARD SHORTCUTS
-  useHotkeys('ctrl+s, cmd+s', (e) => {
-    e.preventDefault();
-    saveFlow();
-  });
-
-  useHotkeys('ctrl+z, cmd+z', (e) => {
-    e.preventDefault();
-    undo();
-  });
-
-  useHotkeys('ctrl+y, cmd+y', (e) => {
-    e.preventDefault();
-    redo();
-  });
-
-  useHotkeys('delete, backspace', (e) => {
-    if (selectedNodes.size > 0) {
-      e.preventDefault();
-      deleteSelectedNodes();
-    }
-  });
-
-  useHotkeys('ctrl+a, cmd+a', (e) => {
-    e.preventDefault();
-    selectAllNodes();
-  });
-
-  useHotkeys('ctrl+d, cmd+d', (e) => {
-    e.preventDefault();
-    duplicateSelectedNodes();
-  });
-
-  useHotkeys('ctrl+g, cmd+g', (e) => {
-    e.preventDefault();
-    groupSelectedNodes();
-  });
-
-  // 🎯 AI-POWERED FUNCTIONS
-  const optimizeFlow = useCallback(async () => {
-    try {
-      const response = await fetch('/api/ai/optimize-flow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes: canvasNodes, connections: canvasConnections })
-      });
-      const optimization = await response.json();
-      // Apply AI recommendations
-      console.log('AI Optimization:', optimization);
-    } catch (error) {
-      console.error('Flow optimization failed:', error);
-    }
-  }, [canvasNodes, canvasConnections]);
-
-  const generateFlowFromPrompt = useCallback(async (prompt) => {
-    try {
-      const response = await fetch('/api/ai/generate-flow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-      const generatedFlow = await response.json();
-      setCanvasNodes(generatedFlow.nodes);
-      setCanvasConnections(generatedFlow.connections);
-    } catch (error) {
-      console.error('AI flow generation failed:', error);
-    }
-  }, []);
-
-  // 🔄 REAL-TIME COLLABORATION ENGINE
-  useEffect(() => {
-    if (collaborationMode) {
-      socketRef.current = io('/flow-collaboration');
-      
-      socketRef.current.on('user-joined', (user) => {
-        setRealTimeUsers(prev => [...prev, user]);
-      });
-
-      socketRef.current.on('user-left', (userId) => {
-        setRealTimeUsers(prev => prev.filter(u => u.id !== userId));
-      });
-
-      socketRef.current.on('flow-updated', (flowData) => {
-        setCanvasNodes(flowData.nodes);
-        setCanvasConnections(flowData.connections);
-      });
-
-      socketRef.current.on('cursor-moved', (cursorData) => {
-        // Handle real-time cursor updates
-      });
-
-      return () => {
-        socketRef.current?.disconnect();
-      };
-    }
-  }, [collaborationMode]);
-
-  // 💾 AUTO-SAVE FUNCTIONALITY
-  useEffect(() => {
-    const debouncedSave = debounce(() => {
-      saveFlow();
-    }, 2000);
-
-    const saveTimer = setInterval(() => {
-      if (canvasNodes.length > 0) {
-        debouncedSave();
-      }
-    }, 5000);
-
-    return () => {
-      clearInterval(saveTimer);
-      debouncedSave.cancel();
-    };
-  }, [canvasNodes, canvasConnections]);
-
-  // 🚀 Phase 2: Advanced Template Management
-  const createTemplateFromFlow = useCallback(() => {
-    const template = {
-      id: `template_${Date.now()}`,
-      name: flowName || 'Custom Template',
-      thumbnail: '🎨',
-      description: 'Custom flow template',
-      complexity: canvasNodes.length > 15 ? 'Expert' : canvasNodes.length > 8 ? 'Intermediate' : 'Beginner',
-      estimatedSetup: `${Math.ceil(canvasNodes.length * 1.5)} min`,
-      nodes: canvasNodes.length,
-      features: ['Custom Logic', 'Personalized Flow'],
-      category: 'Custom',
-      version: '1.0.0',
-      author: 'You',
-      downloads: 0,
-      rating: 5.0,
-      tags: ['custom', 'personal'],
-      preview: {
-        nodes: canvasNodes.slice(0, 3),
-        connections: connections.slice(0, 2)
-      },
-      flowData: { nodes: canvasNodes, connections }
-    };
-    
-    setFlowTemplates(prev => [...prev, template]);
-    setShowTemplateModal(false);
-  }, [flowName, canvasNodes, connections]);
-
-  const loadTemplate = useCallback((templateId) => {
-    const template = flowTemplates.find(t => t.id === templateId);
-    if (template && template.flowData) {
-      setCanvasNodes(template.flowData.nodes);
-      setConnections(template.flowData.connections);
-      setFlowName(template.name);
-      addToHistory({ nodes: template.flowData.nodes, connections: template.flowData.connections });
-    }
-  }, [flowTemplates]);
-
-  // 🔀 Version Control System
-  const createVersion = useCallback((versionName, description = '') => {
-    const newVersion = {
-      id: `v_${Date.now()}`,
-      version: versionName || `${parseInt(currentVersion.split('.')[0]) + 1}.0.0`,
-      name: versionName,
-      description,
-      timestamp: new Date().toISOString(),
-      author: 'Current User',
-      flowData: { nodes: canvasNodes, connections },
-      branch: currentBranch,
-      changes: validationErrors.length === 0 ? 'Stable' : 'Has Issues'
-    };
-    
-    setFlowVersions(prev => [...prev, newVersion]);
-    setCurrentVersion(newVersion.version);
-    setShowVersionModal(false);
-  }, [canvasNodes, connections, currentVersion, currentBranch, validationErrors]);
-
-  const loadVersion = useCallback((versionId) => {
-    const version = flowVersions.find(v => v.id === versionId);
-    if (version) {
-      setCanvasNodes(version.flowData.nodes);
-      setConnections(version.flowData.connections);
-      setCurrentVersion(version.version);
-      addToHistory(version.flowData);
-    }
-  }, [flowVersions]);
-
-  const createBranch = useCallback((branchName) => {
-    const newBranch = {
-      id: `branch_${Date.now()}`,
-      name: branchName,
-      createdFrom: currentBranch,
-      timestamp: new Date().toISOString(),
-      flowData: { nodes: canvasNodes, connections }
-    };
-    
-    setFlowBranches(prev => [...prev, newBranch]);
-    setCurrentBranch(branchName);
-  }, [currentBranch, canvasNodes, connections]);
-
-  // 🔍 Advanced Flow Validation
-  const validateFlow = useCallback(() => {
-    setIsValidating(true);
-    const errors = [];
-    
-    // Check for orphaned nodes
-    const connectedNodeIds = new Set();
-    connections.forEach(conn => {
-      connectedNodeIds.add(conn.from);
-      connectedNodeIds.add(conn.to);
-    });
-    
-    canvasNodes.forEach(node => {
-      if (!connectedNodeIds.has(node.id) && node.type !== 'start' && node.type !== 'end') {
-        errors.push({
-          id: `orphan_${node.id}`,
-          type: 'warning',
-          message: `Node "${node.label}" is not connected`,
-          nodeId: node.id
-        });
-      }
-    });
-
-    // Check for missing end nodes
-    const hasEndNode = canvasNodes.some(node => node.type === 'end');
-    if (canvasNodes.length > 1 && !hasEndNode) {
-      errors.push({
-        id: 'no_end_node',
-        type: 'error',
-        message: 'Flow must have at least one end node'
-      });
-    }
-
-    // Check for circular references
-    const visited = new Set();
-    const checkCircular = (nodeId, path = []) => {
-      if (path.includes(nodeId)) {
-        errors.push({
-          id: `circular_${Date.now()}`,
-          type: 'error',
-          message: `Circular reference detected: ${path.join(' → ')} → ${nodeId}`,
-          nodeIds: [...path, nodeId]
-        });
-        return;
-      }
-      
-      if (visited.has(nodeId)) return;
-      visited.add(nodeId);
-      
-      const outgoingConnections = connections.filter(conn => conn.from === nodeId);
-      outgoingConnections.forEach(conn => {
-        checkCircular(conn.to, [...path, nodeId]);
-      });
-    };
-    
-    const startNodes = canvasNodes.filter(node => node.type === 'start');
-    startNodes.forEach(startNode => checkCircular(startNode.id));
-
-    setValidationErrors(errors);
-    setIsValidating(false);
-    
-    return errors.length === 0;
-  }, [canvasNodes, connections]);
-
-  // 👥 Collaboration Functions
-  const inviteCollaborator = useCallback((email, role = 'editor') => {
-    const newUser = {
-      id: `user_${Date.now()}`,
-      email,
-      role,
-      status: 'invited',
-      joinedAt: new Date().toISOString()
-    };
-    
-    setOnlineUsers(prev => [...prev, newUser]);
-    
-    if (socketRef.current) {
-      socketRef.current.emit('invite-user', { email, role, flowId: 'current' });
-    }
-  }, []);
-
-  const startCollaboration = useCallback(() => {
-    setCollaborationMode(true);
-    setShowCollaborationPanel(true);
-  }, []);
-
-  const stopCollaboration = useCallback(() => {
-    setCollaborationMode(false);
-    setShowCollaborationPanel(false);
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
-    setOnlineUsers([]);
-  }, []);
-
-  // 📊 PERFORMANCE OPTIMIZATION
-  const memoizedNodes = useMemo(() => {
-    return canvasNodes.map(node => ({
-      ...node,
-      rendered: true
-    }));
-  }, [canvasNodes]);
-
-  // 🔗 CONNECTION MANAGEMENT FUNCTIONS
-  const startConnection = useCallback((nodeId, handleType) => {
-    setIsConnecting(true);
-    setConnectionStart({ nodeId, handleType });
-  }, []);
-
-  const endConnection = useCallback((nodeId, handleType) => {
-    if (connectionStart && connectionStart.nodeId !== nodeId) {
-      const newConnection = {
-        id: uuidv4(),
-        source: connectionStart.nodeId,
-        target: nodeId,
-        sourceHandle: connectionStart.handleType,
-        targetHandle: handleType
-      };
-      setCanvasConnections([...canvasConnections, newConnection]);
-    }
-    setIsConnecting(false);
-    setConnectionStart(null);
-    setConnectionEnd(null);
-  }, [connectionStart, canvasConnections]);
-
-  const deleteConnection = useCallback((connectionId) => {
-    setCanvasConnections(canvasConnections.filter(conn => conn.id !== connectionId));
-    setSelectedConnections(prev => {
-      const updated = new Set(prev);
-      updated.delete(connectionId);
-      return updated;
-    });
-  }, [canvasConnections]);
-
-  // 📐 BEZIER CURVE CALCULATION
-  const createConnectionPath = useCallback((sourcePos, targetPos) => {
-    const dx = targetPos.x - sourcePos.x;
-    const dy = targetPos.y - sourcePos.y;
-    
-    const controlOffset = Math.abs(dx) * 0.5;
-    const sourceControlX = sourcePos.x + controlOffset;
-    const targetControlX = targetPos.x - controlOffset;
-    
-    return `M ${sourcePos.x} ${sourcePos.y} C ${sourceControlX} ${sourcePos.y}, ${targetControlX} ${targetPos.y}, ${targetPos.x} ${targetPos.y}`;
-  }, []);
-
-  // 🎯 NODE POSITION HELPERS
-  const getNodeCenter = useCallback((nodeId) => {
-    const node = canvasNodes.find(n => n.id === nodeId);
-    if (!node) return { x: 0, y: 0 };
-    return {
-      x: node.position.x + 96, // Half of node width (192px)
-      y: node.position.y + 48   // Half of node height (96px)
-    };
-  }, [canvasNodes]);
-
-  const getConnectionHandlePosition = useCallback((nodeId, handleType) => {
-    const node = canvasNodes.find(n => n.id === nodeId);
-    if (!node) return { x: 0, y: 0 };
-    
-    if (handleType === 'input') {
-      return { x: node.position.x, y: node.position.y + 48 }; // Left center
-    } else {
-      return { x: node.position.x + 192, y: node.position.y + 48 }; // Right center
-    }
-  }, [canvasNodes]);
-
-  // 🎨 ENHANCED UI FUNCTIONS
-  const saveFlow = useCallback(() => {
-    setIsAutoSaving(true);
-    const flowData = {
-      nodes: canvasNodes,
-      connections: canvasConnections,
-      metadata: {
-        name: 'Untitled Flow',
-        created: new Date().toISOString(),
-        version: '1.0.0'
-      }
-    };
-    
-    // Save to localStorage for now (later we'll add database integration)
-    localStorage.setItem('vocelio-flow-builder', JSON.stringify(flowData));
+  // Show notification function
+  const showNotification = useCallback((message, type = 'info') => {
+    const id = Date.now();
+    const notification = { id, message, type };
+    setNotifications(prev => [...prev, notification]);
     
     setTimeout(() => {
-      setIsAutoSaving(false);
-      addToHistory();
-    }, 1000);
-  }, [canvasNodes, canvasConnections]);
-
-  const addToHistory = useCallback(() => {
-    const snapshot = {
-      nodes: [...canvasNodes],
-      connections: [...canvasConnections],
-      timestamp: Date.now()
-    };
-    
-    const newHistory = [...flowHistory.slice(0, currentHistoryIndex + 1), snapshot];
-    setFlowHistory(newHistory);
-    setCurrentHistoryIndex(newHistory.length - 1);
-  }, [canvasNodes, canvasConnections, flowHistory, currentHistoryIndex]);
-
-  // 🤖 PHASE 3: AI-POWERED INTELLIGENCE & ADVANCED ANALYTICS FUNCTIONS
-
-  // AI Flow Analysis & Optimization
-  const analyzeFlowComplexity = useCallback(() => {
-    const nodeCount = canvasNodes.length;
-    const connectionCount = canvasConnections.length;
-    const decisionNodes = canvasNodes.filter(node => 
-      ['decision', 'condition', 'ai-decision'].includes(node.type)
-    ).length;
-    
-    // Calculate complexity score (0-100)
-    const complexityScore = Math.min(100, 
-      (nodeCount * 2) + 
-      (connectionCount * 1.5) + 
-      (decisionNodes * 3) + 
-      (Math.max(0, nodeCount - 10) * 0.5)
-    );
-    
-    setFlowComplexityScore(Math.round(complexityScore));
-    return complexityScore;
-  }, [canvasNodes, canvasConnections]);
-
-  // AI-Powered Flow Optimization Suggestions
-  const generateOptimizationSuggestions = useCallback(async () => {
-    const complexity = analyzeFlowComplexity();
-    const suggestions = [];
-
-    // Analyze flow patterns
-    const orphanNodes = canvasNodes.filter(node => {
-      const hasIncoming = canvasConnections.some(conn => conn.target === node.id);
-      const hasOutgoing = canvasConnections.some(conn => conn.source === node.id);
-      return !hasIncoming && node.type !== 'trigger';
-    });
-
-    // Suggest optimizations based on AI analysis
-    if (complexity > 60) {
-      suggestions.push({
-        id: `opt_${Date.now()}`,
-        type: 'optimization',
-        priority: 'high',
-        title: 'High Complexity Detected',
-        description: 'Consider breaking this flow into smaller, reusable sub-flows',
-        action: 'Split flow into modules',
-        impact: 'Reduces complexity by ~30%'
-      });
-    }
-
-    if (orphanNodes.length > 0) {
-      suggestions.push({
-        id: `opt_${Date.now() + 1}`,
-        type: 'optimization',
-        priority: 'medium',
-        title: 'Disconnected Nodes Found',
-        description: `${orphanNodes.length} nodes are not connected to the main flow`,
-        action: 'Connect or remove orphaned nodes',
-        impact: 'Improves flow clarity and performance'
-      });
-    }
-
-    // AI-powered performance suggestions
-    const duplicateNodeTypes = {};
-    canvasNodes.forEach(node => {
-      duplicateNodeTypes[node.type] = (duplicateNodeTypes[node.type] || 0) + 1;
-    });
-
-    Object.entries(duplicateNodeTypes).forEach(([type, count]) => {
-      if (count > 3 && ['condition', 'data-transform'].includes(type)) {
-        suggestions.push({
-          id: `opt_${Date.now() + Math.random()}`,
-          type: 'optimization',
-          priority: 'low',
-          title: `Multiple ${type} Nodes`,
-          description: `Consider consolidating ${count} ${type} nodes into a single advanced node`,
-          action: 'Consolidate similar operations',
-          impact: 'Reduces execution time and complexity'
-        });
-      }
-    });
-
-    setFlowOptimizations(suggestions);
-    return suggestions;
-  }, [canvasNodes, canvasConnections, analyzeFlowComplexity]);
-
-  // Smart Recommendations based on Flow Context
-  const generateSmartRecommendations = useCallback(() => {
-    const recommendations = [];
-    const flowTypes = canvasNodes.map(node => node.type);
-
-    // Analyze flow pattern and suggest improvements
-    if (flowTypes.includes('phone-call') && !flowTypes.includes('call-recording')) {
-      recommendations.push({
-        id: `rec_${Date.now()}`,
-        type: 'enhancement',
-        category: 'compliance',
-        title: 'Add Call Recording',
-        description: 'Phone calls benefit from recording for quality assurance and compliance',
-        suggestedNode: 'call-recording',
-        confidence: 85
-      });
-    }
-
-    if (flowTypes.includes('email') && !flowTypes.includes('email-template')) {
-      recommendations.push({
-        id: `rec_${Date.now() + 1}`,
-        type: 'enhancement',
-        category: 'efficiency',
-        title: 'Use Email Templates',
-        description: 'Template-based emails ensure consistency and save time',
-        suggestedNode: 'email-template',
-        confidence: 90
-      });
-    }
-
-    // AI-powered context analysis
-    if (canvasNodes.length > 5 && !flowTypes.includes('analytics')) {
-      recommendations.push({
-        id: `rec_${Date.now() + 2}`,
-        type: 'enhancement',
-        category: 'insights',
-        title: 'Add Analytics Tracking',
-        description: 'Complex flows benefit from detailed analytics and performance monitoring',
-        suggestedNode: 'analytics',
-        confidence: 75
-      });
-    }
-
-    setSmartRecommendations(recommendations);
-    return recommendations;
-  }, [canvasNodes]);
-
-  // Predictive Analytics
-  const generatePredictiveAnalytics = useCallback(async () => {
-    const analytics = {
-      conversionPrediction: {
-        rate: Math.round(65 + Math.random() * 25), // Simulate AI prediction
-        confidence: Math.round(80 + Math.random() * 15),
-        factors: [
-          'Flow complexity: Medium impact',
-          'Decision points: High impact',
-          'User engagement nodes: Positive impact'
-        ]
-      },
-      performanceForecast: {
-        expectedExecutionTime: Math.round(2.5 + Math.random() * 3),
-        bottleneckNodes: canvasNodes
-          .filter(node => ['decision', 'api-call', 'database'].includes(node.type))
-          .map(node => node.id)
-          .slice(0, 2),
-        scalabilityScore: Math.round(70 + Math.random() * 25)
-      },
-      userExperienceScore: {
-        rating: (4.2 + Math.random() * 0.6).toFixed(1),
-        improvements: [
-          'Reduce decision complexity',
-          'Add progress indicators',
-          'Optimize wait times'
-        ]
-      }
-    };
-
-    setPredictiveAnalytics(analytics);
-    return analytics;
-  }, [canvasNodes]);
-
-  // AI Behavior Analysis
-  const analyzeBehaviorPatterns = useCallback(() => {
-    const patterns = {
-      commonPaths: [
-        { path: ['trigger', 'condition', 'action'], frequency: 78, success_rate: 85 },
-        { path: ['trigger', 'ai-assistant', 'response'], frequency: 45, success_rate: 92 },
-        { path: ['trigger', 'decision', 'branch_a', 'end'], frequency: 62, success_rate: 79 }
-      ],
-      dropoffPoints: [
-        { nodeId: canvasNodes.find(n => n.type === 'condition')?.id || 'none', rate: 23 },
-        { nodeId: canvasNodes.find(n => n.type === 'form')?.id || 'none', rate: 18 }
-      ].filter(point => point.nodeId !== 'none'),
-      engagementMetrics: {
-        averageSessionTime: '4m 32s',
-        completionRate: '76.3%',
-        userSatisfaction: 4.1,
-        returnRate: '34.5%'
-      }
-    };
-
-    setBehaviorAnalysis(patterns);
-    return patterns;
-  }, [canvasNodes]);
-
-  // Performance Insights Generation
-  const generatePerformanceInsights = useCallback(() => {
-    const insights = {
-      executionMetrics: {
-        averageProcessingTime: Math.round(1.2 + Math.random() * 2) + 's',
-        memoryUsage: Math.round(45 + Math.random() * 30) + 'MB',
-        successRate: (95.2 + Math.random() * 4).toFixed(1) + '%',
-        errorRate: (0.8 + Math.random() * 1.5).toFixed(1) + '%'
-      },
-      optimization_opportunities: [
-        {
-          area: 'Connection Efficiency',
-          impact: 'High',
-          description: 'Simplify connection paths to reduce execution overhead',
-          estimated_improvement: '15-25% faster execution'
-        },
-        {
-          area: 'Node Consolidation',
-          impact: 'Medium',
-          description: 'Combine similar operations into single nodes',
-          estimated_improvement: '8-12% memory savings'
-        }
-      ],
-      trends: {
-        daily_executions: Array.from({length: 7}, () => Math.round(100 + Math.random() * 200)),
-        success_trends: Array.from({length: 7}, () => Math.round(90 + Math.random() * 8)),
-        performance_trends: Array.from({length: 7}, () => Math.round(80 + Math.random() * 15))
-      }
-    };
-
-    setPerformanceInsights(insights);
-    return insights;
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
   }, []);
 
-  // AI Assistant Functions
-  const toggleAiAssistant = useCallback(() => {
-    setAiAssistantActive(!aiAssistantActive);
-    if (!aiAssistantActive) {
-      // Initialize AI suggestions when activated
-      generateOptimizationSuggestions();
-      generateSmartRecommendations();
-      generatePredictiveAnalytics();
-    }
-  }, [aiAssistantActive, generateOptimizationSuggestions, generateSmartRecommendations, generatePredictiveAnalytics]);
+  // Zoom functions
+  const zoomIn = () => {
+    setCurrentZoom(prev => Math.min(prev * 1.2, 3));
+  };
 
-  // Contextual Help System
-  const showContextualHelp = useCallback((nodeType, context = {}) => {
-    const helpContent = {
-      'trigger': {
-        title: 'Trigger Node Help',
-        description: 'Triggers initiate flow execution based on events or conditions',
-        tips: ['Use specific trigger conditions', 'Consider multiple trigger types', 'Test trigger reliability'],
-        examples: ['Form submission', 'Timer-based', 'API webhook']
-      },
-      'condition': {
-        title: 'Condition Node Help', 
-        description: 'Conditions create branching logic in your flow',
-        tips: ['Keep conditions simple and clear', 'Use meaningful variable names', 'Test all branches'],
-        examples: ['User status check', 'Value comparison', 'Time-based conditions']
-      },
-      'action': {
-        title: 'Action Node Help',
-        description: 'Actions perform operations like sending emails, API calls, or data updates',
-        tips: ['Ensure proper error handling', 'Add timeout configurations', 'Log important actions'],
-        examples: ['Send notification', 'Update database', 'Call external API']
+  const zoomOut = () => {
+    setCurrentZoom(prev => Math.max(prev / 1.2, 0.3));
+  };
+
+  const resetZoom = () => {
+    setCurrentZoom(1);
+  };
+
+  // Toggle functions
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const toggleMinimap = () => {
+    setMinimapVisible(!minimapVisible);
+  };
+
+  const toggleGrid = () => {
+    setGridVisible(!gridVisible);
+    showNotification(gridVisible ? 'Grid disabled' : 'Grid enabled', 'info');
+  };
+
+  const toggleLayers = () => {
+    setLayersVisible(!layersVisible);
+  };
+
+  const toggleHistory = () => {
+    setHistoryVisible(!historyVisible);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    showNotification(isDarkMode ? 'Light mode enabled' : 'Dark mode enabled', 'info');
+  };
+
+  const toggleCommandPalette = () => {
+    setCommandPaletteVisible(!commandPaletteVisible);
+    if (!commandPaletteVisible) {
+      setTimeout(() => commandSearchRef.current?.focus(), 100);
+    }
+  };
+
+  // Modal functions
+  const showModal = (modalId) => {
+    setActiveModal(modalId);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setCurrentEditingNode(null);
+    setNodeForm({
+      name: '',
+      type: 'Large Text',
+      prompt: '',
+      plainText: '',
+      loopCondition: '',
+      temperature: 0.5,
+      staticText: false,
+      globalNode: false,
+      skipResponse: false,
+      blockInterruptions: false,
+      disableRecording: false
+    });
+  };
+
+  // Node management
+  const editNode = (nodeId) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node) {
+      setCurrentEditingNode(nodeId);
+      setNodeForm({
+        name: node.title,
+        type: node.type,
+        prompt: node.content,
+        plainText: '',
+        loopCondition: '',
+        temperature: 0.5,
+        staticText: false,
+        globalNode: false,
+        skipResponse: false,
+        blockInterruptions: false,
+        disableRecording: false
+      });
+      showModal('editNode');
+    }
+  };
+
+  const addNodeToCanvas = (nodeType) => {
+    const newId = `node-${nodeCounter}`;
+    const icons = {
+      'collect-phone': '📱',
+      'collect-email': '✉️',
+      'schedule-meeting': '📅'
+    };
+    
+    const titles = {
+      'collect-phone': 'Collect Phone Number',
+      'collect-email': 'Collect Email',
+      'schedule-meeting': 'Schedule Meeting'
+    };
+
+    const contents = {
+      'collect-phone': 'Collect and validate phone numbers from users',
+      'collect-email': 'Collect and validate email addresses from users',
+      'schedule-meeting': 'Book appointments and manage calendar integration'
+    };
+
+    const newNode = {
+      id: newId,
+      type: titles[nodeType] || 'New Node',
+      icon: icons[nodeType] || '⚡',
+      title: titles[nodeType] || `New Node ${nodeCounter}`,
+      content: contents[nodeType] || 'New conversation node',
+      badge: 'Default',
+      position: { 
+        x: 200 + Math.random() * 600, 
+        y: 100 + Math.random() * 400 
       }
     };
 
-    setContextualHelp({
-      ...helpContent[nodeType] || {
-        title: 'Node Help',
-        description: 'This node performs a specific operation in your flow',
-        tips: ['Configure node properties', 'Test functionality', 'Monitor performance'],
-        examples: []
-      },
-      nodeType,
-      context
-    });
-  }, []);
+    setNodes(prev => [...prev, newNode]);
+    setNodeCounter(prev => prev + 1);
+    closeModal();
+    showNotification('Node added successfully!', 'success');
+  };
 
-  // Real-time Optimization
-  const enableRealTimeOptimization = useCallback(() => {
-    setRealTimeOptimization(!realTimeOptimization);
-    
-    if (!realTimeOptimization) {
-      // Start real-time monitoring
-      const interval = setInterval(() => {
-        analyzeFlowComplexity();
-        generateOptimizationSuggestions();
-      }, 10000); // Check every 10 seconds
-
-      return () => clearInterval(interval);
+  const saveNode = () => {
+    if (currentEditingNode) {
+      setNodes(prev => prev.map(node => 
+        node.id === currentEditingNode 
+          ? { ...node, title: nodeForm.name, content: nodeForm.prompt }
+          : node
+      ));
+      showNotification('Node saved successfully!', 'success');
+      closeModal();
     }
-  }, [realTimeOptimization, analyzeFlowComplexity, generateOptimizationSuggestions]);
+  };
 
-  // AI Insights Generator
-  const generateAiInsights = useCallback(() => {
-    const insights = [
-      {
-        id: `insight_${Date.now()}`,
-        type: 'performance',
-        severity: 'info',
-        title: 'Flow Performance Analysis',
-        message: `Your flow has ${canvasNodes.length} nodes with optimal connection patterns`,
-        action: 'View detailed metrics',
-        timestamp: new Date().toISOString()
-      },
-      {
-        id: `insight_${Date.now() + 1}`,
-        type: 'optimization',
-        severity: 'warning',
-        title: 'Optimization Opportunity',
-        message: 'Consider adding error handling nodes for better reliability',
-        action: 'Add error handling',
-        timestamp: new Date().toISOString()
-      },
-      {
-        id: `insight_${Date.now() + 2}`,
-        type: 'enhancement',
-        severity: 'success',
-        title: 'Smart Enhancement',
-        message: 'AI suggests adding analytics tracking for better insights',
-        action: 'Add analytics node',
-        timestamp: new Date().toISOString()
-      }
-    ];
+  // Utility functions
+  const copyId = () => {
+    navigator.clipboard.writeText('3e18c41b-1902-48d7-a86e-8e3150e83ae7');
+    showNotification('ID copied to clipboard!', 'success');
+  };
 
-    setAiInsights(insights);
-    return insights;
-  }, [canvasNodes.length]);
+  const saveWorkflow = () => {
+    showNotification('Workflow saved successfully!', 'success');
+  };
 
-  // Initialize AI features
+  const testPathway = () => {
+    showNotification('Pathway test started!', 'success');
+    closeModal();
+  };
+
+  const startCall = () => {
+    showNotification('Call initiated successfully!', 'success');
+    closeModal();
+  };
+
+  const promoteToProduction = () => {
+    showNotification('Successfully promoted to production!', 'success');
+    closeModal();
+  };
+
+  // Keyboard shortcuts
   useEffect(() => {
-    if (canvasNodes.length > 0) {
-      analyzeFlowComplexity();
-      generateAiInsights();
-    }
-  }, [canvasNodes, analyzeFlowComplexity, generateAiInsights]);
-
-  const undo = useCallback(() => {
-    if (currentHistoryIndex > 0) {
-      const previousState = flowHistory[currentHistoryIndex - 1];
-      setCanvasNodes(previousState.nodes);
-      setCanvasConnections(previousState.connections);
-      setCurrentHistoryIndex(currentHistoryIndex - 1);
-    }
-  }, [flowHistory, currentHistoryIndex]);
-
-  const redo = useCallback(() => {
-    if (currentHistoryIndex < flowHistory.length - 1) {
-      const nextState = flowHistory[currentHistoryIndex + 1];
-      setCanvasNodes(nextState.nodes);
-      setCanvasConnections(nextState.connections);
-      setCurrentHistoryIndex(currentHistoryIndex + 1);
-    }
-  }, [flowHistory, currentHistoryIndex]);
-
-  const deleteSelectedNodes = useCallback(() => {
-    const newNodes = canvasNodes.filter(node => !selectedNodes.has(node.id));
-    const newConnections = canvasConnections.filter(conn => 
-      !selectedNodes.has(conn.source) && !selectedNodes.has(conn.target)
-    );
-    
-    setCanvasNodes(newNodes);
-    setCanvasConnections(newConnections);
-    setSelectedNodes(new Set());
-  }, [canvasNodes, canvasConnections, selectedNodes]);
-
-  const selectAllNodes = useCallback(() => {
-    setSelectedNodes(new Set(canvasNodes.map(node => node.id)));
-  }, [canvasNodes]);
-
-  const duplicateSelectedNodes = useCallback(() => {
-    const nodesToDuplicate = canvasNodes.filter(node => selectedNodes.has(node.id));
-    const duplicatedNodes = nodesToDuplicate.map(node => ({
-      ...node,
-      id: uuidv4(),
-      position: {
-        x: node.position.x + 50,
-        y: node.position.y + 50
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (commandPaletteVisible) {
+          setCommandPaletteVisible(false);
+        } else if (activeModal) {
+          closeModal();
+        }
       }
-    }));
-    
-    setCanvasNodes([...canvasNodes, ...duplicatedNodes]);
-    setSelectedNodes(new Set(duplicatedNodes.map(node => node.id)));
-  }, [canvasNodes, selectedNodes]);
 
-  const groupSelectedNodes = useCallback(() => {
-    if (selectedNodes.size < 2) return;
-    
-    const selectedNodesList = canvasNodes.filter(node => selectedNodes.has(node.id));
-    const minX = Math.min(...selectedNodesList.map(n => n.position.x));
-    const minY = Math.min(...selectedNodesList.map(n => n.position.y));
-    const maxX = Math.max(...selectedNodesList.map(n => n.position.x + 200));
-    const maxY = Math.max(...selectedNodesList.map(n => n.position.y + 100));
-    
-    const groupNode = {
-      id: uuidv4(),
-      type: 'group',
-      position: { x: minX - 20, y: minY - 40 },
-      data: {
-        label: `Group (${selectedNodes.size} nodes)`,
-        width: maxX - minX + 40,
-        height: maxY - minY + 60,
-        children: Array.from(selectedNodes)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleCommandPalette();
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveWorkflow();
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        showModal('addNode');
+      }
+
+      if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+        toggleGrid();
       }
     };
-    
-    setCanvasNodes([...canvasNodes, groupNode]);
-  }, [canvasNodes, selectedNodes]);
 
-  // 🎨 ENHANCED SIDEBAR COMPONENT
-  const EnhancedSidebar = () => (
-    <motion.div 
-      initial={{ x: -300 }}
-      animate={{ x: leftPanelCollapsed ? -250 : 0 }}
-      className={`${leftPanelCollapsed ? 'w-16' : 'w-80'} bg-black/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 relative z-20 h-full`}
-    >
-      <div className="p-4 border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          {!leftPanelCollapsed && (
-            <h2 className="text-lg font-bold text-white">Node Library</h2>
-          )}
-          <button
-            onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [commandPaletteVisible, activeModal]);
+
+  // Sidebar items
+  const sidebarItems = [
+    { icon: '🔗', label: 'Add New Node', action: () => showModal('addNode') },
+    { icon: '🌍', label: 'Global Prompt', action: () => showModal('globalPrompt') },
+    { icon: '🎯', label: 'Feature Flags', action: () => {} },
+    { icon: '🧪', label: 'Test Pathway', action: () => showModal('testPathway') },
+    { icon: '📞', label: 'Send Call', action: () => showModal('sendCall') },
+    { icon: '🌐', label: 'Web Client', action: () => showModal('webClient') },
+    { icon: '🚀', label: 'Promote to Production', action: () => showModal('promoteProduction') },
+    { icon: '📊', label: 'Analytics', action: () => {} }
+  ];
+
+  return (
+    <div className={`h-screen flex ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`px-4 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ${
+              notification.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+            }`}
           >
-            {leftPanelCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+            {notification.message}
+          </div>
+        ))}
+      </div>
+
+      {/* Sidebar */}
+      <div className={`w-64 ${isDarkMode ? 'bg-gray-800' : 'bg-slate-800'} text-white p-5 overflow-y-auto`}>
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-8 pb-5 border-b border-slate-700">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-lg">
+            V
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Vocelio AI</h2>
+            <p className="text-xs text-slate-400">Conversational Platform</p>
+          </div>
+        </div>
+
+        {/* Workflow Section */}
+        <div className="mb-6">
+          <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-3">Workflow</h3>
+          {sidebarItems.slice(0, 3).map((item, idx) => (
+            <div
+              key={idx}
+              onClick={item.action}
+              className="flex items-center gap-3 p-3 bg-slate-700 hover:bg-blue-600 rounded-lg mb-2 cursor-pointer transition-all duration-200 transform hover:translate-x-1"
+            >
+              <span>{item.icon}</span>
+              <span className="text-sm">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Testing Section */}
+        <div className="mb-6">
+          <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-3">Testing</h3>
+          {sidebarItems.slice(3, 6).map((item, idx) => (
+            <div
+              key={idx}
+              onClick={item.action}
+              className="flex items-center gap-3 p-3 bg-slate-700 hover:bg-blue-600 rounded-lg mb-2 cursor-pointer transition-all duration-200 transform hover:translate-x-1"
+            >
+              <span>{item.icon}</span>
+              <span className="text-sm">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Deployment Section */}
+        <div>
+          <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-3">Deployment</h3>
+          {sidebarItems.slice(6).map((item, idx) => (
+            <div
+              key={idx}
+              onClick={item.action}
+              className="flex items-center gap-3 p-3 bg-slate-700 hover:bg-blue-600 rounded-lg mb-2 cursor-pointer transition-all duration-200 transform hover:translate-x-1"
+            >
+              <span>{item.icon}</span>
+              <span className="text-sm">{item.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {!leftPanelCollapsed && (
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search nodes..."
-                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-              />
-            </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className={`h-18 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-8 shadow-sm`}>
+          <div className="flex items-center gap-4">
+            <h1 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Vocelio SalesBot
+            </h1>
+            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+              Version 1
+            </span>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+              Staging
+            </span>
+            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+              ✓ Saved
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyId}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Copy size={16} />
+              Copy ID
+            </button>
+            <button
+              onClick={() => showModal('promoteProduction')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Rocket size={16} />
+              Promote to Production
+            </button>
+            <button
+              onClick={() => showModal('testPathway')}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <TestTube size={16} />
+              Test Pathway
+            </button>
+            <button
+              onClick={() => showModal('sendCall')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Phone size={16} />
+              Send Call
+            </button>
+            <button
+              onClick={() => showModal('webClient')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              🌐 Web Client
+            </button>
+          </div>
+        </div>
+
+        {/* Canvas Container */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Canvas Controls */}
+          <div className="absolute top-5 right-5 z-20 flex gap-2">
+            {[
+              { icon: Plus, action: zoomIn, tooltip: 'Zoom In' },
+              { icon: Minus, action: zoomOut, tooltip: 'Zoom Out' },
+              { icon: RotateCcw, action: resetZoom, tooltip: 'Reset Zoom' },
+              { icon: Maximize, action: toggleFullscreen, tooltip: 'Toggle Fullscreen' },
+              { icon: Map, action: toggleMinimap, tooltip: 'Toggle Minimap' },
+              { icon: Grid, action: toggleGrid, tooltip: 'Toggle Grid' },
+              { icon: Layers, action: toggleLayers, tooltip: 'Layers' },
+              { icon: Clock, action: toggleHistory, tooltip: 'History' },
+              { icon: Moon, action: toggleDarkMode, tooltip: 'Dark Mode' }
+            ].map(({ icon: Icon, action, tooltip }, idx) => (
+              <button
+                key={idx}
+                onClick={action}
+                className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-200 shadow-lg ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-600 text-gray-200 hover:bg-blue-600 hover:border-blue-500' 
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-600 hover:text-white hover:border-blue-500'
+                }`}
+                title={tooltip}
+              >
+                <Icon size={18} />
+              </button>
+            ))}
           </div>
 
-          <div className="space-y-6">
-            {['AI', 'Communication', 'Logic', 'Integration', 'Analytics', 'Security'].map(category => (
-              <div key={category}>
-                <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">
-                  {category}
-                </h3>
-                <div className="space-y-2">
-                  {nodeTypes
-                    .filter(nodeType => nodeType.category === category)
-                    .map(nodeType => (
-                      <motion.div
-                        key={nodeType.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 cursor-grab active:cursor-grabbing transition-all group"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggedNode(nodeType);
-                          e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        onDragEnd={() => {
-                          setDraggedNode(null);
-                        }}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 bg-gradient-to-br ${nodeType.color} rounded-lg group-hover:scale-110 transition-transform`}>
-                            {React.createElement(nodeType.icon, { className: "w-4 h-4 text-white" })}
-                          </div>
-                          <span className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
-                            {nodeType.label}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
+          {/* Zoom Indicator */}
+          <div className={`absolute bottom-5 right-5 z-20 px-3 py-2 rounded-full text-sm font-medium shadow-lg border ${
+            isDarkMode 
+              ? 'bg-gray-800 border-gray-600 text-white' 
+              : 'bg-white border-gray-300 text-gray-900'
+          }`}>
+            {Math.round(currentZoom * 100)}%
+          </div>
+
+          {/* Minimap */}
+          {minimapVisible && (
+            <div className={`absolute bottom-5 left-5 w-48 h-36 rounded-lg shadow-lg z-20 border-2 ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-600' 
+                : 'bg-white border-gray-300'
+            }`}>
+              <div className={`flex items-center justify-between p-2 border-b text-sm font-medium ${
+                isDarkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white' 
+                  : 'bg-gray-50 border-gray-200 text-gray-900'
+              }`}>
+                <span>Navigator</span>
+                <button onClick={toggleMinimap} className={`p-1 rounded hover:bg-opacity-80 ${
+                  isDarkMode ? 'hover:bg-gray-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'
+                }`}>
+                  <X size={14} />
+                </button>
+              </div>
+              <div className={`relative h-full overflow-hidden ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
+              }`}>
+                {nodes.map(node => (
+                  <div
+                    key={node.id}
+                    className="absolute w-4 h-3 bg-blue-600 rounded-sm"
+                    style={{
+                      left: `${(node.position.x / 10)}px`,
+                      top: `${(node.position.y / 10)}px`
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Layers Panel */}
+          {layersVisible && (
+            <div className={`absolute top-5 left-5 w-60 rounded-xl shadow-lg z-20 border ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-600' 
+                : 'bg-white border-gray-300'
+            }`}>
+              <div className={`flex items-center justify-between p-4 border-b ${
+                isDarkMode 
+                  ? 'border-gray-600 text-white' 
+                  : 'border-gray-200 text-gray-900'
+              }`}>
+                <span className="font-semibold">Layers</span>
+                <button onClick={toggleLayers} className={`p-1 rounded hover:bg-opacity-80 ${
+                  isDarkMode ? 'hover:bg-gray-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'
+                }`}>
+                  <X size={16} />
+                </button>
+              </div>
+              {['Workflow Nodes', 'Connections', 'Comments', 'Grid'].map((layer, idx) => (
+                <div key={idx} className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                  isDarkMode 
+                    ? 'hover:bg-gray-700 text-gray-200' 
+                    : 'hover:bg-gray-50 text-gray-800'
+                }`}>
+                  <Eye size={16} className="text-blue-600" />
+                  <span className="text-sm">{layer}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* History Panel */}
+          {historyVisible && (
+            <div className={`absolute top-20 right-5 w-48 rounded-xl shadow-lg z-20 border ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-600' 
+                : 'bg-white border-gray-300'
+            }`}>
+              <div className={`flex items-center justify-between p-4 border-b ${
+                isDarkMode 
+                  ? 'border-gray-600 text-white' 
+                  : 'border-gray-200 text-gray-900'
+              }`}>
+                <span className="font-semibold">History</span>
+                <button onClick={toggleHistory} className={`p-1 rounded hover:bg-opacity-80 ${
+                  isDarkMode ? 'hover:bg-gray-600 text-gray-300' : 'hover:bg-gray-200 text-gray-600'
+                }`}>
+                  <X size={16} />
+                </button>
+              </div>
+              {['Current State', 'Added Technology Node', 'Modified Introduction', 'Added End Call Node', 'Initial Setup'].map((item, idx) => (
+                <div key={idx} className={`p-3 text-xs cursor-pointer border-b last:border-b-0 transition-colors ${
+                  idx === 0 
+                    ? isDarkMode 
+                      ? 'text-blue-400 font-medium hover:bg-gray-700' 
+                      : 'text-blue-600 font-medium hover:bg-gray-50'
+                    : isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-600 hover:bg-gray-50'
+                } ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Canvas */}
+          <div
+            ref={canvasRef}
+            className={`w-full h-full relative overflow-auto transition-transform duration-300 ${
+              gridVisible 
+                ? 'bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:20px_20px]'
+                : 'bg-[radial-gradient(circle_at_20px_20px,#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px]'
+            }`}
+            style={{ transform: `scale(${currentZoom})`, transformOrigin: '0 0' }}
+          >
+            {/* Workflow Nodes */}
+            {nodes.map(node => (
+              <div
+                key={node.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  editNode(node.id);
+                }}
+                className={`absolute ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white border-gray-200'} border-2 rounded-xl shadow-lg p-5 min-w-48 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500 ${
+                  selectedNodes.includes(node.id) ? 'border-blue-500 shadow-blue-200' : ''
+                }`}
+                style={{
+                  left: `${node.position.x}px`,
+                  top: `${node.position.y}px`
+                }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+                    {node.icon}
+                  </div>
+                  <div className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {node.title}
+                  </div>
+                </div>
+                <div className={`text-xs mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {node.content}
+                </div>
+                <div className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+                  {node.badge}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
 
-  // 🏢 PHASE 4: ENTERPRISE FUNCTIONS (Must be defined before UI components)
-  // Advanced Workflow Versioning
-  const createWorkflowBranch = useCallback((branchName) => {
-    const newBranch = {
-      id: uuidv4(),
-      name: branchName,
-      basedOn: currentVersion,
-      createdAt: new Date().toISOString(),
-      createdBy: 'current-user',
-      nodes: [...canvasNodes],
-      connections: [...canvasConnections],
-      status: 'draft'
-    };
-
-    setWorkflowVersions(prev => [...prev, newBranch]);
-    return newBranch;
-  }, [currentVersion, canvasNodes, canvasConnections]);
-
-  const mergeBranch = useCallback((branchId, targetVersion) => {
-    const branch = workflowVersions.find(b => b.id === branchId);
-    if (!branch) return;
-
-    const mergeRequest = {
-      id: uuidv4(),
-      branchId,
-      targetVersion,
-      requestedBy: 'current-user',
-      requestedAt: new Date().toISOString(),
-      status: 'pending',
-      changes: {
-        nodesAdded: branch.nodes.length - canvasNodes.length,
-        nodesModified: 0, // Calculate actual diff
-        connectionsChanged: Math.abs(branch.connections.length - canvasConnections.length)
-      }
-    };
-
-    setMergeRequests(prev => [...prev, mergeRequest]);
-    return mergeRequest;
-  }, [workflowVersions, canvasNodes, canvasConnections]);
-
-  // Enterprise Compliance & Governance
-  const validateCompliance = useCallback((workflowData) => {
-    const rules = [
-      { id: 'data-retention', name: 'Data Retention Policy', severity: 'critical' },
-      { id: 'approval-required', name: 'Management Approval Required', severity: 'high' },
-      { id: 'audit-logging', name: 'Audit Trail Enabled', severity: 'medium' },
-      { id: 'security-review', name: 'Security Review Complete', severity: 'high' }
-    ];
-
-    const violations = [];
-    if (workflowData.nodes.some(node => node.type === 'database' && !node.data.encryption)) {
-      violations.push({ rule: 'data-retention', message: 'Database nodes must have encryption enabled' });
-    }
-
-    const complianceReport = {
-      status: violations.length === 0 ? 'compliant' : 'violations',
-      violations,
-      lastChecked: new Date().toISOString(),
-      rulesEvaluated: rules.length
-    };
-
-    setGovernanceRules(rules);
-    return complianceReport;
-  }, []);
-
-  // Enterprise Audit Trail
-  const logAuditEvent = useCallback((action, details) => {
-    const auditEvent = {
-      id: uuidv4(),
-      timestamp: new Date().toISOString(),
-      user: 'current-user',
-      action,
-      details,
-      workflowVersion: currentVersion,
-      ipAddress: '192.168.1.100', // Mock IP
-      sessionId: 'session-123'
-    };
-
-    setAuditTrail(prev => [auditEvent, ...prev.slice(0, 99)]); // Keep last 100 events
-  }, [currentVersion]);
-
-  // Enterprise Workflow Templates
-  const createEnterpriseTemplate = useCallback((templateData) => {
-    const template = {
-      id: uuidv4(),
-      name: templateData.name,
-      category: templateData.category,
-      description: templateData.description,
-      nodes: [...canvasNodes],
-      connections: [...canvasConnections],
-      metadata: {
-        createdBy: 'current-user',
-        createdAt: new Date().toISOString(),
-        version: '1.0.0',
-        tags: templateData.tags || [],
-        approvalStatus: 'pending',
-        complianceLevel: 'enterprise'
-      }
-    };
-
-    setWorkflowTemplates(prev => [...prev, template]);
-    logAuditEvent('template-created', { templateId: template.id, templateName: template.name });
-    return template;
-  }, [canvasNodes, canvasConnections, logAuditEvent]);
-
-  // Bulk Operations
-  const executeBulkOperation = useCallback((operation, targetNodes) => {
-    let updatedNodes = [...canvasNodes];
-
-    switch (operation) {
-      case 'bulk-edit-properties':
-        updatedNodes = updatedNodes.map(node => 
-          targetNodes.includes(node.id) 
-            ? { ...node, data: { ...node.data, bulkEdited: true, lastModified: new Date().toISOString() } }
-            : node
-        );
-        break;
-      case 'bulk-change-category':
-        updatedNodes = updatedNodes.map(node =>
-          targetNodes.includes(node.id)
-            ? { ...node, category: 'updated-category' }
-            : node
-        );
-        break;
-      case 'bulk-apply-template':
-        // Apply template styling/properties
-        updatedNodes = updatedNodes.map(node =>
-          targetNodes.includes(node.id)
-            ? { ...node, style: { ...node.style, template: 'enterprise-standard' } }
-            : node
-        );
-        break;
-      default:
-        break;
-    }
-
-    setCanvasNodes(updatedNodes);
-    logAuditEvent('bulk-operation', { operation, nodeCount: targetNodes.length });
-  }, [canvasNodes, logAuditEvent]);
-
-  // Enterprise Integration Management
-  const initializeEnterpriseIntegrations = useCallback(() => {
-    const integrations = [
-      { id: 'salesforce', name: 'Salesforce CRM', status: 'connected', type: 'crm' },
-      { id: 'azure-ad', name: 'Azure Active Directory', status: 'connected', type: 'auth' },
-      { id: 'slack', name: 'Slack Workspace', status: 'connected', type: 'communication' },
-      { id: 'jira', name: 'Jira Service Desk', status: 'pending', type: 'ticketing' },
-      { id: 'tableau', name: 'Tableau Analytics', status: 'connected', type: 'analytics' }
-    ];
-
-    setEnterpriseIntegrations(integrations);
-  }, []);
-
-  // Advanced Workflow Scheduler
-  const scheduleWorkflowExecution = useCallback((scheduleConfig) => {
-    const scheduledJob = {
-      id: uuidv4(),
-      workflowId: canvasNodes[0]?.id || 'current-workflow',
-      schedule: scheduleConfig.schedule,
-      timezone: scheduleConfig.timezone || 'UTC',
-      parameters: scheduleConfig.parameters || {},
-      status: 'active',
-      nextExecution: new Date(Date.now() + 60000).toISOString(), // 1 minute from now
-      createdBy: 'current-user',
-      createdAt: new Date().toISOString()
-    };
-
-    setWorkflowScheduler(prev => ({
-      ...prev,
-      jobs: [...(prev.jobs || []), scheduledJob]
-    }));
-
-    logAuditEvent('workflow-scheduled', { jobId: scheduledJob.id, schedule: scheduleConfig.schedule });
-    return scheduledJob;
-  }, [canvasNodes, logAuditEvent]);
-
-  // Enterprise Reporting & Analytics
-  const generateEnterpriseReport = useCallback((reportType) => {
-    const reportData = {
-      id: uuidv4(),
-      type: reportType,
-      generatedAt: new Date().toISOString(),
-      data: {}
-    };
-
-    switch (reportType) {
-      case 'workflow-performance':
-        reportData.data = {
-          totalWorkflows: 45,
-          activeWorkflows: 32,
-          averageExecutionTime: '2.3s',
-          successRate: '97.8%',
-          errorRate: '2.2%',
-          topPerformingWorkflows: ['Customer Onboarding', 'Lead Qualification', 'Support Ticket Routing']
-        };
-        break;
-      case 'team-collaboration':
-        reportData.data = {
-          activeUsers: teamMembers.length,
-          collaborationEvents: auditTrail.length,
-          averageSessionTime: '45 minutes',
-          mostCollaborativeWorkflows: ['Product Launch Flow', 'Compliance Review Process'],
-          teamEfficiencyScore: 92
-        };
-        break;
-      case 'compliance-audit':
-        reportData.data = {
-          complianceScore: 94,
-          violationsFound: 2,
-          rulesEvaluated: 12,
-          lastAuditDate: new Date().toISOString(),
-          criticalIssues: 0,
-          recommendedActions: ['Enable encryption on database nodes', 'Add approval step for sensitive operations']
-        };
-        break;
-      default:
-        reportData.data = { message: 'Report type not implemented' };
-    }
-
-    setEnterpriseReporting(prev => ({
-      ...prev,
-      [reportType]: reportData
-    }));
-
-    return reportData;
-  }, [teamMembers, auditTrail]);
-
-  // Save current workflow version
-  const saveVersion = useCallback((versionName) => {
-    try {
-      const newVersion = {
-        id: Date.now().toString(),
-        name: versionName,
-        timestamp: new Date().toISOString(),
-        nodes: [...canvasNodes],
-        connections: [...canvasConnections],
-        metadata: {
-          author: currentUser?.name || 'Unknown User',
-          description: `Version saved on ${new Date().toLocaleDateString()}`,
-          changes: 'Manual save'
-        }
-      };
-
-      const updatedVersions = [...workflowVersions, newVersion];
-      setWorkflowVersions(updatedVersions);
-      setCurrentVersion(newVersion.id);
-
-      // Log audit event
-      logAuditEvent('version_saved', {
-        versionId: newVersion.id,
-        versionName,
-        author: currentUser?.name || 'Unknown User'
-      });
-
-      console.log('Version saved:', newVersion);
-      return newVersion;
-    } catch (error) {
-      console.error('Failed to save version:', error);
-      return null;
-    }
-  }, [canvasNodes, canvasConnections, workflowVersions, currentUser, setWorkflowVersions, setCurrentVersion, logAuditEvent]);
-
-  // 🤖 PHASE 3: AI INTELLIGENCE PANEL
-  const AIAssistantPanel = () => (
-    <AnimatePresence>
-      {(aiAssistantExpanded || showAiPanel) && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-4 top-20 w-96 bg-gradient-to-b from-purple-900/95 to-indigo-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-purple-500/40 z-50 max-h-[80vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-purple-500/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="p-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-white">AI Intelligence</span>
-                  <p className="text-xs text-purple-300">Advanced Flow Analytics</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${aiAssistantActive ? 'bg-green-400' : 'bg-gray-400'}`} />
-                <button 
-                  onClick={() => {
-                    setAiAssistantExpanded(false);
-                    setShowAiPanel(false);
-                  }}
-                  className="p-1 hover:bg-purple-800 rounded"
-                >
-                  <X className="w-4 h-4 text-purple-400" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(80vh-80px)]">
-            
-            {/* Flow Complexity Score */}
-            <div className="bg-gradient-to-r from-purple-800/50 to-indigo-800/50 rounded-lg p-3 border border-purple-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-purple-200">Flow Complexity</span>
-                <span className={`text-lg font-bold ${
-                  flowComplexityScore < 30 ? 'text-green-400' : 
-                  flowComplexityScore < 60 ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {flowComplexityScore}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full ${
-                    flowComplexityScore < 30 ? 'bg-green-400' : 
-                    flowComplexityScore < 60 ? 'bg-yellow-400' : 'bg-red-400'
-                  }`}
-                  style={{ width: `${flowComplexityScore}%` }}
-                />
-              </div>
-            </div>
-
-            {/* AI Insights */}
-            {aiInsights.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-white flex items-center">
-                  <Brain className="w-4 h-4 mr-2 text-purple-400" />
-                  AI Insights
-                </h3>
-                {aiInsights.slice(0, 3).map(insight => (
-                  <div key={insight.id} className={`p-3 rounded-lg border-l-4 ${
-                    insight.severity === 'success' ? 'bg-green-900/30 border-green-400' :
-                    insight.severity === 'warning' ? 'bg-yellow-900/30 border-yellow-400' :
-                    'bg-blue-900/30 border-blue-400'
-                  }`}>
-                    <h4 className="text-xs font-medium text-white">{insight.title}</h4>
-                    <p className="text-xs text-gray-300 mt-1">{insight.message}</p>
-                    <button className="text-xs text-purple-400 hover:text-purple-300 mt-1">
-                      {insight.action} →
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Smart Recommendations */}
-            {smartRecommendations.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-white flex items-center">
-                  <Lightbulb className="w-4 h-4 mr-2 text-yellow-400" />
-                  Smart Recommendations
-                </h3>
-                {smartRecommendations.slice(0, 2).map(rec => (
-                  <div key={rec.id} className="p-3 bg-yellow-900/20 rounded-lg border border-yellow-500/20">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-medium text-white">{rec.title}</h4>
-                      <span className="text-xs text-yellow-400">{rec.confidence}%</span>
-                    </div>
-                    <p className="text-xs text-gray-300 mt-1">{rec.description}</p>
-                    <button className="text-xs text-yellow-400 hover:text-yellow-300 mt-2 px-2 py-1 bg-yellow-900/30 rounded">
-                      Add {rec.suggestedNode}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Flow Optimizations */}
-            {flowOptimizations.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-white flex items-center">
-                  <Zap className="w-4 h-4 mr-2 text-orange-400" />
-                  Optimizations
-                </h3>
-                {flowOptimizations.slice(0, 2).map(opt => (
-                  <div key={opt.id} className={`p-3 rounded-lg border border-opacity-20 ${
-                    opt.priority === 'high' ? 'bg-red-900/20 border-red-400' :
-                    opt.priority === 'medium' ? 'bg-orange-900/20 border-orange-400' :
-                    'bg-blue-900/20 border-blue-400'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-medium text-white">{opt.title}</h4>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        opt.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                        opt.priority === 'medium' ? 'bg-orange-500/20 text-orange-400' :
-                        'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {opt.priority}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-300 mt-1">{opt.description}</p>
-                    <p className="text-xs text-green-400 mt-1">💡 {opt.impact}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-white">AI Actions</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={generateOptimizationSuggestions}
-                  className="p-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-white text-xs font-medium transition-all"
-                >
-                  🔍 Analyze
-                </button>
-                
-                <button 
-                  onClick={generateSmartRecommendations}
-                  className="p-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 rounded-lg text-white text-xs font-medium transition-all"
-                >
-                  💡 Suggest
-                </button>
-                
-                <button 
-                  onClick={generatePredictiveAnalytics}
-                  className="p-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-white text-xs font-medium transition-all"
-                >
-                  📊 Predict
-                </button>
-                
-                <button 
-                  onClick={enableRealTimeOptimization}
-                  className={`p-2 rounded-lg text-white text-xs font-medium transition-all ${
-                    realTimeOptimization 
-                      ? 'bg-gradient-to-r from-green-600 to-green-700' 
-                      : 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700'
-                  }`}
-                >
-                  {realTimeOptimization ? '✅ Real-time' : '🚀 Auto-Opt'}
-                </button>
-              </div>
-            </div>
-
-            {/* Predictive Analytics Summary */}
-            {Object.keys(predictiveAnalytics).length > 0 && (
-              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg p-3 border border-blue-500/20">
-                <h3 className="text-sm font-semibold text-white mb-2 flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-2 text-blue-400" />
-                  Predictions
-                </h3>
-                {predictiveAnalytics.conversionPrediction && (
-                  <div className="text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Conversion Rate:</span>
-                      <span className="text-green-400">{predictiveAnalytics.conversionPrediction.rate}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-300">Confidence:</span>
-                      <span className="text-blue-400">{predictiveAnalytics.conversionPrediction.confidence}%</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* AI Chat Input */}
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Ask AI: 'Optimize my flow' or 'Add error handling'..."
-                className="w-full p-2 bg-purple-800/30 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 text-xs focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    generateFlowFromPrompt(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
-  // 🏢 PHASE 4: ENTERPRISE COLLABORATION PANEL
-  const EnterpriseCollaborationPanel = () => (
-    <AnimatePresence>
-      {showCollaborationPanel && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-4 top-20 w-96 bg-gradient-to-b from-blue-900/95 to-cyan-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-blue-500/40 z-50 max-h-[80vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-blue-500/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                  <Users className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-white">Team Collaboration</span>
-                  <p className="text-xs text-blue-300">Enterprise Workspace</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowCollaborationPanel(false);
-                  setCollaborationMode(false);
-                }}
-                className="p-1 hover:bg-blue-800 rounded"
-              >
-                <X className="w-4 h-4 text-blue-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(80vh-80px)]">
-            
-            {/* Active Collaborators */}
-            <div className="bg-gradient-to-r from-blue-800/50 to-cyan-800/50 rounded-lg p-3 border border-blue-500/20">
-              <h3 className="text-sm font-medium text-blue-200 mb-3 flex items-center">
-                <User className="w-4 h-4 mr-2" />
-                Active Team Members ({activeCollaborators.length})
-              </h3>
-              <div className="space-y-2">
-                {teamMembers.map(member => (
-                  <div key={member.id} className="flex items-center justify-between p-2 bg-blue-900/30 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <div className="text-lg">{member.avatar}</div>
-                      <div>
-                        <div className="text-sm font-medium text-white">{member.name}</div>
-                        <div className="text-xs text-blue-300">{member.role}</div>
-                      </div>
-                    </div>
-                    <div className={`w-2 h-2 rounded-full ${
-                      member.status === 'online' ? 'bg-green-400' : 
-                      member.status === 'away' ? 'bg-yellow-400' : 'bg-gray-400'
-                    }`} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Current Permissions */}
-            <div className="bg-gradient-to-r from-cyan-800/50 to-blue-800/50 rounded-lg p-3 border border-cyan-500/20">
-              <h3 className="text-sm font-medium text-cyan-200 mb-3 flex items-center">
-                <Shield className="w-4 h-4 mr-2" />
-                Your Permissions
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['Edit', 'Approve', 'Deploy', 'Audit'].map(permission => (
-                  <div key={permission} className="flex items-center justify-between p-2 bg-cyan-900/30 rounded">
-                    <span className="text-xs text-cyan-300">{permission}</span>
-                    <CheckCircle className="w-3 h-3 text-green-400" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-gradient-to-r from-blue-800/50 to-cyan-800/50 rounded-lg p-3 border border-blue-500/20">
-              <h3 className="text-sm font-medium text-blue-200 mb-3 flex items-center">
-                <Activity className="w-4 h-4 mr-2" />
-                Recent Activity
-              </h3>
-              <div className="space-y-2">
-                {auditTrail.slice(0, 3).map(event => (
-                  <div key={event.id} className="p-2 bg-blue-900/30 rounded text-xs">
-                    <div className="text-white font-medium">{event.action}</div>
-                    <div className="text-blue-300">{new Date(event.timestamp).toLocaleTimeString()}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Collaboration Actions */}
-            <div className="space-y-2">
-              <button
-                onClick={() => createWorkflowBranch('feature-branch-' + Date.now())}
-                className="w-full p-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all font-medium"
-              >
-                Create Branch
-              </button>
-              <button
-                onClick={() => generateEnterpriseReport('team-collaboration')}
-                className="w-full p-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium"
-              >
-                Generate Report
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
-  // 🏢 PHASE 4: VERSION CONTROL PANEL
-  const VersionControlPanel = () => (
-    <AnimatePresence>
-      {showVersionControl && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-4 top-20 w-96 bg-gradient-to-b from-green-900/95 to-emerald-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-green-500/40 z-50 max-h-[80vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-green-500/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
-                  <GitBranch className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-white">Version Control</span>
-                  <p className="text-xs text-green-300">Current: {currentVersion}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowVersionControl(false)}
-                className="p-1 hover:bg-green-800 rounded"
-              >
-                <X className="w-4 h-4 text-green-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(80vh-80px)]">
-            
-            {/* Current Branch */}
-            <div className="bg-gradient-to-r from-green-800/50 to-emerald-800/50 rounded-lg p-3 border border-green-500/20">
-              <h3 className="text-sm font-medium text-green-200 mb-2">Current Branch</h3>
-              <div className="flex items-center justify-between">
-                <span className="text-white font-medium">{currentBranch}</span>
-                <span className="text-xs text-green-300 bg-green-900/50 px-2 py-1 rounded">v{currentVersion}</span>
-              </div>
-            </div>
-
-            {/* Version History */}
-            <div className="bg-gradient-to-r from-emerald-800/50 to-green-800/50 rounded-lg p-3 border border-emerald-500/20">
-              <h3 className="text-sm font-medium text-emerald-200 mb-3">Version History</h3>
-              <div className="space-y-2">
-                {workflowVersions.slice(0, 3).map(version => (
-                  <div key={version.id} className="p-2 bg-green-900/30 rounded">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-white">{version.name}</span>
-                      <span className="text-xs text-green-300">{version.status}</span>
-                    </div>
-                    <div className="text-xs text-green-400">{new Date(version.createdAt).toLocaleDateString()}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Merge Requests */}
-            <div className="bg-gradient-to-r from-green-800/50 to-emerald-800/50 rounded-lg p-3 border border-green-500/20">
-              <h3 className="text-sm font-medium text-green-200 mb-3">
-                Merge Requests ({mergeRequests.length})
-              </h3>
-              {mergeRequests.length > 0 ? (
-                <div className="space-y-2">
-                  {mergeRequests.slice(0, 2).map(request => (
-                    <div key={request.id} className="p-2 bg-green-900/30 rounded text-xs">
-                      <div className="text-white">Branch merge to {request.targetVersion}</div>
-                      <div className="text-green-300">{request.status} - {request.changes.nodesAdded} nodes added</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-green-400">No pending merge requests</div>
-              )}
-            </div>
-
-            {/* Version Control Actions */}
-            <div className="space-y-2">
-              <button
-                onClick={() => createWorkflowBranch('feature-' + Date.now())}
-                className="w-full p-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all font-medium"
-              >
-                Create Branch
-              </button>
-              <button
-                onClick={() => saveVersion(`v${Date.now()}`)}
-                className="w-full p-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg transition-all font-medium"
-              >
-                Save Version
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
-  // 🔧 PROPERTY PANEL COMPONENT
-  const PropertyPanel = () => (
-    <AnimatePresence>
-      {showPropertyPanel && selectedNodeForProperties && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-4 top-20 w-80 bg-gradient-to-b from-gray-800/95 to-gray-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-600/50 z-50 max-h-[80vh] overflow-hidden"
-        >
-          <div className="p-4 border-b border-gray-600/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className={`p-2 bg-gradient-to-br ${selectedNodeForProperties.color} rounded-lg`}>
-                  {selectedNodeForProperties.icon && React.createElement(selectedNodeForProperties.icon, { className: "w-4 h-4 text-white" })}
-                </div>
-                <span className="font-semibold text-white">{selectedNodeForProperties.label}</span>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowPropertyPanel(false);
-                  setSelectedNodeForProperties(null);
-                }}
-                className="p-1 hover:bg-gray-700 rounded text-gray-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-4 overflow-y-auto max-h-96">
-            <div className="space-y-4">
-              {/* Basic Properties */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Node Name
-                </label>
-                <input
-                  type="text"
-                  value={selectedNodeForProperties.data?.label || selectedNodeForProperties.label || ''}
-                  onChange={(e) => {
-                    const updatedNodes = canvasNodes.map(node => 
-                      node.id === selectedNodeForProperties.id 
-                        ? { ...node, data: { ...node.data, label: e.target.value } }
-                        : node
-                    );
-                    setCanvasNodes(updatedNodes);
-                    setSelectedNodeForProperties(prev => ({
-                      ...prev,
-                      data: { ...prev.data, label: e.target.value }
-                    }));
-                  }}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                  placeholder="Enter node name"
-                />
-              </div>
-
-              {/* Node Type Specific Properties */}
-              {selectedNodeForProperties.type === 'phone' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={selectedNodeForProperties.data?.phoneNumber || ''}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, phoneNumber: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, phoneNumber: e.target.value }
-                        }));
-                      }}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Call Type
-                    </label>
-                    <select
-                      value={selectedNodeForProperties.data?.callType || 'inbound'}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, callType: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, callType: e.target.value }
-                        }));
-                      }}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    >
-                      <option value="inbound">Inbound Call</option>
-                      <option value="outbound">Outbound Call</option>
-                      <option value="internal">Internal Transfer</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {selectedNodeForProperties.type === 'ai-assistant' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      AI Model
-                    </label>
-                    <select
-                      value={selectedNodeForProperties.data?.model || 'gpt-4'}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, model: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, model: e.target.value }
-                        }));
-                      }}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    >
-                      <option value="gpt-4">GPT-4</option>
-                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                      <option value="claude-3">Claude 3</option>
-                      <option value="gemini-pro">Gemini Pro</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      System Prompt
-                    </label>
-                    <textarea
-                      value={selectedNodeForProperties.data?.systemPrompt || ''}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, systemPrompt: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, systemPrompt: e.target.value }
-                        }));
-                      }}
-                      rows={3}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                      placeholder="You are a helpful customer service assistant..."
-                    />
-                  </div>
-                </>
-              )}
-
-              {selectedNodeForProperties.type === 'webhook' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Webhook URL
-                    </label>
-                    <input
-                      type="url"
-                      value={selectedNodeForProperties.data?.url || ''}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, url: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, url: e.target.value }
-                        }));
-                      }}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                      placeholder="https://api.example.com/webhook"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      HTTP Method
-                    </label>
-                    <select
-                      value={selectedNodeForProperties.data?.method || 'POST'}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, method: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, method: e.target.value }
-                        }));
-                      }}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    >
-                      <option value="GET">GET</option>
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="PATCH">PATCH</option>
-                      <option value="DELETE">DELETE</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {/* Advanced Properties */}
-              <div className="pt-4 border-t border-gray-600/50">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">Advanced Settings</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      value={selectedNodeForProperties.data?.description || ''}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, description: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, description: e.target.value }
-                        }));
-                      }}
-                      rows={2}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                      placeholder="Describe what this node does..."
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="node-enabled"
-                      checked={selectedNodeForProperties.data?.enabled !== false}
-                      onChange={(e) => {
-                        const updatedNodes = canvasNodes.map(node => 
-                          node.id === selectedNodeForProperties.id 
-                            ? { ...node, data: { ...node.data, enabled: e.target.checked } }
-                            : node
-                        );
-                        setCanvasNodes(updatedNodes);
-                        setSelectedNodeForProperties(prev => ({
-                          ...prev,
-                          data: { ...prev.data, enabled: e.target.checked }
-                        }));
-                      }}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <label htmlFor="node-enabled" className="text-sm text-gray-300">
-                      Node Enabled
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-
-  // 📁 FLOW MANAGEMENT COMPONENT
-  const FlowManagement = () => {
-    const [showManagement, setShowManagement] = useState(false);
-    const [flowName, setFlowName] = useState('My Flow');
-    const [flows, setFlows] = useState([]);
-
-    const saveCurrentFlow = () => {
-      const flowData = {
-        id: Date.now().toString(),
-        name: flowName,
-        nodes: canvasNodes,
-        connections,
-        createdAt: new Date().toISOString(),
-        version: '1.0.0'
-      };
-      
-      const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
-      savedFlows.push(flowData);
-      localStorage.setItem('vocelio-flows', JSON.stringify(savedFlows));
-      setFlows(savedFlows);
-      
-      // Show success message
-      alert(`Flow "${flowName}" saved successfully!`);
-    };
-
-    const loadFlow = (flow) => {
-      setCanvasNodes(flow.nodes || []);
-      setConnections(flow.connections || []);
-      setFlowName(flow.name);
-      setShowManagement(false);
-    };
-
-    const deleteFlow = (flowId) => {
-      if (window.confirm('Are you sure you want to delete this flow?')) {
-        const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
-        const updatedFlows = savedFlows.filter(flow => flow.id !== flowId);
-        localStorage.setItem('vocelio-flows', JSON.stringify(updatedFlows));
-        setFlows(updatedFlows);
-      }
-    };
-
-    const exportFlow = () => {
-      const flowData = {
-        name: flowName,
-        nodes: canvasNodes,
-        connections,
-        exportedAt: new Date().toISOString(),
-        version: '1.0.0'
-      };
-      
-      const dataStr = JSON.stringify(flowData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${flowName.replace(/\s+/g, '-').toLowerCase()}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    };
-
-    const importFlow = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const flowData = JSON.parse(e.target.result);
-            setCanvasNodes(flowData.nodes || []);
-            setConnections(flowData.connections || []);
-            setFlowName(flowData.name || 'Imported Flow');
-            alert('Flow imported successfully!');
-          } catch (error) {
-            alert('Error importing flow: Invalid file format');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-
-    React.useEffect(() => {
-      const savedFlows = JSON.parse(localStorage.getItem('vocelio-flows') || '[]');
-      setFlows(savedFlows);
-    }, []);
-
-  // 🏢 PHASE 4: ENTERPRISE COLLABORATION & WORKFLOW MANAGEMENT FUNCTIONS
-
-  // Enterprise Team Management
-  const initializeTeamCollaboration = useCallback(() => {
-    const mockTeamMembers = [
-      { id: 1, name: 'Sarah Chen', role: 'Flow Architect', avatar: '👩‍💼', status: 'online', permissions: ['edit', 'approve', 'deploy'] },
-      { id: 2, name: 'Marcus Johnson', role: 'Business Analyst', avatar: '👨‍💻', status: 'online', permissions: ['view', 'comment'] },
-      { id: 3, name: 'Elena Rodriguez', role: 'Compliance Officer', avatar: '👩‍⚖️', status: 'away', permissions: ['audit', 'approve'] },
-      { id: 4, name: 'David Kim', role: 'Technical Lead', avatar: '👨‍🔧', status: 'online', permissions: ['edit', 'deploy', 'admin'] }
-    ];
-
-    setTeamMembers(mockTeamMembers);
-    setActiveCollaborators(mockTeamMembers.filter(m => m.status === 'online'));
-
-    // Initialize enterprise permissions
-    const permissions = {
-      currentUser: 'admin',
-      canEdit: true,
-      canApprove: true,
-      canDeploy: true,
-      canAudit: true,
-      requiresApproval: false
-    };
-    setEnterprisePermissions(permissions);
-  }, []);
-
-  // Initialize Enterprise Features
-  React.useEffect(() => {
-    if (enterpriseMode) {
-      initializeTeamCollaboration();
-      initializeEnterpriseIntegrations();
-    }
-  }, [enterpriseMode, initializeTeamCollaboration, initializeEnterpriseIntegrations]);
-
-    return (
-      <>
-        <button
-          onClick={() => setShowManagement(true)}
-          className="fixed bottom-4 left-4 p-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-30"
-          title="Flow Management"
-        >
-          <Folder className="w-5 h-5" />
-        </button>
-
-        <AnimatePresence>
-          {showManagement && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            {/* Connection Lines */}
+            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '191px', left: '250px', transform: 'rotate(45deg)' }} />
+            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '341px', left: '250px', transform: 'rotate(45deg)' }} />
+            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '191px', left: '450px' }} />
+            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '341px', left: '450px' }} />
+            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '491px', left: '450px' }} />
+
+            {/* Comment Pin */}
+            <div 
+              className="absolute w-6 h-6 bg-red-500 rounded-full text-white flex items-center justify-center text-xs font-bold cursor-pointer shadow-lg"
+              style={{ top: '180px', left: '400px' }}
             >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl border border-gray-600"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-                    <Folder className="w-6 h-6" />
-                    <span>Flow Management</span>
-                  </h2>
-                  <button
-                    onClick={() => setShowManagement(false)}
-                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Current Flow */}
-                  <div className="border border-gray-600 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Current Flow</h3>
-                    <div className="flex items-center space-x-3 mb-4">
-                      <input
-                        type="text"
-                        value={flowName}
-                        onChange={(e) => setFlowName(e.target.value)}
-                        className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                        placeholder="Flow name"
-                      />
-                      <button
-                        onClick={saveCurrentFlow}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center space-x-2 transition-colors"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>Save</span>
-                      </button>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-400">
-                      <span>{canvasNodes.length} nodes</span>
-                      <span>•</span>
-                      <span>{connections.length} connections</span>
-                    </div>
-                  </div>
-
-                  {/* Import/Export */}
-                  <div className="border border-gray-600 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Import/Export</h3>
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={exportFlow}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Export Flow</span>
-                      </button>
-                      <label className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors cursor-pointer">
-                        <Upload className="w-4 h-4" />
-                        <span>Import Flow</span>
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={importFlow}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Saved Flows */}
-                  <div className="border border-gray-600 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Saved Flows ({flows.length})</h3>
-                    <div className="max-h-60 overflow-y-auto space-y-2">
-                      {flows.length === 0 ? (
-                        <div className="text-gray-400 text-center py-8">
-                          <Folder className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                          <p>No saved flows yet</p>
-                          <p className="text-sm">Create and save your first flow above!</p>
-                        </div>
-                      ) : (
-                        flows.map((flow) => (
-                          <div key={flow.id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="font-medium text-white">{flow.name}</h4>
-                                <span className="text-xs text-gray-400">v{flow.version}</span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
-                                <span>{flow.nodes?.length || 0} nodes</span>
-                                <span>•</span>
-                                <span>{flow.connections?.length || 0} connections</span>
-                                <span>•</span>
-                                <span>{new Date(flow.createdAt).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => loadFlow(flow)}
-                                className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                                title="Load Flow"
-                              >
-                                <Folder className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => deleteFlow(flow.id)}
-                                className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                                title="Delete Flow"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </>
-    );
-  };
-
-  // 🎨 MAIN COMPONENT RETURN
-  return (
-    <div className="h-screen flex bg-gradient-to-br from-slate-900 via-gray-900 to-indigo-900 text-white overflow-hidden relative">
-      {/* Enhanced Sidebar */}
-      <EnhancedSidebar />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* World-Class Header */}
-        <div className="h-16 bg-black/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 relative z-30">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              {activeView === 'canvas' ? 'Flow Canvas' : 
-               activeView === 'flows' ? 'Enterprise Flows' :
-               activeView === 'analytics' ? 'Flow Analytics' : 'Flow Builder'}
-            </h1>
-            
-            {isAutoSaving && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center space-x-2 text-green-400"
-              >
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-xs">Auto-saving...</span>
-              </motion.div>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* Flow Controls */}
-            <div className="flex items-center space-x-2 bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setActiveView('flows')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  activeView === 'flows' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Flows
-              </button>
-              <button
-                onClick={() => setActiveView('canvas')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  activeView === 'canvas' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Canvas
-              </button>
-              <button
-                onClick={() => setActiveView('analytics')}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  activeView === 'analytics' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Analytics
-              </button>
+              1
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setFlowTesting(!flowTesting)}
-                className={`p-2 rounded-lg transition-all ${
-                  flowTesting ? 'bg-green-500 text-white' : 'bg-white/10 hover:bg-white/20 text-gray-300'
-                }`}
-                title="Test Flow"
-              >
-                <Play className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => setCollaborationMode(!collaborationMode)}
-                className={`p-2 rounded-lg transition-all ${
-                  collaborationMode ? 'bg-purple-500 text-white' : 'bg-white/10 hover:bg-white/20 text-gray-300'
-                }`}
-                title="Collaboration Mode"
-              >
-                <Users className="w-4 h-4" />
-              </button>
-
-              {selectedNodes.size > 0 && (
-                <button
-                  onClick={deleteSelectedNodes}
-                  className="p-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg transition-all text-red-400"
-                  title={`Delete ${selectedNodes.size} selected node${selectedNodes.size > 1 ? 's' : ''}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-
-              <button
-                onClick={saveFlow}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-gray-300"
-                title="Save Flow"
-              >
-                <Save className="w-4 h-4" />
-              </button>
-
-              {/* Phase 2: Advanced Controls */}
-              <button
-                onClick={() => setShowTemplateModal(true)}
-                className="p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-blue-400"
-                title="Flow Templates"
-              >
-                <Folder className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setShowVersionModal(true)}
-                className="p-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg transition-all text-green-400"
-                title="Version Control"
-              >
-                <GitBranch className="w-4 h-4" />
-              </button>
-
-              {/* Phase 3: AI Intelligence */}
-              <button
-                onClick={() => {
-                  setShowAiPanel(!showAiPanel);
-                  if (!showAiPanel) {
-                    toggleAiAssistant();
-                  }
-                }}
-                className={`p-2 border rounded-lg transition-all ${
-                  showAiPanel || aiAssistantActive 
-                    ? 'bg-purple-500/30 border-purple-500/50 text-purple-300' 
-                    : 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30 text-purple-400'
-                }`}
-                title="AI Intelligence Panel"
-              >
-                <Brain className="w-4 h-4" />
-              </button>
-
-              {/* Phase 4: Enterprise Collaboration */}
-              <button
-                onClick={() => {
-                  setShowCollaborationPanel(!showCollaborationPanel);
-                  setCollaborationMode(!collaborationMode);
-                }}
-                className={`p-2 border rounded-lg transition-all ${
-                  collaborationMode 
-                    ? 'bg-blue-500/30 border-blue-500/50 text-blue-300' 
-                    : 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-400'
-                }`}
-                title="Team Collaboration"
-              >
-                <Users className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setShowVersionControl(!showVersionControl)}
-                className={`p-2 border rounded-lg transition-all ${
-                  showVersionControl 
-                    ? 'bg-green-500/30 border-green-500/50 text-green-300' 
-                    : 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30 text-green-400'
-                }`}
-                title="Version Control & Branching"
-              >
-                <GitBranch className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setShowEnterpriseSettings(!showEnterpriseSettings)}
-                className={`p-2 border rounded-lg transition-all ${
-                  showEnterpriseSettings 
-                    ? 'bg-orange-500/30 border-orange-500/50 text-orange-300' 
-                    : 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/30 text-orange-400'
-                }`}
-                title="Enterprise Settings"
-              >
-                <Shield className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={startCollaboration}
-                className={`p-2 rounded-lg transition-all ${
-                  collaborationMode ? 'bg-purple-500 text-white' : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
-                }`}
-                title="Start Collaboration"
-              >
-                <Users className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={validateFlow}
-                className="p-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 rounded-lg transition-all text-orange-400"
-                title="Validate Flow"
-              >
-                <CheckCircle className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setAiAssistantExpanded(!aiAssistantExpanded)}
-                className="p-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-lg transition-all text-white shadow-lg"
-                title="AI Assistant"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex relative">
-          {/* Canvas */}
-          <div 
-            ref={canvasRef}
-            className="flex-1 bg-gradient-to-br from-gray-900/50 to-slate-900/50 relative overflow-hidden"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)', backgroundSize: '20px 20px' }}
-            onClick={(e) => {
-              // Clear selection when clicking on empty canvas
-              if (e.target === e.currentTarget) {
-                setSelectedNodes(new Set());
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (draggedNode) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                const x = e.clientX - rect.left - 96; // Center the node (192px width / 2)
-                const y = e.clientY - rect.top - 48; // Center the node (96px height / 2)
-                
-                const newNode = {
-                  id: uuidv4(),
-                  type: draggedNode.id,
-                  label: draggedNode.label,
-                  icon: draggedNode.icon,
-                  color: draggedNode.color,
-                  position: { x, y },
-                  data: { label: draggedNode.label }
-                };
-                
-                setCanvasNodes([...canvasNodes, newNode]);
-                setDraggedNode(null);
-              }
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-            }}
-          >
-            {activeView === 'canvas' && (
-              <div className="absolute inset-0">
-                {/* Canvas Content */}
-                <div className="w-full h-full relative">
-                  {/* Selection indicator */}
-                  {selectedNodes.size > 0 && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-lg z-20">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                          {selectedNodes.size} node{selectedNodes.size > 1 ? 's' : ''} selected
-                        </span>
-                        <button
-                          onClick={() => setSelectedNodes(new Set())}
-                          className="ml-2 p-1 hover:bg-white/20 rounded"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Render nodes */}
-                  {memoizedNodes.map(node => (
-                    <motion.div
-                      key={node.id}
-                      className={`absolute w-48 h-24 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 ${
-                        selectedNodes.has(node.id) ? 'border-blue-500 shadow-lg shadow-blue-500/25' : 'border-gray-600'
-                      } cursor-move transition-all hover:scale-105 group`}
-                      style={{
-                        left: node.position?.x || 100,
-                        top: node.position?.y || 100
-                      }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      drag
-                      dragConstraints={canvasRef}
-                      onDragStart={() => {
-                        if (!selectedNodes.has(node.id)) {
-                          setSelectedNodes(new Set([node.id]));
-                        }
-                      }}
-                      onDragEnd={(event, info) => {
-                        const newNodes = canvasNodes.map(n => {
-                          if (selectedNodes.has(n.id)) {
-                            return {
-                              ...n,
-                              position: {
-                                x: n.id === node.id ? n.position.x + info.offset.x : n.position.x,
-                                y: n.id === node.id ? n.position.y + info.offset.y : n.position.y
-                              }
-                            };
-                          }
-                          return n;
-                        });
-                        setCanvasNodes(newNodes);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newSelection = new Set();
-                        if (e.ctrlKey || e.metaKey) {
-                          newSelection.add(...selectedNodes);
-                          if (selectedNodes.has(node.id)) {
-                            newSelection.delete(node.id);
-                          } else {
-                            newSelection.add(node.id);
-                          }
-                        } else {
-                          newSelection.add(node.id);
-                        }
-                        setSelectedNodes(newSelection);
-                        setSelectedNodeForProperties(node);
-                        setShowPropertyPanel(true);
-                      }}
-                    >
-                      <div className="p-4 h-full flex flex-col justify-between">
-                        {/* Input Handle */}
-                        <div
-                          className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-green-500 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-transform z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isConnecting && connectionStart) {
-                              endConnection(node.id, 'input');
-                            } else {
-                              startConnection(node.id, 'input');
-                            }
-                          }}
-                          title="Input port"
-                        />
-                        
-                        {/* Output Handle */}
-                        <div
-                          className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-transform z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isConnecting && connectionStart) {
-                              endConnection(node.id, 'output');
-                            } else {
-                              startConnection(node.id, 'output');
-                            }
-                          }}
-                          title="Output port"
-                        />
-
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 bg-gradient-to-br ${node.color || 'from-blue-500 to-purple-600'} rounded-lg`}>
-                            {node.icon && React.createElement(node.icon, { className: "w-4 h-4 text-white" })}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-white truncate">
-                              {node.data?.label || node.label || 'Untitled'}
-                            </h3>
-                            <p className="text-xs text-gray-400 truncate">
-                              {node.type || 'Node'}
-                            </p>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newNodes = canvasNodes.filter(n => n.id !== node.id);
-                              const newConnections = canvasConnections.filter(conn => 
-                                conn.source !== node.id && conn.target !== node.id
-                              );
-                              setCanvasNodes(newNodes);
-                              setCanvasConnections(newConnections);
-                              setSelectedNodes(prev => {
-                                const updated = new Set(prev);
-                                updated.delete(node.id);
-                                return updated;
-                              });
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
-                            title="Delete Node"
-                          >
-                            <X className="w-3 h-3 text-red-400" />
-                          </button>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-gray-500">
-                            {node.id.slice(0, 8)}
-                          </div>
-                          <div className="text-xs text-blue-400">
-                            {selectedNodes.has(node.id) ? 'Selected' : ''}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-
-                  {/* Connection Lines */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                    <defs>
-                      <marker
-                        id="arrowhead"
-                        markerWidth="10"
-                        markerHeight="7"
-                        refX="9"
-                        refY="3.5"
-                        orient="auto"
-                      >
-                        <polygon
-                          points="0 0, 10 3.5, 0 7"
-                          fill="#60a5fa"
-                        />
-                      </marker>
-                    </defs>
-                    
-                    {canvasConnections.map(connection => {
-                      const sourcePos = getConnectionHandlePosition(connection.source, 'output');
-                      const targetPos = getConnectionHandlePosition(connection.target, 'input');
-                      const path = createConnectionPath(sourcePos, targetPos);
-                      const isSelected = selectedConnections.has(connection.id);
-                      
-                      return (
-                        <g key={connection.id}>
-                          {/* Invisible thick line for easier clicking */}
-                          <path
-                            d={path}
-                            stroke="transparent"
-                            strokeWidth="20"
-                            fill="none"
-                            className="pointer-events-auto cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (selectedConnections.has(connection.id)) {
-                                setSelectedConnections(new Set());
-                              } else {
-                                setSelectedConnections(new Set([connection.id]));
-                              }
-                            }}
-                          />
-                          {/* Visible connection line */}
-                          <path
-                            d={path}
-                            stroke={isSelected ? "#f59e0b" : "#60a5fa"}
-                            strokeWidth={isSelected ? "3" : "2"}
-                            fill="none"
-                            markerEnd="url(#arrowhead)"
-                            className={`transition-all duration-200 ${isSelected ? 'drop-shadow-lg' : ''}`}
-                          />
-                          {/* Connection label */}
-                          {isSelected && (
-                            <foreignObject
-                              x={sourcePos.x + (targetPos.x - sourcePos.x) / 2 - 20}
-                              y={sourcePos.y + (targetPos.y - sourcePos.y) / 2 - 15}
-                              width="40"
-                              height="30"
-                            >
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteConnection(connection.id);
-                                }}
-                                className="w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
-                                title="Delete Connection"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </foreignObject>
-                          )}
-                        </g>
-                      );
-                    })}
-                    
-                    {/* Active connection being drawn */}
-                    {isConnecting && connectionStart && connectionEnd && (
-                      <path
-                        d={createConnectionPath(
-                          getConnectionHandlePosition(connectionStart.nodeId, connectionStart.handleType),
-                          connectionEnd
-                        )}
-                        stroke="#10b981"
-                        strokeWidth="2"
-                        fill="none"
-                        strokeDasharray="5,5"
-                        className="animate-pulse"
-                      />
-                    )}
-                  </svg>
-
-                  {/* Empty state */}
-                  {canvasNodes.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <Workflow className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-400 mb-2">Start Building Your Flow</h2>
-                        <p className="text-gray-500 mb-6">Drag nodes from the sidebar to begin</p>
-                        <button
-                          onClick={() => setShowCreateFlowModal(true)}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg font-semibold text-white transition-all shadow-lg"
-                        >
-                          Create New Flow
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Demo showcase message */}
-                  {canvasNodes.length > 0 && (
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-500/30 rounded-lg p-4 max-w-md">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Sparkles className="w-5 h-5 text-blue-400" />
-                        <h3 className="font-semibold text-white">World-Class Flow Builder</h3>
-                      </div>
-                      <p className="text-sm text-blue-200 mb-3">
-                        🎯 This is one of the world's most advanced flow builders with AI-powered features, real-time collaboration, and 20+ enterprise node types!
-                      </p>
-                      <div className="space-y-1 text-xs text-blue-300">
-                        <p>✅ Drag & drop nodes from sidebar</p>
-                        <p>✅ Select nodes to edit properties</p>
-                        <p>✅ Use Ctrl+S to save, Ctrl+Z to undo</p>
-                        <p>✅ Click AI Assistant for optimization</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeView === 'flows' && (
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Your Flows</h2>
-                    <p className="text-gray-400">Manage and organize your automation flows</p>
-                  </div>
-                  <button
-                    onClick={() => setShowCreateFlowModal(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg font-semibold text-white transition-all shadow-lg flex items-center space-x-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>Create Flow</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {flowTemplates.map(template => (
-                    <motion.div
-                      key={template.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-all cursor-pointer shadow-lg"
-                      onClick={() => {
-                        setActiveView('canvas');
-                        // Load template
-                      }}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="text-4xl">{template.thumbnail}</div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          template.complexity === 'Beginner' ? 'bg-green-500/20 text-green-400' :
-                          template.complexity === 'Intermediate' ? 'bg-yellow-500/20 text-yellow-400' :
-                          template.complexity === 'Advanced' ? 'bg-orange-500/20 text-orange-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
-                          {template.complexity}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-xl font-bold text-white mb-2">{template.name}</h3>
-                      <p className="text-gray-400 text-sm mb-4">{template.description}</p>
-                      
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>{template.nodes} nodes</span>
-                        <span>{template.estimatedSetup}</span>
-                      </div>
-                      
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {template.features.map(feature => (
-                          <span key={feature} className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeView === 'analytics' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2">Flow Analytics</h2>
-                  <p className="text-gray-400">Monitor performance and optimize your flows</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {[
-                    { label: 'Active Flows', value: '12', change: '+2', icon: Workflow },
-                    { label: 'Total Executions', value: '1,234', change: '+15%', icon: Play },
-                    { label: 'Success Rate', value: '98.5%', change: '+0.5%', icon: CheckCircle },
-                    { label: 'Avg Response Time', value: '245ms', change: '-12ms', icon: Clock }
-                  ].map((metric, index) => (
-                    <div key={index} className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg`}>
-                          {React.createElement(metric.icon, { className: "w-5 h-5 text-white" })}
-                        </div>
-                        <span className={`text-sm font-medium ${
-                          metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {metric.change}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-white mb-1">{metric.value}</div>
-                        <div className="text-gray-400 text-sm">{metric.label}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700">
-                  <h3 className="text-xl font-bold text-white mb-4">Performance Overview</h3>
-                  <div className="h-64 bg-gray-700/50 rounded-lg flex items-center justify-center">
-                    <p className="text-gray-400">Analytics Chart Placeholder</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* AI Assistant Panel */}
-      <AIAssistantPanel />
+      {/* Floating Action Button */}
+      <button
+        onClick={() => showModal('addNode')}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-30"
+      >
+        <Plus size={24} />
+      </button>
 
-      {/* Phase 4: Enterprise Collaboration Panels */}
-      <EnterpriseCollaborationPanel />
-      <VersionControlPanel />
-
-      {/* Property Panel */}
-      <PropertyPanel />
-
-      {/* Flow Management */}
-      <FlowManagement />
-
-      {/* Enhanced Properties Panel */}
-      {selectedNodes.size > 0 && !rightPanelCollapsed && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="w-96 bg-gradient-to-b from-gray-800 to-gray-900 border-l border-gray-700 flex flex-col relative z-20"
-        >
-          <div className="p-6 border-b border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">Properties</h2>
-              <button
-                onClick={() => setRightPanelCollapsed(true)}
-                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      {/* Command Palette */}
+      {commandPaletteVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) setCommandPaletteVisible(false);
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-lg mx-4 ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`p-4 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <input
+                ref={commandSearchRef}
+                type="text"
+                placeholder="Search commands..."
+                className={`w-full text-lg border-none outline-none bg-transparent ${
+                  isDarkMode ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+                }`}
+              />
             </div>
-            
-            {selectedNodes.size === 1 && (
-              <div className="flex items-center space-x-3 p-3 bg-gray-700/50 rounded-lg">
-                {(() => {
-                  const node = canvasNodes.find(n => selectedNodes.has(n.id));
-                  const nodeType = nodeTypes.find(nt => nt.id === node?.type);
-                  return (
-                    <>
-                      <div className={`p-2 bg-gradient-to-br ${nodeType?.color} rounded-lg`}>
-                        {nodeType && React.createElement(nodeType.icon, { className: "w-5 h-5 text-white" })}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-white">{nodeType?.label}</h3>
-                        <p className="text-xs text-gray-400">{node?.data?.label || 'Untitled'}</p>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            {selectedNodes.size === 1 && (() => {
-              const selectedNode = canvasNodes.find(n => selectedNodes.has(n.id));
-              if (!selectedNode) return null;
-              
-              return (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Label</label>
-                    <input
-                      type="text"
-                      value={selectedNode.data?.label || ''}
-                      onChange={(e) => {
-                        const newNodes = canvasNodes.map(node =>
-                          node.id === selectedNode.id
-                            ? { ...node, data: { ...node.data, label: e.target.value } }
-                            : node
-                        );
-                        setCanvasNodes(newNodes);
-                      }}
-                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                      placeholder="Enter node label"
-                    />
+            <div className="max-h-80 overflow-y-auto">
+              {[
+                { icon: Plus, name: 'Add Node', description: 'Add a new workflow node', shortcut: 'Ctrl+N' },
+                { icon: Save, name: 'Save Pathway', description: 'Save current workflow', shortcut: 'Ctrl+S' },
+                { icon: TestTube, name: 'Test Pathway', description: 'Test the workflow', shortcut: 'Ctrl+T' },
+                { icon: Download, name: 'Export Workflow', description: 'Export as JSON or image', shortcut: 'Ctrl+E' }
+              ].map((command, idx) => (
+                <div key={idx} className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                  isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                }`}>
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                    <command.icon size={16} />
                   </div>
-
-                  {selectedNode.type === 'phone' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-                      <input
-                        type="tel"
-                        value={selectedNode.data?.phoneNumber || ''}
-                        onChange={(e) => {
-                          const newNodes = canvasNodes.map(node =>
-                            node.id === selectedNode.id
-                              ? { ...node, data: { ...node.data, phoneNumber: e.target.value } }
-                              : node
-                          );
-                          setCanvasNodes(newNodes);
-                        }}
-                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  )}
-
-                  {selectedNode.type === 'ai-assistant' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">AI Model</label>
-                        <select
-                          value={selectedNode.data?.model || 'gpt-4'}
-                          onChange={(e) => {
-                            const newNodes = canvasNodes.map(node =>
-                              node.id === selectedNode.id
-                                ? { ...node, data: { ...node.data, model: e.target.value } }
-                                : node
-                            );
-                            setCanvasNodes(newNodes);
-                          }}
-                          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500"
-                        >
-                          <option value="gpt-4">GPT-4</option>
-                          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                          <option value="claude-3">Claude 3</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">System Prompt</label>
-                        <textarea
-                          value={selectedNode.data?.systemPrompt || ''}
-                          onChange={(e) => {
-                            const newNodes = canvasNodes.map(node =>
-                              node.id === selectedNode.id
-                                ? { ...node, data: { ...node.data, systemPrompt: e.target.value } }
-                                : node
-                            );
-                            setCanvasNodes(newNodes);
-                          }}
-                          rows={4}
-                          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 resize-none"
-                          placeholder="You are a helpful AI assistant..."
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {selectedNodes.size > 1 && (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-white mb-2">Multiple Nodes Selected</h3>
-                <p className="text-gray-400 mb-4">{selectedNodes.size} nodes selected</p>
-                <div className="space-y-2">
-                  <button 
-                    onClick={deleteSelectedNodes}
-                    className="w-full p-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-400 font-medium transition-colors"
-                  >
-                    Delete Selected ({selectedNodes.size})
-                  </button>
-                  <button 
-                    onClick={groupSelectedNodes}
-                    className="w-full p-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-400 font-medium transition-colors"
-                  >
-                    Group Nodes
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Create Flow Modal */}
-      <AnimatePresence>
-        {showCreateFlowModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Create New Flow</h2>
-                <button
-                  onClick={() => setShowCreateFlowModal(false)}
-                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Flow Name</label>
-                  <input
-                    type="text"
-                    placeholder="My Awesome Flow"
-                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Template</label>
-                    <div className="space-y-2">
-                      {flowTemplates.slice(0, 3).map(template => (
-                        <div key={template.id} className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition-colors border border-gray-600">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-2xl">{template.thumbnail}</span>
-                            <div>
-                              <h4 className="font-medium text-white">{template.name}</h4>
-                              <p className="text-xs text-gray-400">{template.complexity} • {template.estimatedSetup}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex-1">
+                    <div className={`font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{command.name}</div>
+                    <div className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>{command.description}</div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Advanced Options</label>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-300">Enable Analytics</span>
-                        <button className="w-12 h-6 bg-blue-500 rounded-full relative">
-                          <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-300">Auto-save</span>
-                        <button className="w-12 h-6 bg-blue-500 rounded-full relative">
-                          <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5" />
-                        </button>
-                      </div>
-                    </div>
+                  <div className={`text-xs px-2 py-1 rounded ${
+                    isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {command.shortcut}
                   </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 pt-6">
-                <button
-                  onClick={() => setShowCreateFlowModal(false)}
-                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold text-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreateFlowModal(false);
-                    setActiveView('canvas');
-                  }}
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg font-semibold text-white transition-all shadow-lg"
-                >
-                  Create Flow
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Collaboration Users */}
-      {collaborationMode && realTimeUsers.length > 0 && (
-        <div className="fixed top-20 right-4 z-40">
-          <div className="bg-black/80 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-            <div className="flex items-center space-x-2">
-              <Users className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-white">
-                {realTimeUsers.length} collaborator{realTimeUsers.length > 1 ? 's' : ''} online
-              </span>
-            </div>
-            <div className="flex space-x-2 mt-2">
-              {realTimeUsers.slice(0, 5).map(user => (
-                <div
-                  key={user.id}
-                  className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white"
-                  title={user.name}
-                >
-                  {user.name.charAt(0)}
                 </div>
               ))}
             </div>
@@ -3348,496 +742,1149 @@ const EnterpriseFlowBuilder = () => {
         </div>
       )}
 
-      {/* Phase 2: Advanced Template Modal */}
-      <AnimatePresence>
-        {showTemplateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-            onClick={() => setShowTemplateModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-white/20"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Flow Templates</h2>
-                <button
-                  onClick={() => setShowTemplateModal(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {flowTemplates.map(template => (
-                  <motion.div
-                    key={template.id}
-                    whileHover={{ scale: 1.02 }}
-                    className="bg-gray-800 rounded-lg p-4 border border-white/10 cursor-pointer hover:border-blue-500/50"
-                    onClick={() => loadTemplate(template.id)}
-                  >
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="text-2xl">{template.thumbnail}</div>
-                      <div>
-                        <h3 className="font-semibold text-white">{template.name}</h3>
-                        <p className="text-sm text-gray-400">{template.category} • v{template.version}</p>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-300 mb-3">{template.description}</p>
-                    
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        template.complexity === 'Beginner' ? 'bg-green-500/20 text-green-400' :
-                        template.complexity === 'Intermediate' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
-                        {template.complexity}
-                      </span>
-                      <span className="text-xs text-gray-400">{template.estimatedSetup}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <span>⭐ {template.rating}</span>
-                      <span>📥 {template.downloads.toLocaleString()}</span>
-                      <span>🧩 {template.nodes} nodes</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {template.tags.map(tag => (
-                        <span key={tag} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-white/10">
-                <button
-                  onClick={createTemplateFromFlow}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Create Template from Current Flow</span>
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Phase 2: Version Control Modal */}
-      <AnimatePresence>
-        {showVersionModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-            onClick={() => setShowVersionModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 rounded-xl p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-white/20"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Version Control</h2>
-                <button
-                  onClick={() => setShowVersionModal(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <GitBranch className="w-5 h-5 text-blue-400" />
-                    <span className="text-white">Current: {currentBranch}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Tag className="w-5 h-5 text-green-400" />
-                    <span className="text-white">v{currentVersion}</span>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => createVersion()}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Version</span>
-                  </button>
-                  <button
-                    onClick={() => createBranch(`branch_${Date.now()}`)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
-                  >
-                    <GitBranch className="w-4 h-4" />
-                    <span>New Branch</span>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-white">Version History</h3>
-                {flowVersions.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">No versions created yet</p>
-                ) : (
-                  flowVersions.map(version => (
-                    <motion.div
-                      key={version.id}
-                      whileHover={{ scale: 1.01 }}
-                      className="bg-gray-800 rounded-lg p-4 border border-white/10 cursor-pointer hover:border-blue-500/50"
-                      onClick={() => loadVersion(version.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-semibold text-white">v{version.version}</span>
-                            <span className="text-sm text-gray-400">by {version.author}</span>
-                          </div>
-                          <p className="text-sm text-gray-300">{version.description || 'No description'}</p>
-                          <p className="text-xs text-gray-500">{new Date(version.timestamp).toLocaleString()}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            version.changes === 'Stable' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                          }`}>
-                            {version.changes}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Phase 2: Collaboration Panel */}
-      <AnimatePresence>
-        {showCollaborationPanel && (
-          <motion.div
-            initial={{ x: 300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
-            className="fixed right-0 top-0 h-full w-80 bg-gray-900 border-l border-white/20 z-40 flex flex-col"
-          >
-            <div className="p-4 border-b border-white/10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Collaboration</h3>
-                <button
-                  onClick={() => setShowCollaborationPanel(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Modals */}
+      {activeModal === 'addNode' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Add New Node</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
             </div>
-            
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Online Users ({onlineUsers.length})</h4>
-                <div className="space-y-2">
-                  {onlineUsers.map(user => (
-                    <div key={user.id} className="flex items-center space-x-3 p-2 bg-gray-800 rounded-lg">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
-                        {user.email.charAt(0).toUpperCase()}
+
+            <div className={`flex border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              {['featured', 'library'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-3 border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? 'border-blue-600 text-blue-600'
+                      : isDarkMode 
+                        ? 'border-transparent text-gray-400 hover:text-gray-200' 
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {tab === 'featured' ? 'Featured Nodes' : 'Node Library'}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6">
+              {activeTab === 'featured' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    { type: 'collect-phone', icon: '📱', title: 'Collect Phone Number', content: 'A node which collect US phone number, enabling back-channeling repeating system' },
+                    { type: 'collect-email', icon: '✉️', title: 'Collect Email', content: 'Collect and validate email addresses from users' },
+                    { type: 'schedule-meeting', icon: '📅', title: 'Schedule Meeting', content: 'Book appointments and manage calendar integration' }
+                  ].map(node => (
+                    <div
+                      key={node.type}
+                      onClick={() => addNodeToCanvas(node.type)}
+                      className={`border-2 rounded-xl p-4 cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all duration-200 ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                          {node.icon}
+                        </div>
+                        <div className={`font-semibold ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{node.title}</div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-white">{user.email}</p>
-                        <p className="text-xs text-gray-400">{user.role}</p>
-                      </div>
-                      <div className={`w-2 h-2 rounded-full ${
-                        user.status === 'online' ? 'bg-green-400' : 'bg-gray-400'
-                      }`} />
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                      }`}>{node.content}</div>
                     </div>
                   ))}
                 </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Invite Collaborator</h4>
-                <div className="flex space-x-2">
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    className="flex-1 px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white placeholder-gray-400"
-                  />
-                  <button
-                    onClick={() => inviteCollaborator('user@example.com')}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-                  >
-                    Invite
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Flow Validation</h4>
-                <button
-                  onClick={validateFlow}
-                  disabled={isValidating}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 rounded-lg text-white"
-                >
-                  {isValidating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Validating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Validate Flow</span>
-                    </>
-                  )}
-                </button>
-                
-                {validationErrors.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {validationErrors.map(error => (
-                      <div
-                        key={error.id}
-                        className={`p-2 rounded-lg text-sm ${
-                          error.type === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
-                        }`}
-                      >
-                        {error.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              ) : (
+                <p className={`text-center py-8 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Node Library - Coming Soon</p>
+              )}
             </div>
-            
-            <div className="p-4 border-t border-white/10">
-              <button
-                onClick={stopCollaboration}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
-              >
-                <X className="w-4 h-4" />
-                <span>Stop Collaboration</span>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Node Modal */}
+      {activeModal === 'editNode' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Edit Node</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* PHASE 3: Advanced Analytics Modal */}
-      <AnimatePresence>
-        {Object.keys(predictiveAnalytics).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setPredictiveAnalytics({})}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                    <BarChart3 className="w-6 h-6 text-white" />
+            <div className="p-6 space-y-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Node Type</label>
+                <select 
+                  value={nodeForm.type}
+                  onChange={(e) => setNodeForm({...nodeForm, type: e.target.value})}
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <option>Large Text</option>
+                  <option>Small Text</option>
+                  <option>Collect Info</option>
+                  <option>Decision</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Name:</label>
+                <input
+                  type="text"
+                  value={nodeForm.name}
+                  onChange={(e) => setNodeForm({...nodeForm, name: e.target.value})}
+                  placeholder="Enter node name"
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-6 rounded-full cursor-pointer transition-colors ${nodeForm.staticText ? 'bg-blue-600' : 'bg-gray-300'}`}
+                     onClick={() => setNodeForm({...nodeForm, staticText: !nodeForm.staticText})}>
+                  <div className={`w-5 h-5 bg-white rounded-full transition-transform ${nodeForm.staticText ? 'translate-x-6' : 'translate-x-0.5'} translate-y-0.5`} />
+                </div>
+                <label className={`text-sm ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Static Text (When you want the agent to say a specific dialogue. Uncheck to use AI generated text)</label>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Prompt:</label>
+                <textarea
+                  value={nodeForm.prompt}
+                  onChange={(e) => setNodeForm({...nodeForm, prompt: e.target.value})}
+                  placeholder="Enter the prompt for this node..."
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none h-32 resize-vertical ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Paste Plain Text Content:</label>
+                <textarea
+                  value={nodeForm.plainText}
+                  onChange={(e) => setNodeForm({...nodeForm, plainText: e.target.value})}
+                  placeholder="Enter plain text content that the agent should say..."
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none h-32 resize-vertical ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Loop Condition</label>
+                <textarea
+                  value={nodeForm.loopCondition}
+                  onChange={(e) => setNodeForm({...nodeForm, loopCondition: e.target.value})}
+                  placeholder="Describe the condition for when the agent should move to the next node..."
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none h-24 resize-vertical ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              {/* Advanced Options */}
+              <div className={`rounded-lg p-6 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+              }`}>
+                <h3 className={`text-lg font-semibold mb-4 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Advanced Options</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Global Node</div>
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Make this node accessible from any other node</div>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full cursor-pointer transition-colors ${nodeForm.globalNode ? 'bg-blue-600' : 'bg-gray-300'}`}
+                         onClick={() => setNodeForm({...nodeForm, globalNode: !nodeForm.globalNode})}>
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${nodeForm.globalNode ? 'translate-x-6' : 'translate-x-0.5'} translate-y-0.5`} />
+                    </div>
                   </div>
+
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Advanced Analytics</h2>
-                    <p className="text-gray-400">AI-Powered Flow Intelligence</p>
+                    <label className={`block text-sm font-medium mb-2 ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>Temperature (0.0 to 1.0)</label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={nodeForm.temperature}
+                        onChange={(e) => setNodeForm({...nodeForm, temperature: parseFloat(e.target.value)})}
+                        className="flex-1"
+                      />
+                      <span className={`text-sm font-medium ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>{nodeForm.temperature}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Skip User's Response</div>
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Continue immediately without waiting for user response</div>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full cursor-pointer transition-colors ${nodeForm.skipResponse ? 'bg-blue-600' : 'bg-gray-300'}`}
+                         onClick={() => setNodeForm({...nodeForm, skipResponse: !nodeForm.skipResponse})}>
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${nodeForm.skipResponse ? 'translate-x-6' : 'translate-x-0.5'} translate-y-0.5`} />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Block Interruptions</div>
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Ignore user's interruptions at this node</div>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full cursor-pointer transition-colors ${nodeForm.blockInterruptions ? 'bg-blue-600' : 'bg-gray-300'}`}
+                         onClick={() => setNodeForm({...nodeForm, blockInterruptions: !nodeForm.blockInterruptions})}>
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${nodeForm.blockInterruptions ? 'translate-x-6' : 'translate-x-0.5'} translate-y-0.5`} />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Disable Recording</div>
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Disable call recording for PCI compliance</div>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full cursor-pointer transition-colors ${nodeForm.disableRecording ? 'bg-blue-600' : 'bg-gray-300'}`}
+                         onClick={() => setNodeForm({...nodeForm, disableRecording: !nodeForm.disableRecording})}>
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${nodeForm.disableRecording ? 'translate-x-6' : 'translate-x-0.5'} translate-y-0.5`} />
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => setPredictiveAnalytics({})}
-                  className="text-gray-400 hover:text-white"
+                  onClick={closeModal}
+                  className={`px-6 py-2 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  <X className="w-6 h-6" />
+                  Cancel
+                </button>
+                <button
+                  onClick={saveNode}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Save Node
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Prompt Modal */}
+      {activeModal === 'globalPrompt' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Global Prompt and Logs</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <h3 className={`text-lg font-semibold mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>## **AGENT IDENTITY & ROLE**</h3>
+              <textarea
+                className={`w-full h-64 p-4 border-2 rounded-lg focus:border-blue-500 outline-none resize-vertical ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-200 text-gray-900'
+                }`}
+                defaultValue={`You are Alex from Vocelio AI, a specialized lead generation and appointment setting company that works exclusively with businesses looking to automate their customer conversations. You are calling business owners, sales managers, and development professionals to introduce them to our services.
+
+You're calling {{customer_name}} because you came across their company and saw they're doing great work and could benefit from conversational AI automation.`}
+              />
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button className={`px-6 py-2 border rounded-lg transition-colors ${
+                  isDarkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}>
+                  Compress Prompt
+                </button>
+                <button
+                  onClick={closeModal}
+                  className={`px-6 py-2 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { showNotification('Global prompt saved!', 'success'); closeModal(); }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Call Modal */}
+      {activeModal === 'sendCall' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Send a Call with your pathway now!</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Load Configuration</label>
+                <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-200 text-gray-900'
+                }`}>
+                  <option>Select a configuration</option>
+                  <option>Production Config</option>
+                  <option>Test Config</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Phone number</label>
+                <div className="flex gap-3">
+                  <select className={`w-20 p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <option>🇺🇸 +1</option>
+                    <option>🇬🇧 +44</option>
+                    <option>🇨🇦 +1</option>
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder="Enter phone number"
+                    className={`flex-1 p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                    }`}
+                  />
+                </div>
+                <div className="mt-2">
+                  <label className={`flex items-center gap-2 text-sm cursor-pointer ${
+                    isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    <input type="checkbox" className="rounded" />
+                    Use my phone number
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Start Node</label>
+                  <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <option>Select Node</option>
+                    <option>Start</option>
+                    <option>Introduction</option>
+                    <option>Technology</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Version</label>
+                  <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <option>Version 1</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Voice</label>
+                  <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <option>june</option>
+                    <option>nat</option>
+                    <option>alex</option>
+                    <option>sarah</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Timezone</label>
+                  <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-200 text-gray-900'
+                  }`}>
+                    <option>America/Los_Angeles</option>
+                    <option>America/New_York</option>
+                    <option>Europe/London</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Interruption Threshold: <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>100 ms</span></label>
+                <input
+                  type="range"
+                  min="50"
+                  max="500"
+                  defaultValue="100"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>MetaData</label>
+                <textarea
+                  placeholder="Add any additional information you want to associate with the call..."
+                  className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none h-24 resize-vertical ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={closeModal}
+                  className={`px-6 py-2 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={startCall}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Start Call
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Test Pathway Modal */}
+      {activeModal === 'testPathway' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Test Pathway</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Load Configuration</label>
+                <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-200 text-gray-900'
+                }`}>
+                  <option>Select a configuration</option>
+                  <option>Test Configuration</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Start Node</label>
+                <p className={`text-sm mb-2 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Choose which Node to start testing from. Default node will be the Start Node.</p>
+                <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white' 
+                    : 'bg-white border-gray-200 text-gray-900'
+                }`}>
+                  <option>Select Node</option>
+                  <option>Start</option>
+                  <option>Introduction</option>
+                  <option>Technology</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Request Data</label>
+                <p className={`text-sm mb-2 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Variables the agent has access to, and can be referenced using {`{{variable_name}}`} notation</p>
+                <button className={`px-4 py-2 border rounded-lg transition-colors ${
+                  isDarkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}>
+                  + Key/Value
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Conversion Prediction */}
-                {predictiveAnalytics.conversionPrediction && (
-                  <div className="bg-gradient-to-br from-green-900/30 to-teal-900/30 rounded-lg p-6 border border-green-500/20">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2 text-green-400" />
-                      Conversion Prediction
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-300">Predicted Rate:</span>
-                        <span className="text-2xl font-bold text-green-400">
-                          {predictiveAnalytics.conversionPrediction.rate}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-3">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-teal-400 h-3 rounded-full"
-                          style={{ width: `${predictiveAnalytics.conversionPrediction.rate}%` }}
-                        />
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        <p>Confidence: {predictiveAnalytics.conversionPrediction.confidence}%</p>
-                        <div className="mt-2 space-y-1">
-                          {predictiveAnalytics.conversionPrediction.factors.map((factor, idx) => (
-                            <p key={idx} className="text-xs">• {factor}</p>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-6 bg-blue-600 rounded-full cursor-pointer">
+                    <div className="w-5 h-5 bg-white rounded-full translate-x-6 translate-y-0.5" />
                   </div>
-                )}
+                  <div>
+                    <label className={`font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>Run Unit Test</label>
+                    <div className={`text-sm ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Check instruction following</div>
+                  </div>
+                </div>
 
-                {/* Performance Forecast */}
-                {predictiveAnalytics.performanceForecast && (
-                  <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-500/20">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <Zap className="w-5 h-5 mr-2 text-blue-400" />
-                      Performance Forecast
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-gray-400 text-sm">Execution Time</p>
-                          <p className="text-xl font-bold text-blue-400">
-                            {predictiveAnalytics.performanceForecast.expectedExecutionTime}s
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Scalability</p>
-                          <p className="text-xl font-bold text-purple-400">
-                            {predictiveAnalytics.performanceForecast.scalabilityScore}%
-                          </p>
-                        </div>
-                      </div>
-                      {predictiveAnalytics.performanceForecast.bottleneckNodes.length > 0 && (
-                        <div>
-                          <p className="text-gray-400 text-sm mb-2">Potential Bottlenecks:</p>
-                          <div className="space-y-1">
-                            {predictiveAnalytics.performanceForecast.bottleneckNodes.map(nodeId => {
-                              const node = canvasNodes.find(n => n.id === nodeId);
-                              return (
-                                <div key={nodeId} className="text-xs text-yellow-400">
-                                  • {node?.type || nodeId} node
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-6 bg-gray-300 rounded-full cursor-pointer">
+                    <div className="w-5 h-5 bg-white rounded-full translate-x-0.5 translate-y-0.5" />
                   </div>
-                )}
-
-                {/* User Experience Score */}
-                {predictiveAnalytics.userExperienceScore && (
-                  <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-lg p-6 border border-purple-500/20">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <User className="w-5 h-5 mr-2 text-purple-400" />
-                      User Experience
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-purple-400 mb-2">
-                          {predictiveAnalytics.userExperienceScore.rating}
-                        </div>
-                        <div className="flex justify-center">
-                          {[1,2,3,4,5].map(star => (
-                            <Star 
-                              key={star} 
-                              className={`w-4 h-4 ${
-                                star <= Math.floor(predictiveAnalytics.userExperienceScore.rating) 
-                                  ? 'text-yellow-400 fill-current' 
-                                  : 'text-gray-500'
-                              }`} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-sm mb-2">Improvements:</p>
-                        <div className="space-y-1">
-                          {predictiveAnalytics.userExperienceScore.improvements.map((improvement, idx) => (
-                            <p key={idx} className="text-xs text-gray-300">• {improvement}</p>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Advanced Metrics */}
-                {Object.keys(advancedMetrics).length > 0 && (
-                  <div className="bg-gradient-to-br from-orange-900/30 to-red-900/30 rounded-lg p-6 border border-orange-500/20">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <Activity className="w-5 h-5 mr-2 text-orange-400" />
-                      Advanced Metrics
-                    </h3>
-                    <div className="space-y-3">
-                      {Object.entries(advancedMetrics).map(([key, value]) => (
-                        <div key={key} className="flex justify-between items-center">
-                          <span className="text-gray-300 capitalize">{key.replace('_', ' ')}:</span>
-                          <span className="text-orange-400 font-semibold">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  <label className={`font-medium ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Use Candidate Model</label>
+                </div>
               </div>
 
-              {/* Actions */}
-              <div className="mt-6 pt-4 border-t border-white/10">
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={generateOptimizationSuggestions}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white"
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span>Generate Optimizations</span>
-                  </button>
-                  <button
-                    onClick={analyzeBehaviorPatterns}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    <span>Analyze Patterns</span>
-                  </button>
-                  <button
-                    onClick={() => setRealTimeOptimization(!realTimeOptimization)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white ${
-                      realTimeOptimization ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Save Configuration</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Config Name"
+                    className={`flex-1 p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                     }`}
-                  >
-                    <Brain className="w-4 h-4" />
-                    <span>{realTimeOptimization ? 'Disable' : 'Enable'} Real-time AI</span>
+                  />
+                  <button className={`px-4 py-3 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}>
+                    Save
                   </button>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={closeModal}
+                  className={`px-6 py-2 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={testPathway}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Test Pathway
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Web Client Modal */}
+      {activeModal === 'webClient' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Web Client</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex h-[600px]">
+              {/* Left Panel - Configuration */}
+              <div className={`w-1/3 border-r p-6 space-y-6 overflow-y-auto ${
+                isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <div>
+                  <h3 className={`text-lg font-semibold mb-4 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Configuration</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Pathway</label>
+                      <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border-gray-600 text-white' 
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}>
+                        <option>Vocelio SalesBot - Version 1</option>
+                        <option>Customer Support Bot</option>
+                        <option>Lead Qualifier Bot</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Voice</label>
+                      <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border-gray-600 text-white' 
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}>
+                        <option>june</option>
+                        <option>nat</option>
+                        <option>alex</option>
+                        <option>sarah</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Language</label>
+                      <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border-gray-600 text-white' 
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}>
+                        <option>English (US)</option>
+                        <option>English (UK)</option>
+                        <option>Spanish</option>
+                        <option>French</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Start Node</label>
+                      <select className={`w-full p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                        isDarkMode 
+                          ? 'bg-gray-800 border-gray-600 text-white' 
+                          : 'bg-white border-gray-200 text-gray-900'
+                      }`}>
+                        <option>Start (Default)</option>
+                        <option>Introduction</option>
+                        <option>Technology Demo</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className={`font-medium ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Audio Settings</h4>
+                      
+                      <div>
+                        <label className={`block text-sm mb-2 ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Speech Rate: <span className="text-blue-600">1.0x</span></label>
+                        <input type="range" min="0.5" max="2" step="0.1" defaultValue="1" className="w-full" />
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm mb-2 ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Volume: <span className="text-blue-600">80%</span></label>
+                        <input type="range" min="0" max="100" defaultValue="80" className="w-full" />
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-6 bg-blue-600 rounded-full cursor-pointer">
+                          <div className="w-5 h-5 bg-white rounded-full translate-x-6 translate-y-0.5" />
+                        </div>
+                        <label className={`text-sm ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Auto-play responses</label>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-6 bg-gray-300 rounded-full cursor-pointer">
+                          <div className="w-5 h-5 bg-white rounded-full translate-x-0.5 translate-y-0.5" />
+                        </div>
+                        <label className={`text-sm ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>Show transcripts</label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>Custom Variables</label>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="Key" className={`flex-1 p-2 border rounded text-sm ${
+                            isDarkMode 
+                              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`} />
+                          <input type="text" placeholder="Value" className={`flex-1 p-2 border rounded text-sm ${
+                            isDarkMode 
+                              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          }`} />
+                        </div>
+                        <button className="text-sm text-blue-600 hover:underline">+ Add Variable</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Panel - Chat Interface */}
+              <div className="flex-1 flex flex-col">
+                {/* Chat Header */}
+                <div className="border-b p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Vocelio AI Assistant</h3>
+                      <p className="text-sm opacity-90">Sales & Lead Generation Bot</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                      <span className="text-sm">Online</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat Messages */}
+                <div className={`flex-1 p-4 overflow-y-auto space-y-4 ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
+                  {/* Welcome Message */}
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      AI
+                    </div>
+                    <div className={`rounded-lg p-3 shadow-sm max-w-md ${
+                      isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                    }`}>
+                      <p className="text-sm">
+                        Hello! I'm Alex from Vocelio AI. Thanks for taking the time to chat with me today. 
+                        I'd love to tell you about how we help businesses automate their customer conversations. 
+                        Would you like to hear more about our services?
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button className={`p-1 rounded transition-colors ${
+                          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                        }`}>
+                          <Play size={14} className="text-blue-600" />
+                        </button>
+                        <span className={`text-xs ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>0:03</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample User Message */}
+                  <div className="flex gap-3 justify-end">
+                    <div className="bg-blue-600 text-white rounded-lg p-3 shadow-sm max-w-md">
+                      <p className="text-sm">
+                        Yes, I'd like to learn more. What exactly does Vocelio AI do?
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      U
+                    </div>
+                  </div>
+
+                  {/* AI Response */}
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      AI
+                    </div>
+                    <div className={`rounded-lg p-3 shadow-sm max-w-md ${
+                      isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                    }`}>
+                      <p className="text-sm">
+                        Great question! Vocelio AI is a specialized conversational automation platform that helps businesses 
+                        handle customer interactions automatically. We work with companies to set up intelligent chat systems 
+                        that can qualify leads, book appointments, and provide customer support 24/7. 
+                        What type of business are you in?
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button className={`p-1 rounded transition-colors ${
+                          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                        }`}>
+                          <Play size={14} className="text-blue-600" />
+                        </button>
+                        <span className={`text-xs ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>0:12</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Typing Indicator */}
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      AI
+                    </div>
+                    <div className={`rounded-lg p-3 shadow-sm ${
+                      isDarkMode ? 'bg-gray-800' : 'bg-white'
+                    }`}>
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat Input */}
+                <div className={`border-t p-4 ${
+                  isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Type your message..."
+                      className={`flex-1 p-3 border-2 rounded-lg focus:border-blue-500 outline-none ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      }`}
+                    />
+                    <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      Send
+                    </button>
+                  </div>
+                  
+                  <div className={`flex items-center justify-between mt-3 text-sm ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    <div className="flex items-center gap-4">
+                      <span>🎤 Voice input available</span>
+                      <span>⌨️ Press Enter to send</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Connected</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`border-t p-4 flex items-center justify-between ${
+              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className={`flex items-center gap-4 text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                <span>Session ID: abc123xyz</span>
+                <span>Duration: 2:34</span>
+                <span>Messages: 4</span>
+              </div>
+              
+              <div className="flex gap-2">
+                <button className={`px-4 py-2 border rounded-lg transition-colors text-sm ${
+                  isDarkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-600' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}>
+                  Export Chat
+                </button>
+                <button className={`px-4 py-2 border rounded-lg transition-colors text-sm ${
+                  isDarkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-600' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}>
+                  Reset Session
+                </button>
+                <button 
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promote to Production Modal */}
+      {activeModal === 'promoteProduction' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}>
+          <div className={`rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Promote to Production</h2>
+              <button onClick={closeModal} className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className={`mb-4 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                Are you sure you want to promote your staging pathway to production? Your staging environment will remain available for further changes.
+              </p>
+              <p className={`text-sm mb-6 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                The current production version will be saved under: Previously Published Pathway
+              </p>
+
+              <div className={`rounded-lg p-6 mb-6 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+              }`}>
+                <h3 className={`font-semibold text-lg mb-4 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>Nodes</h3>
+                
+                <div className="mb-4">
+                  <h4 className="text-green-600 font-medium mb-2">✓ Added (1)</h4>
+                  <ul className={`ml-5 space-y-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <li>• Unnamed</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="text-yellow-600 font-medium mb-2">⟳ Modified (15)</h4>
+                  <ul className={`ml-5 space-y-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <li>• Start - 3 changes (Default)</li>
+                    <li>• End call - 0 changes (End Call)</li>
+                    <li>• User busy - 2 changes (Default)</li>
+                    <li>• Introducing our technology - 1 change (Default)</li>
+                    <li>• KB - 3 changes (Knowledge Base)</li>
+                    <li>• Thanks - 0 changes (Default)</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={closeModal}
+                  className={`px-6 py-2 border rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={promoteToProduction}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Promote to Production
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Bar */}
+      <div className={`fixed bottom-0 left-0 right-0 h-8 border-t flex items-center justify-between px-5 text-xs z-10 ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700 text-gray-300' 
+          : 'bg-gray-50 border-gray-200 text-gray-700'
+      }`}>
+        <div className="flex gap-5">
+          <span>Nodes: {nodes.length}</span>
+          <span>Connections: 5</span>
+          <span>Auto-saved 30s ago</span>
+        </div>
+        <div className="flex gap-5">
+          <span>Performance: Good</span>
+          <span>Users: 3 online</span>
+          <span>Version 1.0</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default EnterpriseFlowBuilder;
+export default VocelioAIPlatform;
