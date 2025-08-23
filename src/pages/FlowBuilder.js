@@ -29,6 +29,7 @@ import {
   import NodeTemplateBrowser from '../components/NodeTemplateBrowser';
   import FlowTemplateBrowser from '../components/FlowTemplateBrowser';
   import FlowTemplateManager from '../components/FlowTemplateManager';
+  import FlowAnalyticsDashboard from '../components/FlowAnalyticsDashboard';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -57,6 +58,7 @@ const VocelioAIPlatform = () => {
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   const [flowTemplateBrowserOpen, setFlowTemplateBrowserOpen] = useState(false);
   const [flowTemplateManagerOpen, setFlowTemplateManagerOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   
   // Form states
   const [nodeForm, setNodeForm] = useState({
@@ -539,7 +541,7 @@ const VocelioAIPlatform = () => {
     { icon: '📞', label: 'Send Call', action: () => showModal('sendCall') },
     { icon: '🌐', label: 'Web Client', action: () => showModal('webClient') },
     { icon: '🚀', label: 'Promote to Production', action: () => showModal('promoteProduction') },
-    { icon: '📊', label: 'Analytics', action: () => {} }
+    { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) }
   ];
 
   return (
@@ -719,6 +721,17 @@ const VocelioAIPlatform = () => {
             >
               <Rocket size={16} />
               Flow Templates
+            </button>
+            <button
+              onClick={() => setAnalyticsOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Activity size={16} />
+              Analytics
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2357,6 +2370,47 @@ You're calling {{customer_name}} because you came across their company and saw t
                 showNotification(`Template "${template.name}" updated successfully!`, 'success');
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Flow Analytics Dashboard */}
+      {analyticsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-7xl h-5/6 rounded-xl shadow-2xl overflow-hidden ${
+            isDarkMode ? 'bg-gray-900' : 'bg-white'
+          }`}>
+            <div className="h-full flex flex-col">
+              {/* Modal Header */}
+              <div className={`p-4 border-b flex items-center justify-between ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Flow Analytics Dashboard
+                </h2>
+                <button
+                  onClick={() => setAnalyticsOpen(false)}
+                  className={`p-2 rounded-lg hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
+                    isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Analytics Content */}
+              <div className="flex-1 overflow-hidden">
+                <FlowAnalyticsDashboard
+                  flowId="current-flow"
+                  timeRange="7d"
+                  onFlowSelect={(flowId) => {
+                    showNotification(`Selected flow: ${flowId}`, 'info');
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
