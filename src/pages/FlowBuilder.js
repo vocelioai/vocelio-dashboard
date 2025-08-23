@@ -27,6 +27,8 @@ import {
   import { railwayFlowAPI } from '../lib/railwayFlowAPI';
   import ExecutionMonitor from '../components/ExecutionMonitor';
   import NodeTemplateBrowser from '../components/NodeTemplateBrowser';
+  import FlowTemplateBrowser from '../components/FlowTemplateBrowser';
+  import FlowTemplateManager from '../components/FlowTemplateManager';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -53,6 +55,8 @@ const VocelioAIPlatform = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragElement, setDragElement] = useState(null);
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
+  const [flowTemplateBrowserOpen, setFlowTemplateBrowserOpen] = useState(false);
+  const [flowTemplateManagerOpen, setFlowTemplateManagerOpen] = useState(false);
   
   // Form states
   const [nodeForm, setNodeForm] = useState({
@@ -425,6 +429,32 @@ const VocelioAIPlatform = () => {
     }, 3000);
   };
 
+  // Flow Template selection handler
+  const handleFlowTemplateSelect = (flowTemplate) => {
+    try {
+      // Replace current flow with template
+      setNodes(flowTemplate.nodes);
+      setEdges(flowTemplate.edges);
+      setFlowTemplateBrowserOpen(false);
+      
+      // Show success notification
+      const notification = {
+        id: Date.now(),
+        type: 'success',
+        message: `Flow template "${flowTemplate.name}" loaded successfully!`
+      };
+      setNotifications(prev => [...prev, notification]);
+      
+      // Auto-remove notification after 3 seconds
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      }, 3000);
+    } catch (error) {
+      console.error('Error loading flow template:', error);
+      showNotification('Failed to load flow template', 'error');
+    }
+  };
+
   const saveNode = () => {
     if (currentEditingNode) {
       setNodes(prev => prev.map(node => 
@@ -501,7 +531,9 @@ const VocelioAIPlatform = () => {
   const sidebarItems = [
     { icon: '🔗', label: 'Add New Node', action: () => showModal('addNode') },
     { icon: '📋', label: 'Node Templates', action: () => setTemplateBrowserOpen(true) },
-    { icon: '🌍', label: 'Global Prompt', action: () => showModal('globalPrompt') },
+    { icon: '�', label: 'Flow Templates', action: () => setFlowTemplateBrowserOpen(true) },
+    { icon: '⚙️', label: 'Manage Templates', action: () => setFlowTemplateManagerOpen(true) },
+    { icon: '�🌍', label: 'Global Prompt', action: () => showModal('globalPrompt') },
     { icon: '🎯', label: 'Feature Flags', action: () => {} },
     { icon: '🧪', label: 'Test Pathway', action: () => showModal('testPathway') },
     { icon: '📞', label: 'Send Call', action: () => showModal('sendCall') },
@@ -676,6 +708,17 @@ const VocelioAIPlatform = () => {
             >
               <Download size={16} />
               Export Flow
+            </button>
+            <button
+              onClick={() => setFlowTemplateBrowserOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Rocket size={16} />
+              Flow Templates
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2283,6 +2326,40 @@ You're calling {{customer_name}} because you came across their company and saw t
         onTemplateSelect={handleTemplateSelect}
         onClose={() => setTemplateBrowserOpen(false)}
       />
+
+      {/* Flow Template Browser */}
+      <FlowTemplateBrowser
+        isDarkMode={isDarkMode}
+        isOpen={flowTemplateBrowserOpen}
+        onTemplateSelect={handleFlowTemplateSelect}
+        onClose={() => setFlowTemplateBrowserOpen(false)}
+      />
+
+      {/* Flow Template Manager */}
+      {flowTemplateManagerOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-7xl h-5/6 rounded-xl shadow-2xl ${
+            isDarkMode ? 'bg-gray-900' : 'bg-white'
+          }`}>
+            <FlowTemplateManager
+              isDarkMode={isDarkMode}
+              onClose={() => setFlowTemplateManagerOpen(false)}
+              onTemplateCreate={(template) => {
+                // Handle template creation
+                showNotification(`Template "${template.name}" created successfully!`, 'success');
+              }}
+              onTemplateImport={(template) => {
+                // Handle template import
+                showNotification(`Template "${template.name}" imported successfully!`, 'success');
+              }}
+              onTemplateEdit={(template) => {
+                // Handle template edit
+                showNotification(`Template "${template.name}" updated successfully!`, 'success');
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
