@@ -1,13 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  applyNodeChanges,
+  applyEdgeChanges,
+  MarkerType
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 import { 
   Plus, Minus, RotateCcw, Maximize, Map, Grid, Layers, 
   Clock, Moon, Copy, Save, TestTube, Phone, Rocket,
   X, Settings, Command, Search, ChevronRight, Zap,
   Calendar, Mail, Smartphone, MessageSquare, Trash2,
-  Eye, EyeOff, Download, Upload, Pause, Play
+  Eye, EyeOff, Download, Upload, Pause, Play, Shield,
+  Activity, Headphones
 } from 'lucide-react';
 
-const VocelioAIPlatform = () => {
+  // Import our new schema and components
+  import { NodeTypeConfig } from '../lib/flowSchemas';
+  import { migrateLegacyFlow, autoLayoutNodes, exportFlowToJSON } from '../lib/flowMigration';
+  import { nodeTypes } from '../components/FlowNodes';
+  import { railwayFlowAPI } from '../lib/railwayFlowAPI';
+  import ExecutionMonitor from '../components/ExecutionMonitor';
+
+// Lazy load Phase 3 component to reduce initial bundle size
+const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));const VocelioAIPlatform = () => {
   // State management
   const [currentZoom, setCurrentZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -23,6 +44,8 @@ const VocelioAIPlatform = () => {
   const [nodeCounter, setNodeCounter] = useState(1);
   const [notifications, setNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState('featured');
+  const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  const [advancedTab, setAdvancedTab] = useState('voice');
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragElement, setDragElement] = useState(null);
@@ -42,12 +65,17 @@ const VocelioAIPlatform = () => {
     disableRecording: false
   });
 
+  // Railway execution states
+  const [executionMonitorVisible, setExecutionMonitorVisible] = useState(false);
+  const [currentExecution, setCurrentExecution] = useState(null);
+  const [isExecutionRunning, setIsExecutionRunning] = useState(false);
+
   // Refs
   const canvasRef = useRef(null);
   const commandSearchRef = useRef(null);
 
-  // Initial nodes data
-  const [nodes, setNodes] = useState([
+  // Legacy nodes data (will be migrated)
+  const legacyNodes = [
     {
       id: 'start',
       type: 'Start',
@@ -98,13 +126,41 @@ const VocelioAIPlatform = () => {
       type: 'Introducing our technology',
       icon: '⚡',
       title: 'Introducing our technology',
-      content: 'Ask the user if they would like to book a meeting with one of our specialists',
-      badge: 'Default',
+      content: 'Explain our AI technology and capabilities',
+      badge: 'Large Text', 
       position: { x: 500, y: 400 }
     }
-  ]);
+  ];
 
-  // Show notification function
+  // Migrate legacy data to new format
+  const migratedFlow = useMemo(() => {
+    return migrateLegacyFlow(legacyNodes);
+  }, []);
+
+  // React Flow state management
+  const [nodes, setNodes, onNodesChange] = useNodesState(migratedFlow.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(migratedFlow.edges);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+
+  // Modal and notification handlers (moved up to fix hoisting issues)
+  const closeModal = useCallback(() => {
+    setActiveModal(null);
+    setCurrentEditingNode(null);
+    setNodeForm({
+      name: '',
+      type: 'Large Text',
+      prompt: '',
+      plainText: '',
+      loopCondition: '',
+      temperature: 0.5,
+      staticText: false,
+      globalNode: false,
+      skipResponse: false,
+      blockInterruptions: false,
+      disableRecording: false
+    });
+  }, []);
+
   const showNotification = useCallback((message, type = 'info') => {
     const id = Date.now();
     const notification = { id, message, type };
@@ -114,6 +170,113 @@ const VocelioAIPlatform = () => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
   }, []);
+
+  // React Flow event handlers
+  const onConnect = useCallback(
+    (params) => {
+      const edge = {
+        ...params,
+        id: `edge-${params.source}-${params.target}`,
+        type: 'smoothstep',
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#3b82f6'
+        },
+        style: {
+          stroke: '#3b82f6',
+          strokeWidth: 2
+        }
+      };
+      setEdges((eds) => addEdge(edge, eds));
+    },
+    [setEdges]
+  );
+
+  // Add new node function
+  const addNewNode = useCallback((nodeType) => {
+    const newNode = {
+      id: `${nodeType.toLowerCase()}-${Date.now()}`,
+      type: nodeType,
+      position: { 
+        x: Math.random() * 300 + 100, 
+        y: Math.random() * 300 + 100 
+      },
+      data: {
+        label: `New ${nodeType}`,
+        ...(nodeType === 'Say' && { text: 'Hello, this is a new message.' }),
+        ...(nodeType === 'Collect' && { 
+          mode: 'speech',
+          prompt: 'Please provide your response.',
+          timeoutMs: 4000
+        }),
+        ...(nodeType === 'End' && { disposition: 'not_interested' })
+      }
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    closeModal();
+    showNotification(`Added new ${nodeType} node`, 'success');
+  }, [setNodes, closeModal, showNotification]);
+
+  // Auto-layout function
+  const performAutoLayout = useCallback(() => {
+    const layoutedNodes = autoLayoutNodes(nodes, edges);
+    setNodes(layoutedNodes);
+    showNotification('Auto-layout applied', 'success');
+  }, [nodes, edges, setNodes, showNotification]);
+
+  // Export flow function
+  const exportFlow = useCallback(() => {
+    try {
+      const flow = {
+        ...migratedFlow,
+        nodes,
+        edges,
+        modified: new Date().toISOString()
+      };
+      
+      const json = exportFlowToJSON(flow);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vocelio-flow-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showNotification('Flow exported successfully', 'success');
+    } catch (error) {
+      showNotification('Export failed: ' + error.message, 'error');
+    }
+  }, [nodes, edges, migratedFlow, showNotification]);
+
+  // Railway execution handlers
+  const handleExecutionStart = useCallback((execution) => {
+    setCurrentExecution(execution);
+    setIsExecutionRunning(true);
+    showNotification('Flow execution started on Railway backend', 'success');
+  }, [showNotification]);
+
+  const handleExecutionEnd = useCallback((execution) => {
+    setIsExecutionRunning(false);
+    showNotification(`Flow execution ${execution.status}`, execution.status === 'completed' ? 'success' : 'error');
+  }, [showNotification]);
+
+  const testRailwayConnection = useCallback(async () => {
+    try {
+      const result = await railwayFlowAPI.testConnection();
+      if (result.success) {
+        showNotification('✅ Railway backend connected successfully!', 'success');
+      } else {
+        showNotification('❌ Railway connection failed: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showNotification('❌ Railway connection error: ' + error.message, 'error');
+    }
+  }, [showNotification]);
 
   // Zoom functions
   const zoomIn = () => {
@@ -165,24 +328,6 @@ const VocelioAIPlatform = () => {
   // Modal functions
   const showModal = (modalId) => {
     setActiveModal(modalId);
-  };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    setCurrentEditingNode(null);
-    setNodeForm({
-      name: '',
-      type: 'Large Text',
-      prompt: '',
-      plainText: '',
-      loopCondition: '',
-      temperature: 0.5,
-      staticText: false,
-      globalNode: false,
-      skipResponse: false,
-      blockInterruptions: false,
-      disableRecording: false
-    });
   };
 
   // Node management
@@ -390,7 +535,7 @@ const VocelioAIPlatform = () => {
         </div>
 
         {/* Deployment Section */}
-        <div>
+        <div className="mb-6">
           <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-3">Deployment</h3>
           {sidebarItems.slice(6).map((item, idx) => (
             <div
@@ -402,6 +547,16 @@ const VocelioAIPlatform = () => {
               <span className="text-sm">{item.label}</span>
             </div>
           ))}
+        </div>
+
+        {/* Railway Execution Monitor */}
+        <div>
+          <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-3">Railway Execution</h3>
+          <ExecutionMonitor 
+            flowDefinition={nodes}
+            onExecutionStart={handleExecutionStart}
+            onExecutionEnd={handleExecutionEnd}
+          />
         </div>
       </div>
 
@@ -466,6 +621,41 @@ const VocelioAIPlatform = () => {
               Send Call
             </button>
             <button
+              onClick={performAutoLayout}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Grid size={16} />
+              Auto Layout
+            </button>
+            <button
+              onClick={exportFlow}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Download size={16} />
+              Export Flow
+            </button>
+            <button
+              onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                executionMonitorVisible
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : isDarkMode 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Zap size={16} />
+              Railway Execution
+            </button>
+            <button
               onClick={() => showModal('webClient')}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isDarkMode 
@@ -474,6 +664,50 @@ const VocelioAIPlatform = () => {
               }`}
             >
               🌐 Web Client
+            </button>
+            
+            {/* Phase 3 Advanced Features */}
+            <button
+              onClick={() => {
+                setShowAdvancedPanel(true);
+                setAdvancedTab('compliance');
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-purple-700 hover:bg-purple-600 text-white' 
+                  : 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300'
+              }`}
+            >
+              <Shield size={16} />
+              Compliance
+            </button>
+            <button
+              onClick={() => {
+                setShowAdvancedPanel(true);
+                setAdvancedTab('voice');
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-green-700 hover:bg-green-600 text-white' 
+                  : 'bg-green-100 hover:bg-green-200 text-green-900 border border-green-300'
+              }`}
+            >
+              <Headphones size={16} />
+              Voice Controls
+            </button>
+            <button
+              onClick={() => {
+                setShowAdvancedPanel(true);
+                setAdvancedTab('collaboration');
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-orange-700 hover:bg-orange-600 text-white' 
+                  : 'bg-orange-100 hover:bg-orange-200 text-orange-900 border border-orange-300'
+              }`}
+            >
+              <Activity size={16} />
+              Collaboration
             </button>
           </div>
         </div>
@@ -620,63 +854,74 @@ const VocelioAIPlatform = () => {
             </div>
           )}
 
-          {/* Canvas */}
-          <div
-            ref={canvasRef}
-            className={`w-full h-full relative overflow-auto transition-transform duration-300 ${
-              gridVisible 
-                ? 'bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:20px_20px]'
-                : 'bg-[radial-gradient(circle_at_20px_20px,#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px]'
-            }`}
-            style={{ transform: `scale(${currentZoom})`, transformOrigin: '0 0' }}
-          >
-            {/* Workflow Nodes */}
-            {nodes.map(node => (
-              <div
-                key={node.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  editNode(node.id);
-                }}
-                className={`absolute ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white border-gray-200'} border-2 rounded-xl shadow-lg p-5 min-w-48 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500 ${
-                  selectedNodes.includes(node.id) ? 'border-blue-500 shadow-blue-200' : ''
-                }`}
-                style={{
-                  left: `${node.position.x}px`,
-                  top: `${node.position.y}px`
-                }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
-                    {node.icon}
-                  </div>
-                  <div className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {node.title}
-                  </div>
-                </div>
-                <div className={`text-xs mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {node.content}
-                </div>
-                <div className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                  {node.badge}
-                </div>
-              </div>
-            ))}
-
-            {/* Connection Lines */}
-            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '191px', left: '250px', transform: 'rotate(45deg)' }} />
-            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '341px', left: '250px', transform: 'rotate(45deg)' }} />
-            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '191px', left: '450px' }} />
-            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '341px', left: '450px' }} />
-            <div className="absolute w-24 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full" style={{ top: '491px', left: '450px' }} />
-
-            {/* Comment Pin */}
-            <div 
-              className="absolute w-6 h-6 bg-red-500 rounded-full text-white flex items-center justify-center text-xs font-bold cursor-pointer shadow-lg"
-              style={{ top: '180px', left: '400px' }}
+          {/* React Flow Canvas */}
+          <div className="w-full h-full">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={(event, node) => {
+                setCurrentEditingNode(node.id);
+                setActiveModal('editNode');
+                setNodeForm({
+                  name: node.data?.label || '',
+                  type: node.type || 'default',
+                  prompt: node.data?.content || '',
+                  plainText: node.data?.plainText || '',
+                  loopCondition: node.data?.loopCondition || '',
+                  temperature: node.data?.temperature || 0.5,
+                  staticText: node.data?.staticText || false,
+                  globalNode: node.data?.globalNode || false,
+                  skipResponse: node.data?.skipResponse || false,
+                  blockInterruptions: node.data?.blockInterruptions || false,
+                  disableRecording: node.data?.disableRecording || false
+                });
+              }}
+              onInit={setReactFlowInstance}
+              nodeTypes={nodeTypes}
+              fitView
+              attributionPosition="bottom-left"
+              className={isDarkMode ? 'dark' : ''}
+              defaultViewport={{ x: 0, y: 0, zoom: currentZoom }}
+              minZoom={0.1}
+              maxZoom={2}
+              deleteKeyCode={['Backspace', 'Delete']}
+              multiSelectionKeyCode={['Meta', 'Ctrl']}
             >
-              1
-            </div>
+              <MiniMap 
+                nodeStrokeColor={(n) => {
+                  if (n.type === 'Start') return '#10b981';
+                  if (n.type === 'End') return '#ef4444';
+                  return '#3b82f6';
+                }}
+                nodeColor={(n) => {
+                  if (n.type === 'Start') return '#d1fae5';
+                  if (n.type === 'End') return '#fee2e2';
+                  return '#dbeafe';
+                }}
+                maskColor="rgba(0, 0, 0, 0.1)"
+                className={`${minimapVisible ? 'block' : 'hidden'} ${
+                  isDarkMode ? 'bg-gray-800' : 'bg-white'
+                } border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} rounded-lg`}
+              />
+              
+              <Controls 
+                className={`${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} rounded-lg`}
+                showZoom={true}
+                showFitView={true}
+                showInteractive={true}
+              />
+              
+              <Background 
+                variant={gridVisible ? "lines" : "dots"}
+                gap={20}
+                size={1}
+                color={isDarkMode ? "#374151" : "#e5e7eb"}
+                className={isDarkMode ? "bg-gray-900" : "bg-gray-50"}
+              />
+            </ReactFlow>
           </div>
         </div>
       </div>
@@ -784,14 +1029,10 @@ const VocelioAIPlatform = () => {
             <div className="p-6">
               {activeTab === 'featured' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { type: 'collect-phone', icon: '📱', title: 'Collect Phone Number', content: 'A node which collect US phone number, enabling back-channeling repeating system' },
-                    { type: 'collect-email', icon: '✉️', title: 'Collect Email', content: 'Collect and validate email addresses from users' },
-                    { type: 'schedule-meeting', icon: '📅', title: 'Schedule Meeting', content: 'Book appointments and manage calendar integration' }
-                  ].map(node => (
+                  {Object.entries(NodeTypeConfig).map(([nodeType, config]) => (
                     <div
-                      key={node.type}
-                      onClick={() => addNodeToCanvas(node.type)}
+                      key={nodeType}
+                      onClick={() => addNewNode(nodeType)}
                       className={`border-2 rounded-xl p-4 cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all duration-200 ${
                         isDarkMode 
                           ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
@@ -799,16 +1040,21 @@ const VocelioAIPlatform = () => {
                       }`}
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                          {node.icon}
+                        <div className={`w-8 h-8 bg-gradient-to-r ${config.color} rounded-lg flex items-center justify-center text-white`}>
+                          {config.icon}
                         </div>
                         <div className={`font-semibold ${
                           isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>{node.title}</div>
+                        }`}>{nodeType}</div>
                       </div>
-                      <div className={`text-sm ${
+                      <div className={`text-sm mb-2 ${
                         isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}>{node.content}</div>
+                      }`}>{config.description}</div>
+                      <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                        isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {config.category}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1883,6 +2129,99 @@ You're calling {{customer_name}} because you came across their company and saw t
           <span>Version 1.0</span>
         </div>
       </div>
+      
+      {/* Phase 3 Advanced Features Panel */}
+      {showAdvancedPanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-4xl h-3/4 rounded-lg shadow-xl ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className={`flex items-center justify-between p-4 border-b ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-lg font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Advanced Features - Phase 3
+              </h2>
+              <button
+                onClick={() => setShowAdvancedPanel(false)}
+                className={`p-1 rounded hover:${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                } ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setAdvancedTab('voice')}
+                  className={`px-3 py-2 rounded text-sm font-medium ${
+                    advancedTab === 'voice'
+                      ? isDarkMode 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-green-100 text-green-900'
+                      : isDarkMode
+                        ? 'text-gray-300 hover:bg-gray-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Headphones size={16} className="inline mr-1" />
+                  Voice Controls
+                </button>
+                <button
+                  onClick={() => setAdvancedTab('compliance')}
+                  className={`px-3 py-2 rounded text-sm font-medium ${
+                    advancedTab === 'compliance'
+                      ? isDarkMode 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-100 text-purple-900'
+                      : isDarkMode
+                        ? 'text-gray-300 hover:bg-gray-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Shield size={16} className="inline mr-1" />
+                  Compliance
+                </button>
+                <button
+                  onClick={() => setAdvancedTab('collaboration')}
+                  className={`px-3 py-2 rounded text-sm font-medium ${
+                    advancedTab === 'collaboration'
+                      ? isDarkMode 
+                        ? 'bg-orange-600 text-white' 
+                        : 'bg-orange-100 text-orange-900'
+                      : isDarkMode
+                        ? 'text-gray-300 hover:bg-gray-700'
+                        : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Activity size={16} className="inline mr-1" />
+                  Collaboration
+                </button>
+              </div>
+              
+              <div className="h-96 overflow-auto">
+                <React.Suspense fallback={
+                  <div className={`flex items-center justify-center h-full ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    Loading advanced features...
+                  </div>
+                }>
+                  <Phase3FlowBuilderEnhancements 
+                    activeTab={advancedTab}
+                    isDarkMode={isDarkMode}
+                    onClose={() => setShowAdvancedPanel(false)}
+                  />
+                </React.Suspense>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
