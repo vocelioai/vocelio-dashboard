@@ -26,9 +26,12 @@ import {
   import { nodeTypes } from '../components/FlowNodes';
   import { railwayFlowAPI } from '../lib/railwayFlowAPI';
   import ExecutionMonitor from '../components/ExecutionMonitor';
+  import NodeTemplateBrowser from '../components/NodeTemplateBrowser';
 
 // Lazy load Phase 3 component to reduce initial bundle size
-const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));const VocelioAIPlatform = () => {
+const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
+
+const VocelioAIPlatform = () => {
   // State management
   const [currentZoom, setCurrentZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -49,6 +52,7 @@ const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Pha
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragElement, setDragElement] = useState(null);
+  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   
   // Form states
   const [nodeForm, setNodeForm] = useState({
@@ -391,6 +395,36 @@ const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Pha
     showNotification('Node added successfully!', 'success');
   };
 
+  // Template selection handler
+  const handleTemplateSelect = (templateNode) => {
+    // Find a suitable position for the new node
+    const existingNodes = nodes;
+    const xOffset = 100 + (existingNodes.length * 50);
+    const yOffset = 100 + (existingNodes.length * 30);
+    
+    const newNode = {
+      ...templateNode,
+      position: { x: xOffset, y: yOffset }
+    };
+    
+    setNodes(prevNodes => [...prevNodes, newNode]);
+    setNodeCounter(prev => prev + 1);
+    setTemplateBrowserOpen(false);
+    
+    // Show success notification
+    const notification = {
+      id: Date.now(),
+      type: 'success',
+      message: `Template "${newNode.data.label}" added successfully!`
+    };
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto-remove notification after 3 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    }, 3000);
+  };
+
   const saveNode = () => {
     if (currentEditingNode) {
       setNodes(prev => prev.map(node => 
@@ -466,6 +500,7 @@ const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Pha
   // Sidebar items
   const sidebarItems = [
     { icon: '🔗', label: 'Add New Node', action: () => showModal('addNode') },
+    { icon: '📋', label: 'Node Templates', action: () => setTemplateBrowserOpen(true) },
     { icon: '🌍', label: 'Global Prompt', action: () => showModal('globalPrompt') },
     { icon: '🎯', label: 'Feature Flags', action: () => {} },
     { icon: '🧪', label: 'Test Pathway', action: () => showModal('testPathway') },
@@ -2214,6 +2249,24 @@ You're calling {{customer_name}} because you came across their company and saw t
                   <Phase3FlowBuilderEnhancements 
                     activeTab={advancedTab}
                     isDarkMode={isDarkMode}
+                    nodes={nodes}
+                    edges={edges}
+                    currentEditingNode={currentEditingNode}
+                    onNodeFocus={(nodeId) => {
+                      // Focus on specific node - could implement node selection/highlighting
+                      const targetNode = nodes.find(n => n.id === nodeId);
+                      if (targetNode) {
+                        setCurrentEditingNode(nodeId);
+                        // Optionally center the view on the node
+                        if (reactFlowInstance) {
+                          reactFlowInstance.setCenter(
+                            targetNode.position.x + 50,
+                            targetNode.position.y + 50,
+                            { zoom: 1.2 }
+                          );
+                        }
+                      }
+                    }}
                     onClose={() => setShowAdvancedPanel(false)}
                   />
                 </React.Suspense>
@@ -2222,6 +2275,14 @@ You're calling {{customer_name}} because you came across their company and saw t
           </div>
         </div>
       )}
+
+      {/* Node Template Browser */}
+      <NodeTemplateBrowser
+        isDarkMode={isDarkMode}
+        isOpen={templateBrowserOpen}
+        onTemplateSelect={handleTemplateSelect}
+        onClose={() => setTemplateBrowserOpen(false)}
+      />
     </div>
   );
 };

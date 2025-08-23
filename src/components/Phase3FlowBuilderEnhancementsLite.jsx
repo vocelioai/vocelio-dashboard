@@ -4,16 +4,30 @@
  */
 
 import React, { useState } from 'react';
-import { Shield, Activity, Headphones, Gauge, Users, Settings } from 'lucide-react';
+import { Shield, Activity, Headphones, Gauge, Users, Settings, CheckCircle, GitBranch } from 'lucide-react';
+import NodeValidationPanel from './NodeValidationPanel';
+import NodeDependenciesPanel from './NodeDependenciesPanel';
 
-const Phase3FlowBuilderEnhancementsLite = ({ flowId, userId, userInfo, onUpdate }) => {
+const Phase3FlowBuilderEnhancementsLite = ({ 
+  flowId, 
+  userId, 
+  userInfo, 
+  nodes = [],
+  edges = [],
+  currentEditingNode,
+  isDarkMode,
+  onUpdate,
+  onNodeFocus 
+}) => {
   const [activeTab, setActiveTab] = useState('compliance');
 
   const tabs = [
     { id: 'compliance', name: 'Compliance', icon: Shield },
     { id: 'collaboration', name: 'Collaboration', icon: Users },
     { id: 'voice', name: 'Voice', icon: Headphones },
-    { id: 'performance', name: 'Performance', icon: Activity }
+    { id: 'performance', name: 'Performance', icon: Activity },
+    { id: 'validation', name: 'Validation', icon: CheckCircle },
+    { id: 'dependencies', name: 'Dependencies', icon: GitBranch }
   ];
 
   return (
@@ -52,6 +66,25 @@ const Phase3FlowBuilderEnhancementsLite = ({ flowId, userId, userInfo, onUpdate 
         )}
         {activeTab === 'performance' && (
           <PerformanceTab onUpdate={onUpdate} />
+        )}
+        {activeTab === 'validation' && (
+          <NodeValidationPanel 
+            nodes={nodes}
+            edges={edges}
+            currentEditingNode={currentEditingNode}
+            isDarkMode={isDarkMode}
+            onNodeFocus={onNodeFocus}
+            autoValidate={true}
+          />
+        )}
+        {activeTab === 'dependencies' && (
+          <NodeDependenciesPanel 
+            nodes={nodes}
+            edges={edges}
+            currentEditingNode={currentEditingNode}
+            isDarkMode={isDarkMode}
+            onNodeFocus={onNodeFocus}
+          />
         )}
       </div>
     </div>
