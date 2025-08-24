@@ -17,7 +17,7 @@ import {
   X, Settings, Command, Search, ChevronRight, Zap,
   Calendar, Mail, Smartphone, MessageSquare, Trash2,
   Eye, EyeOff, Download, Upload, Pause, Play, Shield,
-  Activity, Headphones
+  Activity, Headphones, Users
 } from 'lucide-react';
 
   // Import our new schema and components
@@ -30,6 +30,7 @@ import {
   import FlowTemplateBrowser from '../components/FlowTemplateBrowser';
   import FlowTemplateManager from '../components/FlowTemplateManager';
   import FlowAnalyticsDashboard from '../components/FlowAnalyticsDashboard';
+  import FlowCollaboration from '../components/FlowCollaboration';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -59,6 +60,17 @@ const VocelioAIPlatform = () => {
   const [flowTemplateBrowserOpen, setFlowTemplateBrowserOpen] = useState(false);
   const [flowTemplateManagerOpen, setFlowTemplateManagerOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [collaborationOpen, setCollaborationOpen] = useState(false);
+  
+  // Current user for collaboration
+  const [currentUser] = useState({
+    id: 'current-user',
+    name: 'John Smith',
+    email: 'john.smith@vocelio.ai',
+    avatar: 'JS',
+    role: 'admin',
+    color: '#3B82F6'
+  });
   
   // Form states
   const [nodeForm, setNodeForm] = useState({
@@ -541,7 +553,8 @@ const VocelioAIPlatform = () => {
     { icon: '📞', label: 'Send Call', action: () => showModal('sendCall') },
     { icon: '🌐', label: 'Web Client', action: () => showModal('webClient') },
     { icon: '🚀', label: 'Promote to Production', action: () => showModal('promoteProduction') },
-    { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) }
+    { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) },
+    { icon: '👥', label: 'Collaborate', action: () => setCollaborationOpen(true) }
   ];
 
   return (
@@ -732,6 +745,17 @@ const VocelioAIPlatform = () => {
             >
               <Activity size={16} />
               Analytics
+            </button>
+            <button
+              onClick={() => setCollaborationOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+              }`}
+            >
+              <Users size={16} />
+              Collaborate
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2407,6 +2431,48 @@ You're calling {{customer_name}} because you came across their company and saw t
                   timeRange="7d"
                   onFlowSelect={(flowId) => {
                     showNotification(`Selected flow: ${flowId}`, 'info');
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flow Collaboration Panel */}
+      {collaborationOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-5xl h-5/6 rounded-xl shadow-2xl overflow-hidden ${
+            isDarkMode ? 'bg-gray-900' : 'bg-white'
+          }`}>
+            <div className="h-full flex flex-col">
+              {/* Modal Header */}
+              <div className={`p-4 border-b flex items-center justify-between ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Flow Collaboration
+                </h2>
+                <button
+                  onClick={() => setCollaborationOpen(false)}
+                  className={`p-2 rounded-lg hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
+                    isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Collaboration Content */}
+              <div className="flex-1 overflow-auto p-6">
+                <FlowCollaboration
+                  flowId="current-flow"
+                  currentUser={currentUser}
+                  onUserAction={(action, data) => {
+                    showNotification(`Collaboration: ${action}`, 'info');
+                    console.log('Collaboration action:', action, data);
                   }}
                 />
               </div>
