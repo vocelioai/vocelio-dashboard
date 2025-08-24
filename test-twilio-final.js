@@ -1,9 +1,9 @@
-// Final Twilio Integration Test
-// This tests the complete Twilio Voice integration
+// Enhanced Twilio Integration Test
+// This tests the complete enhanced Twilio Voice integration with flow execution and mobile bridge
 
-console.log('🚀 Testing Twilio Voice Integration...\n');
+console.log('🚀 Testing Enhanced Twilio Voice Integration...\n');
 
-// Check environment variables
+// Check environment variables with enhanced requirements
 const requiredEnvVars = [
   'REACT_APP_TWILIO_ACCOUNT_SID',
   'REACT_APP_TWILIO_AUTH_TOKEN', 
@@ -12,6 +12,15 @@ const requiredEnvVars = [
   'REACT_APP_TWILIO_TWIML_APP_SID',
   'REACT_APP_TWILIO_API_KEY',
   'REACT_APP_TWILIO_API_SECRET'
+];
+
+// Enhanced features to test
+const enhancedFeatures = [
+  'Flow execution integration',
+  'Mobile bridge capabilities', 
+  'Real-time voice metrics',
+  'Advanced TwiML generation',
+  'Multi-device support'
 ];
 
 console.log('📋 Environment Variables Check:');
@@ -24,9 +33,14 @@ requiredEnvVars.forEach(envVar => {
   }
 });
 
-// Test backend connectivity
-async function testBackendConnection() {
-  console.log('\n🔗 Testing Backend Connection...');
+console.log('\n🔧 Enhanced Features to Test:');
+enhancedFeatures.forEach((feature, index) => {
+  console.log(`${index + 1}. ${feature}`);
+});
+
+// Enhanced backend connectivity test
+async function testEnhancedBackendConnection() {
+  console.log('\n🔗 Testing Enhanced Backend Connection...');
   
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
   if (!backendUrl) {
@@ -38,15 +52,20 @@ async function testBackendConnection() {
     console.log(`🌐 Connecting to: ${backendUrl}`);
     
     // Test basic connectivity
+    const startTime = Date.now();
     const healthResponse = await fetch(`${backendUrl}/health`);
+    const healthTime = Date.now() - startTime;
+    
     if (healthResponse.ok) {
-      console.log('✅ Backend health check passed');
+      console.log(`✅ Backend health check passed (${healthTime}ms)`);
     } else {
       console.log(`⚠️ Backend health check failed: ${healthResponse.status}`);
     }
     
-    // Test voice endpoints
-    const voiceResponse = await fetch(`${backendUrl}/voice/token`, {
+    // Test enhanced voice token endpoint
+    console.log('🎯 Testing enhanced voice token endpoint...');
+    const tokenStartTime = Date.now();
+    const voiceResponse = await fetch(`${backendUrl}/voice/enhanced-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

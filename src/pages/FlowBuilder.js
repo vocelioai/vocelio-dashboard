@@ -33,6 +33,7 @@ import {
   import FlowCollaboration from '../components/FlowCollaboration';
   import AIFlowOptimizer from '../components/AIFlowOptimizer';
   import AdvancedNodeTypesManager from '../components/AdvancedNodeTypesManager';
+  import MobileFlowBuilder from '../components/MobileFlowBuilder';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -65,6 +66,7 @@ const VocelioAIPlatform = () => {
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [aiOptimizerOpen, setAiOptimizerOpen] = useState(false);
   const [advancedNodesOpen, setAdvancedNodesOpen] = useState(false);
+  const [mobileBuilderOpen, setMobileBuilderOpen] = useState(false);
   
   // Current user for collaboration
   const [currentUser] = useState({
@@ -560,7 +562,8 @@ const VocelioAIPlatform = () => {
     { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) },
     { icon: '👥', label: 'Collaborate', action: () => setCollaborationOpen(true) },
     { icon: '🧠', label: 'AI Optimizer', action: () => setAiOptimizerOpen(true) },
-    { icon: '⚡', label: 'Advanced Nodes', action: () => setAdvancedNodesOpen(true) }
+    { icon: '⚡', label: 'Advanced Nodes', action: () => setAdvancedNodesOpen(true) },
+    { icon: '📱', label: 'Mobile Builder', action: () => setMobileBuilderOpen(true) }
   ];
 
   return (
@@ -784,6 +787,17 @@ const VocelioAIPlatform = () => {
             >
               <Code2 size={16} />
               Advanced Nodes
+            </button>
+            <button
+              onClick={() => setMobileBuilderOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-pink-700 hover:bg-pink-600 text-white' 
+                  : 'bg-pink-100 hover:bg-pink-200 text-pink-900 border border-pink-300'
+              }`}
+            >
+              <Smartphone size={16} />
+              Mobile Builder
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2655,6 +2669,27 @@ You're calling {{customer_name}} because you came across their company and saw t
           </div>
         </div>
       )}
+
+      {/* Mobile Flow Builder */}
+      <MobileFlowBuilder
+        isOpen={mobileBuilderOpen}
+        onClose={() => setMobileBuilderOpen(false)}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={setNodes}
+        onEdgesChange={setEdges}
+        onSave={(savedNodes, savedEdges) => {
+          console.log('Saving mobile flow:', savedNodes, savedEdges);
+          setNodes(savedNodes);
+          setEdges(savedEdges);
+          showNotification(`Mobile flow saved successfully!`, 'success');
+        }}
+        currentFlow={{
+          id: 'current-flow',
+          name: 'Voice Flow',
+          description: 'Mobile optimized voice flow'
+        }}
+      />
     </div>
   );
 };
