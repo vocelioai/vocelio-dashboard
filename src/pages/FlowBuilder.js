@@ -17,7 +17,7 @@ import {
   X, Settings, Command, Search, ChevronRight, Zap,
   Calendar, Mail, Smartphone, MessageSquare, Trash2,
   Eye, EyeOff, Download, Upload, Pause, Play, Shield,
-  Activity, Headphones, Users
+  Activity, Headphones, Users, Brain
 } from 'lucide-react';
 
   // Import our new schema and components
@@ -31,6 +31,7 @@ import {
   import FlowTemplateManager from '../components/FlowTemplateManager';
   import FlowAnalyticsDashboard from '../components/FlowAnalyticsDashboard';
   import FlowCollaboration from '../components/FlowCollaboration';
+  import AIFlowOptimizer from '../components/AIFlowOptimizer';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -61,6 +62,7 @@ const VocelioAIPlatform = () => {
   const [flowTemplateManagerOpen, setFlowTemplateManagerOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
+  const [aiOptimizerOpen, setAiOptimizerOpen] = useState(false);
   
   // Current user for collaboration
   const [currentUser] = useState({
@@ -554,7 +556,8 @@ const VocelioAIPlatform = () => {
     { icon: '🌐', label: 'Web Client', action: () => showModal('webClient') },
     { icon: '🚀', label: 'Promote to Production', action: () => showModal('promoteProduction') },
     { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) },
-    { icon: '👥', label: 'Collaborate', action: () => setCollaborationOpen(true) }
+    { icon: '👥', label: 'Collaborate', action: () => setCollaborationOpen(true) },
+    { icon: '🧠', label: 'AI Optimizer', action: () => setAiOptimizerOpen(true) }
   ];
 
   return (
@@ -756,6 +759,17 @@ const VocelioAIPlatform = () => {
             >
               <Users size={16} />
               Collaborate
+            </button>
+            <button
+              onClick={() => setAiOptimizerOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-purple-700 hover:bg-purple-600 text-white' 
+                  : 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300'
+              }`}
+            >
+              <Brain size={16} />
+              AI Optimizer
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2473,6 +2487,68 @@ You're calling {{customer_name}} because you came across their company and saw t
                   onUserAction={(action, data) => {
                     showNotification(`Collaboration: ${action}`, 'info');
                     console.log('Collaboration action:', action, data);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Flow Optimizer Panel */}
+      {aiOptimizerOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-6xl h-5/6 rounded-xl shadow-2xl overflow-hidden ${
+            isDarkMode ? 'bg-gray-900' : 'bg-white'
+          }`}>
+            <div className="h-full flex flex-col">
+              {/* Modal Header */}
+              <div className={`p-4 border-b flex items-center justify-between ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  AI Flow Optimizer
+                </h2>
+                <button
+                  onClick={() => setAiOptimizerOpen(false)}
+                  className={`p-2 rounded-lg hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
+                    isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* AI Optimizer Content */}
+              <div className="flex-1 overflow-auto">
+                <AIFlowOptimizer
+                  flowData={{
+                    nodes: nodes,
+                    edges: edges,
+                    metadata: {
+                      flowName: 'Current Voice Flow',
+                      version: '1.0.0',
+                      lastModified: new Date().toISOString()
+                    }
+                  }}
+                  onOptimizationApply={(optimization) => {
+                    showNotification(`Applied: ${optimization.title}`, 'success');
+                    console.log('Applied optimization:', optimization);
+                    
+                    // Here you would apply the actual optimization changes
+                    // For example, reorder nodes, update prompts, etc.
+                    if (optimization.changes) {
+                      optimization.changes.forEach(change => {
+                        console.log('Applying change:', change);
+                        // Apply the change based on change.action
+                      });
+                    }
+                  }}
+                  onAnalysisUpdate={(results) => {
+                    console.log('AI Analysis results:', results);
+                    // You can store or display analysis results as needed
                   }}
                 />
               </div>
