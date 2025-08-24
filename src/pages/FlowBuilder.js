@@ -17,7 +17,7 @@ import {
   X, Settings, Command, Search, ChevronRight, Zap,
   Calendar, Mail, Smartphone, MessageSquare, Trash2,
   Eye, EyeOff, Download, Upload, Pause, Play, Shield,
-  Activity, Headphones, Users, Brain
+  Activity, Headphones, Users, Brain, Code2
 } from 'lucide-react';
 
   // Import our new schema and components
@@ -32,6 +32,7 @@ import {
   import FlowAnalyticsDashboard from '../components/FlowAnalyticsDashboard';
   import FlowCollaboration from '../components/FlowCollaboration';
   import AIFlowOptimizer from '../components/AIFlowOptimizer';
+  import AdvancedNodeTypesManager from '../components/AdvancedNodeTypesManager';
 
 // Lazy load Phase 3 component to reduce initial bundle size
 const Phase3FlowBuilderEnhancements = React.lazy(() => import('../components/Phase3FlowBuilderEnhancementsLite'));
@@ -63,6 +64,7 @@ const VocelioAIPlatform = () => {
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [aiOptimizerOpen, setAiOptimizerOpen] = useState(false);
+  const [advancedNodesOpen, setAdvancedNodesOpen] = useState(false);
   
   // Current user for collaboration
   const [currentUser] = useState({
@@ -557,7 +559,8 @@ const VocelioAIPlatform = () => {
     { icon: '🚀', label: 'Promote to Production', action: () => showModal('promoteProduction') },
     { icon: '📊', label: 'Flow Analytics', action: () => setAnalyticsOpen(true) },
     { icon: '👥', label: 'Collaborate', action: () => setCollaborationOpen(true) },
-    { icon: '🧠', label: 'AI Optimizer', action: () => setAiOptimizerOpen(true) }
+    { icon: '🧠', label: 'AI Optimizer', action: () => setAiOptimizerOpen(true) },
+    { icon: '⚡', label: 'Advanced Nodes', action: () => setAdvancedNodesOpen(true) }
   ];
 
   return (
@@ -770,6 +773,17 @@ const VocelioAIPlatform = () => {
             >
               <Brain size={16} />
               AI Optimizer
+            </button>
+            <button
+              onClick={() => setAdvancedNodesOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? 'bg-indigo-700 hover:bg-indigo-600 text-white' 
+                  : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-300'
+              }`}
+            >
+              <Code2 size={16} />
+              Advanced Nodes
             </button>
             <button
               onClick={() => setExecutionMonitorVisible(!executionMonitorVisible)}
@@ -2549,6 +2563,91 @@ You're calling {{customer_name}} because you came across their company and saw t
                   onAnalysisUpdate={(results) => {
                     console.log('AI Analysis results:', results);
                     // You can store or display analysis results as needed
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Node Types Manager */}
+      {advancedNodesOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={`w-full max-w-6xl h-5/6 rounded-xl shadow-2xl overflow-hidden ${
+            isDarkMode ? 'bg-gray-900' : 'bg-white'
+          }`}>
+            <div className="h-full flex flex-col">
+              {/* Modal Header */}
+              <div className={`p-4 border-b flex items-center justify-between ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Advanced Node Types
+                </h2>
+                <button
+                  onClick={() => setAdvancedNodesOpen(false)}
+                  className={`p-2 rounded-lg hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${
+                    isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Advanced Node Types Content */}
+              <div className="flex-1 overflow-auto">
+                <AdvancedNodeTypesManager
+                  onNodeCreate={(node) => {
+                    console.log('Creating advanced node:', node);
+                    
+                    // Add the new advanced node to the flow
+                    const newNode = {
+                      id: node.id,
+                      type: node.name,
+                      data: {
+                        label: node.name,
+                        nodeType: node.id,
+                        config: node.config,
+                        category: node.category,
+                        description: node.description,
+                        inputs: node.inputs,
+                        outputs: node.outputs
+                      },
+                      position: { 
+                        x: Math.random() * 400 + 100, 
+                        y: Math.random() * 300 + 100 
+                      },
+                    };
+                    
+                    setNodes((nds) => [...nds, newNode]);
+                    setAdvancedNodesOpen(false);
+                    showNotification(`Advanced node "${node.name}" created successfully!`, 'success');
+                  }}
+                  onNodeUpdate={(nodeId, config) => {
+                    console.log('Updating advanced node:', nodeId, config);
+                    
+                    // Update existing node configuration
+                    setNodes((nds) => 
+                      nds.map((node) => 
+                        node.id === nodeId 
+                          ? { ...node, data: { ...node.data, config } }
+                          : node
+                      )
+                    );
+                    showNotification(`Node configuration updated!`, 'success');
+                  }}
+                  onNodeDelete={(nodeId) => {
+                    console.log('Deleting advanced node:', nodeId);
+                    
+                    // Remove node from flow
+                    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+                    setEdges((eds) => eds.filter((edge) => 
+                      edge.source !== nodeId && edge.target !== nodeId
+                    ));
+                    showNotification(`Node deleted successfully!`, 'success');
                   }}
                 />
               </div>
